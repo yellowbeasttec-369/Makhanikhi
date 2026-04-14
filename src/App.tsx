@@ -1,0 +1,76 @@
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './lib/AuthContext';
+import { Navbar } from './components/Navbar';
+import { Hero } from './components/Hero';
+import { Dashboard } from './components/Dashboard';
+import { ServiceBooking } from './components/ServiceBooking';
+import { VerificationCenter } from './components/VerificationCenter';
+import { Toaster } from 'sonner';
+
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="h-screen flex items-center justify-center bg-industrial-charcoal text-technic-yellow font-black text-2xl animate-pulse">MAKHANIKHI...</div>;
+  if (!user) return <Navigate to="/" />;
+  return <>{children}</>;
+};
+
+const AppContent: React.FC = () => {
+  return (
+    <div className="min-h-screen bg-industrial-charcoal selection:bg-technic-yellow selection:text-industrial-charcoal">
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<Hero />} />
+        <Route 
+          path="/dashboard" 
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/book" 
+          element={
+            <ProtectedRoute>
+              <ServiceBooking />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/verify" 
+          element={
+            <ProtectedRoute>
+              <VerificationCenter />
+            </ProtectedRoute>
+          } 
+        />
+      </Routes>
+      
+      <footer className="border-t border-white/5 py-12 bg-black/20">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <span className="makhanikhi-logo text-xl">Makhanikhi</span>
+          </div>
+          <p className="text-digital-white/30 text-xs uppercase tracking-widest font-bold">
+            Powered by <span className="text-technic-yellow">Yellow Beast (Pty) Ltd</span> R&D Studio
+          </p>
+          <p className="text-digital-white/20 text-[10px] mt-2">
+            © 2026 Makhanikhi Specialist Mobile Mechanics. All Rights Reserved.
+          </p>
+        </div>
+      </footer>
+      <Toaster position="bottom-right" theme="dark" />
+    </div>
+  );
+};
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <AppContent />
+      </Router>
+    </AuthProvider>
+  );
+}

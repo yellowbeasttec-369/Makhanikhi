@@ -1,0 +1,113 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "App users including Car Owners, Specialists, and Apprentices",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["owner", "specialist", "apprentice", "admin"] },
+        "specialization": { "type": "string" },
+        "experience": { "type": "number" },
+        "bio": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "isVerified": { "type": "boolean" },
+        "verificationStatus": { "type": "string", "enum": ["unverified", "pending", "verified", "rejected"] },
+        "verificationDocs": {
+          "type": "object",
+          "properties": {
+            "identityUrl": { "type": "string" },
+            "certificationUrl": { "type": "string" },
+            "experienceUrl": { "type": "string" }
+          }
+        },
+        "rating": { "type": "number" },
+        "flagged": { "type": "boolean" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Vehicle": {
+      "title": "Vehicle",
+      "description": "Car details and log book",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "make": { "type": "string" },
+        "model": { "type": "string" },
+        "year": { "type": "number" },
+        "vin": { "type": "string" },
+        "mileage": { "type": "number" },
+        "serviceHistory": { "type": "array" },
+        "faults": { "type": "array" }
+      },
+      "required": ["ownerId", "make", "model"]
+    },
+    "ServiceRequest": {
+      "title": "Service Request",
+      "description": "A request for a mechanic service",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "vehicleId": { "type": "string" },
+        "specialistId": { "type": "string" },
+        "apprenticeId": { "type": "string" },
+        "type": { "type": "string", "enum": ["minor", "major", "overhaul", "diagnostic"] },
+        "status": { "type": "string", "enum": ["pending", "quoted", "accepted", "in-progress", "completed", "cancelled"] },
+        "description": { "type": "string" },
+        "callOutFee": { "type": "number" },
+        "diagnosticQuote": { "type": "number" },
+        "partsQuote": { "type": "number" },
+        "totalAmount": { "type": "number" },
+        "paymentStatus": { "type": "string", "enum": ["unpaid", "partial", "paid"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "checklist": { "$ref": "Checklist" }
+      },
+      "required": ["ownerId", "vehicleId", "type", "status"]
+    },
+    "Checklist": {
+      "title": "Safety Checklist",
+      "description": "Safety checks before and after work",
+      "type": "object",
+      "properties": {
+        "preWork": {
+          "type": "object",
+          "properties": {
+            "ppeInspected": { "type": "boolean" },
+            "areaBarricaded": { "type": "boolean" },
+            "toolboxCheck": { "type": "boolean" },
+            "oilSpillMatsPlaced": { "type": "boolean" },
+            "siteSafe": { "type": "boolean" }
+          }
+        },
+        "postWork": {
+          "type": "object",
+          "properties": {
+            "siteCleared": { "type": "boolean" },
+            "toolsAccounted": { "type": "boolean" },
+            "wasteDisposed": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/vehicles/{vehicleId}": {
+      "schema": "Vehicle",
+      "description": "Vehicle records"
+    },
+    "/serviceRequests/{requestId}": {
+      "schema": "ServiceRequest",
+      "description": "Service requests and jobs"
+    },
+    "/regionalStats/{statId}": {
+      "schema": "object",
+      "description": "Regional part failure statistics"
+    }
+  }
+}

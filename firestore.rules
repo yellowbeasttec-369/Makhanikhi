@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Fields: uid, email, displayName, role, specialization, experience, bio, photoURL, isVerified, rating, flagged
+    //
+    // Collection: vehicles
+    // Fields: ownerId, make, model, year, vin, mileage, serviceHistory, faults
+    //
+    // Collection: serviceRequests
+    // Fields: ownerId, vehicleId, specialistId, apprenticeId, type, status, description, callOutFee, diagnosticQuote, partsQuote, totalAmount, paymentStatus, createdAt, checklist
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         (request.auth.token.email == "yellowbeasttech@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function hasRole(role) {
+      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'role']) &&
+             data.role in ['owner', 'specialist', 'apprentice', 'admin'] &&
+             data.email is string && data.email.size() < 100;
+    }
+
+    // Rules
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if (isOwner(userId) && request.resource.data.role == resource.data.role) || isAdmin();
+    }
+
+    match /vehicles/{vehicleId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data.ownerId) || hasRole('specialist') || hasRole('apprentice'));
+      allow create: if isAuthenticated() && isOwner(request.resource.data.ownerId);
+      allow update: if isAuthenticated() && (isOwner(resource.data.ownerId) || hasRole('specialist') || hasRole('apprentice'));
+    }
+
+    match /serviceRequests/{requestId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data.ownerId) || isOwner(resource.data.specialistId) || isOwner(resource.data.apprenticeId) || isAdmin());
+      allow create: if isAuthenticated() && isOwner(request.resource.data.ownerId);
+      allow update: if isAuthenticated() && (isOwner(resource.data.ownerId) || isOwner(resource.data.specialistId) || isOwner(resource.data.apprenticeId) || isAdmin());
+    }
+
+    match /regionalStats/{statId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+  }
+}
