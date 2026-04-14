@@ -76,3 +76,9 @@ export interface SafetyChecklist {
     wasteDisposed: boolean;
   };
 }
+
+declare global {
+  interface Window {
+    ethereum?: any;
+  }
+}

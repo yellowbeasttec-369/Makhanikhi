@@ -4,11 +4,30 @@ import { useAuth } from '../lib/AuthContext';
 import { auth } from '../lib/firebase';
 import { signOut, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { Button } from './ui/button';
-import { Wrench, LogOut, User as UserIcon, Shield } from 'lucide-react';
+import { Wrench, LogOut, User as UserIcon, Shield, Wallet } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { BrowserProvider } from 'ethers';
+import { toast } from 'sonner';
 
 export const Navbar: React.FC = () => {
   const { user, profile } = useAuth();
+  const [walletAddress, setWalletAddress] = React.useState<string | null>(null);
+
+  const connectWallet = async () => {
+    if (typeof window.ethereum !== 'undefined') {
+      try {
+        const provider = new BrowserProvider(window.ethereum);
+        const accounts = await provider.send("eth_requestAccounts", []);
+        setWalletAddress(accounts[0]);
+        toast.success(`Connected: ${accounts[0].slice(0, 6)}...${accounts[0].slice(-4)}`);
+      } catch (error: any) {
+        console.error('MetaMask connection failed', error);
+        toast.error("Failed to connect to MetaMask. Please ensure it is unlocked and you approve the request.");
+      }
+    } else {
+      toast.error("MetaMask not detected. Please install the extension.");
+    }
+  };
 
   const handleLogin = async () => {
     const provider = new GoogleAuthProvider();
@@ -16,6 +35,7 @@ export const Navbar: React.FC = () => {
       await signInWithPopup(auth, provider);
     } catch (error) {
       console.error('Login failed', error);
+      toast.error("Login failed. Please try again.");
     }
   };
 
@@ -38,6 +58,14 @@ export const Navbar: React.FC = () => {
           <div className="flex items-center gap-4">
             {user ? (
               <>
+                {walletAddress && (
+                  <div className="hidden md:flex items-center gap-2 bg-technic-yellow/10 border border-technic-yellow/20 px-3 py-1.5 rounded-lg">
+                    <Wallet className="w-3.5 h-3.5 text-technic-yellow" />
+                    <span className="text-[10px] font-mono text-technic-yellow font-bold">
+                      {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                    </span>
+                  </div>
+                )}
                 <Link to="/dashboard" className="text-sm font-medium hover:text-technic-yellow transition-colors">
                   Dashboard
                 </Link>
@@ -58,9 +86,18 @@ export const Navbar: React.FC = () => {
                 </div>
               </>
             ) : (
-              <Button onClick={handleLogin} className="bg-technic-yellow text-industrial-charcoal hover:bg-technic-yellow/90 font-bold">
-                Connect Wallet / Login
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={connectWallet} 
+                  variant="outline"
+                  className="border-white/20 hover:bg-white/5 font-bold hidden md:flex items-center gap-2"
+                >
+                  <Wallet className="w-4 h-4" /> Connect Wallet
+                </Button>
+                <Button onClick={handleLogin} className="bg-technic-yellow text-industrial-charcoal hover:bg-technic-yellow/90 font-bold">
+                  Login with Google
+                </Button>
+              </div>
             )}
           </div>
         </div>
