@@ -16,13 +16,26 @@ export const Navbar: React.FC = () => {
   const connectWallet = async () => {
     if (typeof window.ethereum !== 'undefined') {
       try {
-        const provider = new BrowserProvider(window.ethereum);
-        const accounts = await provider.send("eth_requestAccounts", []);
-        setWalletAddress(accounts[0]);
-        toast.success(`Connected: ${accounts[0].slice(0, 6)}...${accounts[0].slice(-4)}`);
+        // Request accounts using the standard EIP-1193 method
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        
+        if (accounts && accounts.length > 0) {
+          setWalletAddress(accounts[0]);
+          toast.success(`Connected: ${accounts[0].slice(0, 6)}...${accounts[0].slice(-4)}`);
+        } else {
+          throw new Error("No accounts found.");
+        }
       } catch (error: any) {
         console.error('MetaMask connection failed', error);
-        toast.error("Failed to connect to MetaMask. Please ensure it is unlocked and you approve the request.");
+        
+        // Handle specific MetaMask error codes
+        if (error.code === 4001) {
+          toast.error("Connection rejected. Please approve the request in MetaMask.");
+        } else if (error.code === -32002) {
+          toast.error("Request already pending. Please check your MetaMask extension.");
+        } else {
+          toast.error(`Failed to connect to MetaMask: ${error.message || 'Please ensure it is unlocked.'}`);
+        }
       }
     } else {
       toast.error("MetaMask not detected. Please install the extension.");
