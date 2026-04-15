@@ -43,6 +43,7 @@ export const ServiceBooking: React.FC = () => {
     appointmentTime: '',
     isOwnershipVerified: false,
     ownershipDocUrl: '',
+    vehicleVin: '',
   });
   const [smartContract, setSmartContract] = useState<any>(null);
   const [vehicleSearch, setVehicleSearch] = useState('');
@@ -214,6 +215,17 @@ export const ServiceBooking: React.FC = () => {
                     value={formData.vehicleYear}
                     onChange={(e) => setFormData({...formData, vehicleYear: e.target.value})}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-text-dim text-[10px] uppercase tracking-widest font-bold">VIN Number (17 Characters)</Label>
+                  <Input 
+                    placeholder="Enter VIN for parts sourcing..." 
+                    className="bg-white/5 border-white/10 rounded-xl font-mono"
+                    value={formData.vehicleVin}
+                    onChange={(e) => setFormData({...formData, vehicleVin: e.target.value.toUpperCase()})}
+                    maxLength={17}
+                  />
+                  <p className="text-[9px] text-technic-yellow/60 italic">Essential for sourcing specialized parts correctly.</p>
                 </div>
                 <Button onClick={handleNext} className="bento-btn mt-6">NEXT: SERVICE TYPE</Button>
               </div>

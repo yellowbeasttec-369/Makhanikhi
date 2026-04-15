@@ -14,21 +14,32 @@ import { toast } from 'sonner';
 import { CameraCapture } from './CameraCapture';
 
 export const VehicleLogBook: React.FC = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [logs, setLogs] = useState<any[]>([]);
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddLog, setShowAddLog] = useState(false);
+  const [showAddVehicle, setShowAddVehicle] = useState(false);
   const [showVerifyDialog, setShowVerifyDialog] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+  const [newVehicle, setNewVehicle] = useState({
+    make: '',
+    model: '',
+    year: new Date().getFullYear(),
+    vin: '',
+    mileage: ''
+  });
   const [newLog, setNewLog] = useState({
+    vehicleId: '',
     type: '',
     mileage: '',
     cost: '',
     specialist: '',
-    date: new Date().toISOString().split('T')[0]
+    date: new Date().toISOString().split('T')[0],
+    tasks: [] as { id: string; title: string; status: 'pending' | 'completed' | 'signed-off' }[]
   });
+  const [newTaskTitle, setNewTaskTitle] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -74,8 +85,39 @@ export const VehicleLogBook: React.FC = () => {
     }
   };
 
+  const handleAddVehicle = async () => {
+    if (!user) return;
+    setSubmitting(true);
+    try {
+      await addDoc(collection(db, 'vehicles'), {
+        ...newVehicle,
+        ownerId: user.uid,
+        createdAt: serverTimestamp(),
+        isOwnershipVerified: false,
+        verificationStatus: 'unverified'
+      });
+      toast.success("Vehicle added to your garage!");
+      setShowAddVehicle(false);
+      setNewVehicle({
+        make: '',
+        model: '',
+        year: new Date().getFullYear(),
+        vin: '',
+        mileage: ''
+      });
+    } catch (error) {
+      toast.error("Failed to add vehicle.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleAddLog = async () => {
     if (!user) return;
+    if (!newLog.vehicleId) {
+      toast.error("Please select a vehicle.");
+      return;
+    }
     setSubmitting(true);
     try {
       await addDoc(collection(db, 'vehicleLogs'), {
@@ -86,11 +128,13 @@ export const VehicleLogBook: React.FC = () => {
       toast.success("Log entry added successfully!");
       setShowAddLog(false);
       setNewLog({
+        vehicleId: '',
         type: '',
         mileage: '',
         cost: '',
         specialist: '',
-        date: new Date().toISOString().split('T')[0]
+        date: new Date().toISOString().split('T')[0],
+        tasks: []
       });
     } catch (error) {
       console.error("Error adding log:", error);
@@ -98,6 +142,41 @@ export const VehicleLogBook: React.FC = () => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const addTaskToLog = () => {
+    if (!newTaskTitle) return;
+    setNewLog({
+      ...newLog,
+      tasks: [...newLog.tasks, { id: Math.random().toString(36).substr(2, 9), title: newTaskTitle, status: 'pending' }]
+    });
+    setNewTaskTitle('');
+  };
+
+  const toggleTaskStatus = (logId: string, taskId: string, currentStatus: string) => {
+    const log = logs.find(l => l.id === logId);
+    if (!log) return;
+
+    const updatedTasks = log.tasks.map((t: any) => {
+      if (t.id === taskId) {
+        // Apprentice marks as completed
+        if (currentStatus === 'pending' && profile?.role === 'apprentice') {
+          return { ...t, status: 'completed' };
+        }
+        // Specialist signs off
+        if (currentStatus === 'completed' && profile?.role === 'specialist') {
+          return { ...t, status: 'signed-off' };
+        }
+        // Specialist can also mark as completed if no apprentice
+        if (currentStatus === 'pending' && profile?.role === 'specialist') {
+          return { ...t, status: 'completed' };
+        }
+        return t;
+      }
+      return t;
+    });
+
+    updateDoc(doc(db, 'vehicleLogs', logId), { tasks: updatedTasks });
   };
 
   const totalInvestment = logs.reduce((acc, log) => acc + (parseFloat(log.cost.replace(/[^0-9.]/g, '')) || 0), 0);
@@ -111,7 +190,59 @@ export const VehicleLogBook: React.FC = () => {
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bento-card">
-          <div className="bento-card-title"><div className="bento-dot"></div> VEHICLE OWNERSHIP VERIFICATION</div>
+          <div className="flex justify-between items-center mb-4">
+            <div className="bento-card-title"><div className="bento-dot"></div> VEHICLE OWNERSHIP VERIFICATION</div>
+            <Dialog open={showAddVehicle} onOpenChange={setShowAddVehicle}>
+              <DialogTrigger render={<Button size="sm" className="bg-white/10 text-digital-white font-bold rounded-xl text-[10px] h-7" />}>
+                <Plus className="w-3 h-3 mr-1" /> ADD VEHICLE
+              </DialogTrigger>
+              <DialogContent className="bg-industrial-charcoal border-white/10 text-digital-white">
+                <DialogHeader>
+                  <DialogTitle className="uppercase font-display font-black">Add New Vehicle</DialogTitle>
+                  <DialogDescription className="text-text-dim">Register a new machine in your digital garage.</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] uppercase font-bold text-text-dim">Make</Label>
+                      <Input placeholder="e.g. Toyota" className="bg-white/5 border-white/10" value={newVehicle.make} onChange={(e) => setNewVehicle({...newVehicle, make: e.target.value})} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] uppercase font-bold text-text-dim">Model</Label>
+                      <Input placeholder="e.g. Hilux" className="bg-white/5 border-white/10" value={newVehicle.model} onChange={(e) => setNewVehicle({...newVehicle, model: e.target.value})} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] uppercase font-bold text-text-dim">Year</Label>
+                      <Input type="number" className="bg-white/5 border-white/10" value={newVehicle.year} onChange={(e) => setNewVehicle({...newVehicle, year: parseInt(e.target.value)})} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-[10px] uppercase font-bold text-text-dim">Current Mileage</Label>
+                      <Input type="number" className="bg-white/5 border-white/10" value={newVehicle.mileage} onChange={(e) => setNewVehicle({...newVehicle, mileage: e.target.value})} />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase font-bold text-text-dim">VIN Number (17 Characters)</Label>
+                    <Input 
+                      placeholder="Enter VIN for parts sourcing..." 
+                      className="bg-white/5 border-white/10 font-mono" 
+                      value={newVehicle.vin} 
+                      onChange={(e) => setNewVehicle({...newVehicle, vin: e.target.value.toUpperCase()})} 
+                      maxLength={17}
+                    />
+                    <p className="text-[9px] text-technic-yellow/60 italic">Essential for sourcing specialized parts correctly.</p>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setShowAddVehicle(false)} className="border-white/10">CANCEL</Button>
+                  <Button onClick={handleAddVehicle} disabled={submitting} className="bg-technic-yellow text-industrial-charcoal font-bold">
+                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'ADD TO GARAGE'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
           <div className="space-y-4">
             {vehicles.map((v) => (
               <div key={v.id} className="p-4 rounded-xl bg-white/5 border border-white/10 flex justify-between items-center">
@@ -121,9 +252,12 @@ export const VehicleLogBook: React.FC = () => {
                   </div>
                   <div>
                     <h4 className="font-bold text-sm uppercase">{v.make} {v.model}</h4>
-                    <p className="text-[10px] text-text-dim uppercase tracking-widest">
-                      {v.isOwnershipVerified ? 'Verified Owner' : v.verificationStatus === 'pending' ? 'Verification Pending' : 'Action Required'}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-[10px] text-text-dim uppercase tracking-widest">
+                        {v.isOwnershipVerified ? 'Verified Owner' : v.verificationStatus === 'pending' ? 'Verification Pending' : 'Action Required'}
+                      </p>
+                      <span className="text-[9px] text-technic-yellow font-mono">VIN: {v.vin || 'N/A'}</span>
+                    </div>
                   </div>
                 </div>
                 {!v.isOwnershipVerified && v.verificationStatus !== 'pending' && (
@@ -165,6 +299,21 @@ export const VehicleLogBook: React.FC = () => {
                   <DialogDescription className="text-text-dim">Record a new maintenance or service event.</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase font-bold text-text-dim">Select Vehicle</Label>
+                    <select 
+                      className="w-full h-10 bg-white/5 border border-white/10 rounded-md px-3 text-sm"
+                      value={newLog.vehicleId}
+                      onChange={(e) => setNewLog({...newLog, vehicleId: e.target.value})}
+                    >
+                      <option value="" className="bg-industrial-charcoal">Choose a vehicle...</option>
+                      {vehicles.map(v => (
+                        <option key={v.id} value={v.id} className="bg-industrial-charcoal">
+                          {v.make} {v.model} ({v.vin?.slice(-6) || 'No VIN'})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label className="text-[10px] uppercase font-bold text-text-dim">Date</Label>
@@ -172,7 +321,7 @@ export const VehicleLogBook: React.FC = () => {
                     </div>
                     <div className="space-y-2">
                       <Label className="text-[10px] uppercase font-bold text-text-dim">Mileage (KM)</Label>
-                      <Input placeholder="e.g. 85000" className="bg-white/5 border-white/10" value={newLog.mileage} onChange={(e) => setNewLog({...newLog, mileage: e.target.value})} />
+                      <Input type="number" placeholder="e.g. 85000" className="bg-white/5 border-white/10" value={newLog.mileage} onChange={(e) => setNewLog({...newLog, mileage: e.target.value})} />
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -187,6 +336,28 @@ export const VehicleLogBook: React.FC = () => {
                     <div className="space-y-2">
                       <Label className="text-[10px] uppercase font-bold text-text-dim">Cost (R)</Label>
                       <Input placeholder="e.g. 1500" className="bg-white/5 border-white/10" value={newLog.cost} onChange={(e) => setNewLog({...newLog, cost: e.target.value})} />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-2 border-t border-white/5">
+                    <Label className="text-[10px] uppercase font-bold text-technic-yellow">Workplace Tasks (Apprentice/Specialist)</Label>
+                    <div className="flex gap-2">
+                      <Input 
+                        placeholder="Add a task (e.g. Brake Pad Replacement)" 
+                        className="bg-white/5 border-white/10 h-8 text-xs" 
+                        value={newTaskTitle}
+                        onChange={(e) => setNewTaskTitle(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && addTaskToLog()}
+                      />
+                      <Button size="sm" onClick={addTaskToLog} className="h-8 bg-white/10 hover:bg-white/20">ADD</Button>
+                    </div>
+                    <div className="space-y-1 mt-2">
+                      {newLog.tasks.map((task, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-2 bg-white/5 rounded-lg border border-white/5">
+                          <span className="text-[11px]">{task.title}</span>
+                          <Badge variant="outline" className="text-[8px] uppercase">Pending</Badge>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -208,9 +379,9 @@ export const VehicleLogBook: React.FC = () => {
             <TableHeader>
               <TableRow className="border-white/10 hover:bg-transparent">
                 <TableHead className="text-text-dim text-[11px] uppercase tracking-widest">Date</TableHead>
+                <TableHead className="text-text-dim text-[11px] uppercase tracking-widest">Vehicle & VIN</TableHead>
                 <TableHead className="text-text-dim text-[11px] uppercase tracking-widest">Service Type</TableHead>
-                <TableHead className="text-text-dim text-[11px] uppercase tracking-widest">Specialist</TableHead>
-                <TableHead className="text-text-dim text-[11px] uppercase tracking-widest">Mileage</TableHead>
+                <TableHead className="text-text-dim text-[11px] uppercase tracking-widest">Workplace Tasks</TableHead>
                 <TableHead className="text-text-dim text-[11px] uppercase tracking-widest text-right">Cost</TableHead>
               </TableRow>
             </TableHeader>
@@ -222,15 +393,36 @@ export const VehicleLogBook: React.FC = () => {
                   </TableCell>
                 </TableRow>
               ) : logs.length > 0 ? (
-                logs.map((record, i) => (
-                  <TableRow key={i} className="border-white/5 hover:bg-white/5 transition-colors">
-                    <TableCell className="font-mono text-xs">{record.date}</TableCell>
-                    <TableCell className="font-bold">{record.type}</TableCell>
-                    <TableCell className="text-text-dim text-xs">{record.specialist}</TableCell>
-                    <TableCell className="text-text-dim text-xs">{record.mileage} KM</TableCell>
-                    <TableCell className="text-right font-bold text-technic-yellow">R {parseFloat(record.cost).toLocaleString()}</TableCell>
-                  </TableRow>
-                ))
+                logs.map((record, i) => {
+                  const vehicle = vehicles.find(v => v.id === record.vehicleId);
+                  return (
+                    <TableRow key={i} className="border-white/5 hover:bg-white/5 transition-colors">
+                      <TableCell className="font-mono text-xs">{record.date}</TableCell>
+                      <TableCell>
+                        <div className="font-bold text-xs uppercase">{vehicle ? `${vehicle.make} ${vehicle.model}` : 'Unknown'}</div>
+                        <div className="text-[9px] text-technic-yellow font-mono">{vehicle?.vin || 'NO VIN'}</div>
+                      </TableCell>
+                      <TableCell className="font-bold text-xs">{record.type}</TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          {record.tasks?.map((task: any) => (
+                            <div key={task.id} className="flex items-center gap-2">
+                              <button 
+                                onClick={() => toggleTaskStatus(record.id, task.id, task.status)}
+                                className={`w-3 h-3 rounded-sm border ${task.status === 'signed-off' ? 'bg-success-green border-success-green' : task.status === 'completed' ? 'bg-technic-yellow border-technic-yellow' : 'border-white/20'}`}
+                              />
+                              <span className={`text-[9px] uppercase font-bold ${task.status === 'signed-off' ? 'text-success-green' : task.status === 'completed' ? 'text-technic-yellow' : 'text-text-dim'}`}>
+                                {task.title}
+                              </span>
+                            </div>
+                          ))}
+                          {(!record.tasks || record.tasks.length === 0) && <span className="text-[9px] text-text-dim italic">No tasks recorded</span>}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right font-bold text-technic-yellow">R {parseFloat(record.cost).toLocaleString()}</TableCell>
+                    </TableRow>
+                  );
+                })
               ) : (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-10 text-text-dim italic">
