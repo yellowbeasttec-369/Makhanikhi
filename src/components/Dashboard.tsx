@@ -503,9 +503,17 @@ export const Dashboard: React.FC = () => {
                             <h4 className="text-xs font-bold uppercase tracking-widest text-technic-yellow flex items-center gap-2">
                               <Users className="w-4 h-4" /> Apprentice Tasks & Skills Transfer
                             </h4>
-                            <Badge variant="outline" className="text-[9px] border-white/10 uppercase">
-                              {req.tasks.filter(t => t.status === 'signed-off').length} / {req.tasks.length} Signed Off
-                            </Badge>
+                            <div className="flex flex-col items-end gap-1">
+                              <Badge variant="outline" className="text-[9px] border-white/10 uppercase">
+                                {req.tasks.filter(t => t.status === 'signed-off').length} / {req.tasks.length} Signed Off
+                              </Badge>
+                              <div className="w-32 h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/10">
+                                <div 
+                                  className="h-full bg-success-green transition-all duration-500" 
+                                  style={{ width: `${(req.tasks.filter(t => t.status === 'signed-off').length / req.tasks.length) * 100}%` }}
+                                />
+                              </div>
+                            </div>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             {req.tasks.map((task) => (
@@ -547,13 +555,23 @@ export const Dashboard: React.FC = () => {
                                     </>
                                   )}
                                   {profile?.role === 'specialist' && task.status === 'completed' && (
-                                    <Button 
-                                      size="sm" 
-                                      onClick={() => signOffTask(req.id, task.id)}
-                                      className="w-full h-7 text-[9px] bg-white/10 hover:bg-technic-yellow hover:text-industrial-charcoal font-bold uppercase"
-                                    >
-                                      SIGN OFF
-                                    </Button>
+                                    <>
+                                      <Button 
+                                        size="sm" 
+                                        onClick={() => signOffTask(req.id, task.id)}
+                                        className="flex-1 h-7 text-[9px] bg-white/10 hover:bg-technic-yellow hover:text-industrial-charcoal font-bold uppercase"
+                                      >
+                                        SIGN OFF
+                                      </Button>
+                                      <Button 
+                                        size="sm" 
+                                        variant="outline"
+                                        onClick={() => { setActiveRequestId(req.id); setActiveTaskId(task.id); setShowCamera(true); }}
+                                        className="w-7 h-7 p-0 border-white/10"
+                                      >
+                                        <CameraIcon className="w-3 h-3" />
+                                      </Button>
+                                    </>
                                   )}
                                 </div>
                                 {task.status === 'completed' && profile?.role === 'apprentice' && (

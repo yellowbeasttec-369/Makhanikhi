@@ -60,12 +60,12 @@ export const Navbar: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="bg-technic-yellow p-1.5 rounded-lg group-hover:rotate-12 transition-transform">
-              <Wrench className="w-6 h-6 text-industrial-charcoal" />
+            <div className="bg-technic-yellow p-1 rounded-lg group-hover:rotate-12 transition-transform overflow-hidden w-10 h-10 flex items-center justify-center">
+              <img src="/Makhanikhi_logo_launch.png" alt="Makhanikhi Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
             </div>
             <div className="flex flex-col">
-              <span className="makhanikhi-logo text-2xl text-digital-white">Makhanikhi</span>
-              <span className="text-[10px] uppercase tracking-widest text-technic-yellow font-bold -mt-1">Specialist Mobile Mechanics</span>
+              <span className="makhanikhi-logo text-2xl text-digital-white leading-none">Makhanikhi</span>
+              <span className="text-[10px] uppercase tracking-widest text-technic-yellow font-bold mt-0.5">Specialist Mobile Mechanics</span>
             </div>
           </Link>
 

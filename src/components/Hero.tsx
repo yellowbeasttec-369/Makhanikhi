@@ -19,8 +19,11 @@ export const Hero: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-technic-yellow/10 border border-technic-yellow/20 text-technic-yellow text-xs font-bold uppercase tracking-widest mb-6">
-              <Zap className="w-3 h-3" /> Powered by Yellow Beast R&D
+            <div className="flex justify-center mb-8">
+              <img src="/Makhanikhi_logo_launch.png" alt="Makhanikhi Logo" className="h-32 w-auto object-contain drop-shadow-[0_0_30px_rgba(255,210,0,0.3)]" referrerPolicy="no-referrer" />
+            </div>
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-technic-yellow/10 border border-technic-yellow/20 text-technic-yellow text-[10px] font-bold uppercase tracking-widest mb-6">
+              <img src="/yellow beast.jpg" alt="Yellow Beast" className="w-4 h-4 rounded-full object-cover" referrerPolicy="no-referrer" /> Powered by Yellow Beast R&D & Venture Studio
             </span>
             <h1 className="text-5xl md:text-7xl font-display font-black tracking-tighter mb-6 leading-[0.9]">
               THE DIGITAL <br />

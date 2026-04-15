@@ -52,13 +52,17 @@ const AppContent: React.FC = () => {
       
       <footer className="border-t border-white/5 py-12 bg-black/20">
         <div className="max-w-7xl mx-auto px-4 text-center">
-          <div className="flex items-center justify-center gap-2 mb-4">
+          <div className="flex items-center justify-center gap-2 mb-6">
+            <img src="/Makhanikhi_logo_launch.png" alt="Makhanikhi Logo" className="h-8 w-auto object-contain" referrerPolicy="no-referrer" />
             <span className="makhanikhi-logo text-xl">Makhanikhi</span>
           </div>
-          <p className="text-digital-white/30 text-xs uppercase tracking-widest font-bold">
-            Powered by <span className="text-technic-yellow">Yellow Beast (Pty) Ltd</span> R&D Studio
-          </p>
-          <p className="text-digital-white/20 text-[10px] mt-2">
+          <div className="flex flex-col items-center gap-3">
+            <img src="/yellow beast.jpg" alt="Yellow Beast Logo" className="h-12 w-auto rounded-xl grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-500" referrerPolicy="no-referrer" />
+            <p className="text-digital-white/30 text-xs uppercase tracking-widest font-bold">
+              Powered by <span className="text-technic-yellow">Yellow Beast (Pty) Ltd</span> R&D and Venture studio
+            </p>
+          </div>
+          <p className="text-digital-white/20 text-[10px] mt-8">
             © 2026 Makhanikhi Specialist Mobile Mechanics. All Rights Reserved.
           </p>
         </div>
