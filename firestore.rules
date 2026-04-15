@@ -41,6 +41,19 @@ service cloud.firestore {
              data.email is string && data.email.size() < 100;
     }
 
+    function isValidPortfolio(data) {
+      return data.keys().hasAll(['userId', 'title', 'validationStatus']) &&
+             data.userId is string &&
+             data.validationStatus in ['pending', 'validated', 'rejected'];
+    }
+
+    function isValidWorkplaceReport(data) {
+      return data.keys().hasAll(['userId', 'role', 'status']) &&
+             data.userId is string &&
+             data.role in ['specialist', 'apprentice'] &&
+             data.status in ['draft', 'submitted', 'validated'];
+    }
+
     // Rules
     match /users/{userId} {
       allow read: if isAuthenticated();
@@ -54,10 +67,28 @@ service cloud.firestore {
       allow update: if isAuthenticated() && (isOwner(resource.data.ownerId) || hasRole('specialist') || hasRole('apprentice'));
     }
 
+    match /vehicleLogs/{logId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data.ownerId) || hasRole('specialist') || hasRole('apprentice'));
+      allow create: if isAuthenticated() && isOwner(request.resource.data.ownerId);
+      allow update: if isAuthenticated() && (isOwner(resource.data.ownerId) || hasRole('specialist') || hasRole('apprentice'));
+    }
+
     match /serviceRequests/{requestId} {
       allow read: if isAuthenticated() && (isOwner(resource.data.ownerId) || isOwner(resource.data.specialistId) || isOwner(resource.data.apprenticeId) || isAdmin());
       allow create: if isAuthenticated() && isOwner(request.resource.data.ownerId);
       allow update: if isAuthenticated() && (isOwner(resource.data.ownerId) || isOwner(resource.data.specialistId) || isOwner(resource.data.apprenticeId) || isAdmin());
+    }
+
+    match /workplaceReports/{reportId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data.userId) || hasRole('specialist') || isAdmin());
+      allow create: if isAuthenticated() && isOwner(request.resource.data.userId) && isValidWorkplaceReport(request.resource.data);
+      allow update: if isAuthenticated() && (isOwner(resource.data.userId) || hasRole('specialist') || isAdmin());
+    }
+
+    match /portfolios/{portfolioId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data.userId) || hasRole('specialist') || isAdmin());
+      allow create: if isAuthenticated() && isOwner(request.resource.data.userId) && isValidPortfolio(request.resource.data);
+      allow update: if isAuthenticated() && (isOwner(resource.data.userId) || hasRole('specialist') || isAdmin());
     }
 
     match /regionalStats/{statId} {

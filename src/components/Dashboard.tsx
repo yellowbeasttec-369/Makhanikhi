@@ -1,22 +1,186 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../lib/AuthContext';
+import { db } from '../lib/firebase';
+import { collection, query, where, onSnapshot, orderBy, doc, updateDoc, getDocs } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
 import { Link } from 'react-router-dom';
-import { Wrench, Car, ClipboardCheck, History, TrendingUp, UserCheck, AlertTriangle, Shield } from 'lucide-react';
+import { Wrench, Car, ClipboardCheck, History, TrendingUp, UserCheck, AlertTriangle, Shield, Clock, CheckCircle2, PlayCircle, XCircle, MapPin, Loader2, Users, Award, BarChart3, Camera as CameraIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { toast } from 'sonner';
 
 import { VehicleLogBook } from './VehicleLogBook';
 import { SpecialistProfile } from './SpecialistProfile';
+import { SkillsValidation } from './SkillsValidation';
+import { FleetManager } from './FleetManager';
+import { OHSAGuidelines } from './OHSAGuidelines';
+import { CameraCapture } from './CameraCapture';
+import { ServiceRequest, UserProfile, ApprenticeTask } from '../types';
 
 export const Dashboard: React.FC = () => {
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
+  const [requests, setRequests] = useState<ServiceRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [showApprenticeDialog, setShowApprenticeDialog] = useState(false);
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [availableApprentices, setAvailableApprentices] = useState<UserProfile[]>([]);
+  const [selectedApprenticeId, setSelectedApprenticeId] = useState<string | null>(null);
+  const [showOHSA, setShowOHSA] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
+  const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
 
   const isSpecialist = profile?.role === 'specialist' || profile?.role === 'apprentice';
+  const isOwner = profile?.role === 'owner';
+
+  const fetchApprentices = async () => {
+    try {
+      const q = query(collection(db, 'users'), where('role', '==', 'apprentice'), where('isVerified', '==', true));
+      const querySnapshot = await getDocs(q);
+      const apps = querySnapshot.docs.map(doc => doc.data() as UserProfile);
+      setAvailableApprentices(apps);
+    } catch (error) {
+      console.error("Error fetching apprentices:", error);
+    }
+  };
+
+  const handleAcceptJobClick = (requestId: string) => {
+    if (profile?.role === 'specialist') {
+      setSelectedJobId(requestId);
+      fetchApprentices();
+      setShowApprenticeDialog(true);
+    } else {
+      handleAcceptJob(requestId, null);
+    }
+  };
+
+  const handleAcceptJob = async (requestId: string, apprenticeId: string | null) => {
+    if (!user) return;
+    setProcessingId(requestId);
+    try {
+      const requestRef = doc(db, 'serviceRequests', requestId);
+      const initialTasks: ApprenticeTask[] = [
+        { id: 't1', title: 'Site Safety Setup', description: 'Barricading and PPE check', status: 'pending' },
+        { id: 't2', title: 'Diagnostic Scan', description: 'Initial OBD-II scan and fault logging', status: 'pending' },
+        { id: 't3', title: 'Work Area Prep', description: 'Oil spill mats and tool layout', status: 'pending' }
+      ];
+
+      await updateDoc(requestRef, {
+        status: 'in-progress',
+        specialistId: user.uid,
+        apprenticeId: apprenticeId || (profile?.role === 'apprentice' ? user.uid : null),
+        tasks: initialTasks
+      });
+      toast.success("Job accepted! Time to get to work.");
+      setShowApprenticeDialog(false);
+    } catch (error) {
+      console.error("Error accepting job:", error);
+      toast.error("Failed to accept job. Please try again.");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  useEffect(() => {
+    if (!user) return;
+
+    const q = query(
+      collection(db, 'serviceRequests'),
+      where(isSpecialist ? 'specialistId' : 'ownerId', '==', user.uid),
+      orderBy('createdAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const reqs = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as ServiceRequest[];
+      setRequests(reqs);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching requests:", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user, isSpecialist]);
+
+  const signOffTask = async (requestId: string, taskId: string) => {
+    if (!user || profile?.role !== 'specialist') return;
+    try {
+      const request = requests.find(r => r.id === requestId);
+      if (!request || !request.tasks) return;
+
+      const updatedTasks = request.tasks.map(t => 
+        t.id === taskId ? { 
+          ...t, 
+          status: 'signed-off' as const, 
+          specialistSignOff: { uid: user.uid, timestamp: new Date().toISOString() } 
+        } : t
+      );
+
+      await updateDoc(doc(db, 'serviceRequests', requestId), {
+        tasks: updatedTasks
+      });
+      toast.success("Task signed off successfully.");
+    } catch (error) {
+      toast.error("Failed to sign off task.");
+    }
+  };
+
+  const markTaskCompleted = async (requestId: string, taskId: string) => {
+    if (!user || profile?.role !== 'apprentice') return;
+    try {
+      const request = requests.find(r => r.id === requestId);
+      if (!request || !request.tasks) return;
+
+      const updatedTasks = request.tasks.map(t => 
+        t.id === taskId ? { ...t, status: 'completed' as const } : t
+      );
+
+      await updateDoc(doc(db, 'serviceRequests', requestId), {
+        tasks: updatedTasks
+      });
+      toast.success("Task marked as completed.");
+    } catch (error) {
+      toast.error("Failed to update task.");
+    }
+  };
+
+  const handleCaptureEvidence = async (imgUrl: string) => {
+    if (!activeRequestId) return;
+    try {
+      const request = requests.find(r => r.id === activeRequestId);
+      const currentEvidence = request?.checklist?.ohsaCompliance?.photoEvidence || [];
+      
+      await updateDoc(doc(db, 'serviceRequests', activeRequestId), {
+        'checklist.ohsaCompliance.photoEvidence': [...currentEvidence, imgUrl]
+      });
+      toast.success("Evidence captured and uploaded.");
+    } catch (error) {
+      toast.error("Failed to save evidence.");
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 px-2 py-0.5 rounded-full flex items-center gap-1"><Clock className="w-3 h-3" /> Pending</Badge>;
+      case 'in-progress':
+        return <Badge className="bg-blue-500/10 text-blue-500 border-blue-500/20 px-2 py-0.5 rounded-full flex items-center gap-1"><PlayCircle className="w-3 h-3" /> In Progress</Badge>;
+      case 'completed':
+        return <Badge className="bg-success-green/10 text-success-green border-success-green/20 px-2 py-0.5 rounded-full flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Completed</Badge>;
+      case 'cancelled':
+        return <Badge className="bg-red-500/10 text-red-500 border-red-500/20 px-2 py-0.5 rounded-full flex items-center gap-1"><XCircle className="w-3 h-3" /> Cancelled</Badge>;
+      default:
+        return <Badge className="bg-white/10 text-white/40 border-white/20 px-2 py-0.5 rounded-full">{status}</Badge>;
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -61,9 +225,19 @@ export const Dashboard: React.FC = () => {
           <TabsTrigger value="vehicles" className="data-[state=active]:bg-technic-yellow data-[state=active]:text-industrial-charcoal rounded-lg px-6 py-2.5 font-bold transition-all text-xs tracking-widest uppercase">
             <Car className="w-4 h-4 mr-2" /> {isSpecialist ? 'FLEET RECORDS' : 'MY GARAGE'}
           </TabsTrigger>
+          {isOwner && (
+            <TabsTrigger value="fleet" className="data-[state=active]:bg-technic-yellow data-[state=active]:text-industrial-charcoal rounded-lg px-6 py-2.5 font-bold transition-all text-xs tracking-widest uppercase">
+              <BarChart3 className="w-4 h-4 mr-2" /> FLEET MANAGER
+            </TabsTrigger>
+          )}
           <TabsTrigger value="safety" className="data-[state=active]:bg-technic-yellow data-[state=active]:text-industrial-charcoal rounded-lg px-6 py-2.5 font-bold transition-all text-xs tracking-widest uppercase">
             <ClipboardCheck className="w-4 h-4 mr-2" /> SAFETY
           </TabsTrigger>
+          {(profile?.role === 'specialist' || profile?.role === 'apprentice') && (
+            <TabsTrigger value="skills" className="data-[state=active]:bg-technic-yellow data-[state=active]:text-industrial-charcoal rounded-lg px-6 py-2.5 font-bold transition-all text-xs tracking-widest uppercase">
+              <Award className="w-4 h-4 mr-2" /> SKILLS
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <AnimatePresence mode="wait">
@@ -133,16 +307,26 @@ export const Dashboard: React.FC = () => {
 
                 {/* Financial Summary (Span 1x1) */}
                 <div className="bento-card col-span-1">
-                  <div className="bento-card-title">Live Quote & Billing</div>
-                  <div className="space-y-2 text-[13px]">
-                    <div className="flex justify-between"><span>Diagnostics Fee</span> <span>R 450.00</span></div>
-                    <div className="flex justify-between"><span>Call-out Fee</span> <span>R 250.00</span></div>
-                    <div className="flex justify-between"><span>Consumables Dep.</span> <span>R 1,200.00</span></div>
-                    <div className="border-t border-white/10 pt-2 mt-2 font-bold text-lg text-technic-yellow">
-                      Total: R 1,900.00
+                  <div className="bento-card-title"><div className="bento-dot"></div> Live Quote & Billing</div>
+                  <div className="space-y-2 mt-2">
+                    <div className="flex justify-between text-[13px]">
+                      <span className="text-text-dim">Diagnostics</span> 
+                      <span className="font-mono">R 450.00</span>
+                    </div>
+                    <div className="flex justify-between text-[13px]">
+                      <span className="text-text-dim">Call-out</span> 
+                      <span className="font-mono">R 250.00</span>
+                    </div>
+                    <div className="flex justify-between text-[13px]">
+                      <span className="text-text-dim">Consumables</span> 
+                      <span className="font-mono">R 1,200.00</span>
+                    </div>
+                    <div className="border-t border-white/10 pt-2 mt-2 font-black text-lg text-technic-yellow flex justify-between uppercase tracking-tighter">
+                      <span>Total</span>
+                      <span>R 1,900.00</span>
                     </div>
                   </div>
-                  <p className="text-[10px] text-text-dim mt-3">Payment gateway secured via Yellow Beast R&D.</p>
+                  <p className="text-[9px] text-text-dim mt-auto pt-4 italic">Payment gateway secured via Yellow Beast R&D.</p>
                 </div>
 
                 {/* Regional Stats (Span 1x1) */}
@@ -212,65 +396,203 @@ export const Dashboard: React.FC = () => {
             </TabsContent>
 
             <TabsContent value="jobs" className="mt-0">
-              <Card className="bg-white/5 border-white/10">
-                <CardHeader>
-                  <CardTitle>Active Service Requests</CardTitle>
-                  <CardDescription>Track your ongoing maintenance and upcoming call-outs.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-20 border-2 border-dashed border-white/10 rounded-2xl">
-                    <Wrench className="w-12 h-12 text-white/20 mx-auto mb-4" />
-                    <p className="text-digital-white/40 font-bold">No active jobs found.</p>
-                    <Link to="/book">
-                      <Button className="mt-4 bg-technic-yellow text-industrial-charcoal font-bold">Request New Service</Button>
-                    </Link>
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="space-y-4">
+                {requests.length > 0 ? (
+                  requests.map((req) => (
+                    <div key={req.id} className="bento-card flex flex-col md:flex-row gap-6 items-start md:items-center">
+                      <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
+                        <Wrench className="w-8 h-8 text-technic-yellow" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex flex-wrap items-center gap-3 mb-1">
+                          <h3 className="text-lg font-display font-black uppercase tracking-tight">
+                            {(req as any).vehicleMake} {(req as any).vehicleModel}
+                          </h3>
+                          {getStatusBadge(req.status)}
+                        </div>
+                        <p className="text-sm text-text-dim">{req.type.toUpperCase()} SERVICE • {req.description.slice(0, 60)}{req.description.length > 60 ? '...' : ''}</p>
+                        <div className="flex items-center gap-4 mt-3 text-[11px] text-text-dim font-bold uppercase tracking-widest">
+                          <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date((req.createdAt as any)?.seconds * 1000).toLocaleDateString()}</span>
+                          <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {(req as any).location}</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 w-full md:w-auto">
+                        <Button variant="outline" className="flex-1 md:flex-none border-white/10 rounded-xl text-xs font-bold">DETAILS</Button>
+                        {isSpecialist && req.status === 'pending' && (
+                          <Button 
+                            onClick={() => handleAcceptJobClick(req.id)}
+                            disabled={processingId === req.id}
+                            className="flex-1 md:flex-none bg-technic-yellow text-industrial-charcoal font-bold rounded-xl text-xs"
+                          >
+                            {processingId === req.id ? <Loader2 className="w-4 h-4 animate-spin" /> : 'ACCEPT JOB'}
+                          </Button>
+                        )}
+                      </div>
+                      
+                      {/* Apprentice Tasks Section */}
+                      {req.status === 'in-progress' && req.apprenticeId && req.tasks && (
+                        <div className="mt-6 pt-6 border-t border-white/5 w-full">
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="text-xs font-bold uppercase tracking-widest text-technic-yellow flex items-center gap-2">
+                              <Users className="w-4 h-4" /> Apprentice Tasks & Skills Transfer
+                            </h4>
+                            <Badge variant="outline" className="text-[9px] border-white/10 uppercase">
+                              {req.tasks.filter(t => t.status === 'signed-off').length} / {req.tasks.length} Signed Off
+                            </Badge>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            {req.tasks.map((task) => (
+                              <div key={task.id} className={`p-3 rounded-xl border transition-all ${task.status === 'signed-off' ? 'bg-success-green/5 border-success-green/20' : 'bg-white/5 border-white/10'}`}>
+                                <div className="flex justify-between items-start mb-1">
+                                  <span className="text-[10px] font-bold uppercase tracking-tight">{task.title}</span>
+                                  {task.status === 'signed-off' ? (
+                                    <CheckCircle2 className="w-3 h-3 text-success-green" />
+                                  ) : (
+                                    <Clock className="w-3 h-3 text-text-dim" />
+                                  )}
+                                </div>
+                                <p className="text-[10px] text-text-dim leading-tight mb-3">{task.description}</p>
+                                {profile?.role === 'specialist' && task.status === 'completed' && (
+                                  <Button 
+                                    size="sm" 
+                                    onClick={() => signOffTask(req.id, task.id)}
+                                    className="w-full h-7 text-[9px] bg-white/10 hover:bg-technic-yellow hover:text-industrial-charcoal font-bold uppercase"
+                                  >
+                                    SIGN OFF
+                                  </Button>
+                                )}
+                                {profile?.role === 'apprentice' && task.status === 'pending' && (
+                                  <Button 
+                                    size="sm" 
+                                    onClick={() => markTaskCompleted(req.id, task.id)}
+                                    className="w-full h-7 text-[9px] bg-white/10 hover:bg-technic-yellow hover:text-industrial-charcoal font-bold uppercase"
+                                  >
+                                    MARK COMPLETED
+                                  </Button>
+                                )}
+                                {task.status === 'completed' && profile?.role === 'apprentice' && (
+                                  <div className="flex items-center gap-1 text-[8px] text-technic-yellow font-bold uppercase">
+                                    <Clock className="w-2.5 h-2.5" /> Awaiting specialist sign-off
+                                  </div>
+                                )}
+                                {task.status === 'signed-off' && (
+                                  <div className="flex items-center gap-1 text-[8px] text-success-green font-bold uppercase">
+                                    <UserCheck className="w-2.5 h-2.5" /> Specialist Verified
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <Card className="bg-white/5 border-white/10">
+                    <CardHeader>
+                      <CardTitle>Active Service Requests</CardTitle>
+                      <CardDescription>Track your ongoing maintenance and upcoming call-outs.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-center py-20 border-2 border-dashed border-white/10 rounded-2xl">
+                        <Wrench className="w-12 h-12 text-white/20 mx-auto mb-4" />
+                        <p className="text-digital-white/40 font-bold">No active jobs found.</p>
+                        {!isSpecialist && (
+                          <Link to="/book">
+                            <Button className="mt-4 bg-technic-yellow text-industrial-charcoal font-bold">Request New Service</Button>
+                          </Link>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
             </TabsContent>
 
             <TabsContent value="vehicles" className="mt-0">
                <VehicleLogBook />
             </TabsContent>
 
-            <TabsContent value="safety" className="mt-0 space-y-6">
-              <Card className="bg-white/5 border-white/10">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-technic-yellow" /> SAFETY PROTOCOLS & COMPLIANCE
-                  </CardTitle>
-                  <CardDescription>Mandatory checklists for every mobile service site.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="p-4 rounded-xl bg-technic-yellow/5 border border-technic-yellow/20">
-                    <h4 className="font-bold text-technic-yellow mb-2 flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4" /> SITE SAFETY ANNOUNCEMENT
-                    </h4>
-                    <p className="text-sm text-digital-white/70 italic">
-                      "Attention: A mobile mechanic service is in progress. Please clear the site of all potential hazards. 
-                      Ensure children and pets are kept at a safe distance. Work will stop immediately if the site is breached."
-                    </p>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[
-                      "Visual Inspection of PPE",
-                      "Barricading with Danger Tape/Cones",
-                      "Toolbox Check (Pre-work)",
-                      "Oil Spill Mats Placement",
-                      "Vehicle Stability Check",
-                      "Site Clearance (Post-work)"
-                    ].map((item, i) => (
-                      <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-white/5 border border-white/10">
-                        <div className="w-2 h-2 rounded-full bg-technic-yellow" />
-                        <span className="text-sm font-medium">{item}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+            <TabsContent value="fleet" className="mt-0">
+              <FleetManager />
+            </TabsContent>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <TabsContent value="safety" className="mt-0 space-y-6">
+              <div className="flex justify-between items-center">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-technic-yellow flex items-center gap-2">
+                  <Shield className="w-4 h-4" /> Safety & Compliance
+                </h3>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setShowOHSA(!showOHSA)}
+                  className="border-technic-yellow/20 text-technic-yellow hover:bg-technic-yellow/10 font-bold text-[10px]"
+                >
+                  {showOHSA ? 'CLOSE GUIDELINES' : 'VIEW OHSA SOP'}
+                </Button>
+              </div>
+
+              {showOHSA ? (
+                <OHSAGuidelines />
+              ) : (
+                <>
+                  <Card className="bg-white/5 border-white/10">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Shield className="w-5 h-5 text-technic-yellow" /> SAFETY PROTOCOLS & COMPLIANCE
+                      </CardTitle>
+                      <CardDescription>Mandatory checklists for every mobile service site.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="p-4 rounded-xl bg-technic-yellow/5 border border-technic-yellow/20">
+                        <h4 className="font-bold text-technic-yellow mb-2 flex items-center gap-2">
+                          <AlertTriangle className="w-4 h-4" /> SITE SAFETY ANNOUNCEMENT
+                        </h4>
+                        <p className="text-sm text-digital-white/70 italic">
+                          "Attention: A mobile mechanic service is in progress. Please clear the site of all potential hazards. 
+                          Ensure children and pets are kept at a safe distance. Work will stop immediately if the site is breached."
+                        </p>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {[
+                          "Visual Inspection of PPE",
+                          "Barricading with Danger Tape/Cones",
+                          "Toolbox Check (Pre-work)",
+                          "Oil Spill Mats Placement",
+                          "Vehicle Stability Check",
+                          "Site Clearance (Post-work)"
+                        ].map((item, i) => (
+                          <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10">
+                            <div className="flex items-center gap-3">
+                              <div className="w-2 h-2 rounded-full bg-technic-yellow" />
+                              <span className="text-sm font-medium">{item}</span>
+                            </div>
+                            {isSpecialist && (
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-text-dim hover:text-technic-yellow"
+                                onClick={() => {
+                                  const activeJob = requests.find(r => r.status === 'in-progress');
+                                  if (activeJob) {
+                                    setActiveRequestId(activeJob.id);
+                                    setShowCamera(true);
+                                  } else {
+                                    toast.error("No active job to attach evidence to.");
+                                  }
+                                }}
+                              >
+                                <CameraIcon className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card className="bg-white/5 border-white/10">
                   <CardHeader>
                     <CardTitle className="text-sm font-bold text-technic-yellow uppercase tracking-widest">Regional Reliability Stats</CardTitle>
@@ -322,10 +644,75 @@ export const Dashboard: React.FC = () => {
                   </CardContent>
                 </Card>
               </div>
+            </>
+          )}
+        </TabsContent>
+            <TabsContent value="skills" className="mt-0">
+              <SkillsValidation />
             </TabsContent>
           </motion.div>
         </AnimatePresence>
       </Tabs>
+
+      <Dialog open={showApprenticeDialog} onOpenChange={setShowApprenticeDialog}>
+        <DialogContent className="bg-industrial-charcoal border-white/10 text-digital-white max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-display font-black uppercase flex items-center gap-2">
+              <Users className="w-6 h-6 text-technic-yellow" /> Assign Apprentice
+            </DialogTitle>
+            <DialogDescription className="text-text-dim">
+              Select an apprentice to assist you with this job. This is part of our skills transfer program.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4 space-y-3">
+            <p className="text-[10px] uppercase tracking-widest font-bold text-technic-yellow">Available Apprentices</p>
+            <ScrollArea className="h-[200px] pr-4">
+              {availableApprentices.length > 0 ? (
+                availableApprentices.map((app) => (
+                  <button
+                    key={app.uid}
+                    onClick={() => setSelectedApprenticeId(app.uid)}
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all mb-2 text-left ${selectedApprenticeId === app.uid ? 'border-technic-yellow bg-technic-yellow/10' : 'border-white/5 bg-white/5 hover:border-white/10'}`}
+                  >
+                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center font-bold">
+                      {app.displayName.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold">{app.displayName}</p>
+                      <p className="text-[10px] text-text-dim uppercase tracking-tighter">{app.specialization || 'General Apprentice'}</p>
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <div className="text-center py-8 border border-dashed border-white/10 rounded-xl">
+                  <p className="text-xs text-text-dim italic">No verified apprentices available at the moment.</p>
+                </div>
+              )}
+            </ScrollArea>
+          </div>
+
+          <DialogFooter className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowApprenticeDialog(false)} className="flex-1 border-white/10 rounded-xl">
+              CANCEL
+            </Button>
+            <Button 
+              onClick={() => selectedJobId && handleAcceptJob(selectedJobId, selectedApprenticeId)}
+              className="flex-1 bg-technic-yellow text-industrial-charcoal font-bold rounded-xl"
+            >
+              CONFIRM ACCEPTANCE
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {showCamera && (
+        <CameraCapture 
+          title="Capture Safety Evidence"
+          onCapture={handleCaptureEvidence}
+          onClose={() => setShowCamera(false)}
+        />
+      )}
     </div>
   );
 };

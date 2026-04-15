@@ -90,6 +90,34 @@
           }
         }
       }
+    },
+    "WorkplaceReport": {
+      "title": "Workplace Report",
+      "description": "Validation of workplace experience",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "role": { "type": "string" },
+        "periodStart": { "type": "string" },
+        "periodEnd": { "type": "string" },
+        "totalHours": { "type": "number" },
+        "tasksCompleted": { "type": "array" },
+        "signatures": { "type": "object" },
+        "status": { "type": "string" }
+      }
+    },
+    "PortfolioOfEvidence": {
+      "title": "Portfolio of Evidence",
+      "description": "Evidence for RPL validation",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "documents": { "type": "array" },
+        "validationStatus": { "type": "string" },
+        "validations": { "type": "array" }
+      }
     }
   },
   "firestore": {
@@ -104,6 +132,14 @@
     "/serviceRequests/{requestId}": {
       "schema": "ServiceRequest",
       "description": "Service requests and jobs"
+    },
+    "/workplaceReports/{reportId}": {
+      "schema": "WorkplaceReport",
+      "description": "Workplace experience reports"
+    },
+    "/portfolios/{portfolioId}": {
+      "schema": "PortfolioOfEvidence",
+      "description": "Portfolios of evidence for RPL"
     },
     "/regionalStats/{statId}": {
       "schema": "object",

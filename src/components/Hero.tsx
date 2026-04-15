@@ -37,9 +37,11 @@ export const Hero: React.FC = () => {
                   BOOK A SPECIALIST <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
-              <Button size="lg" variant="outline" className="border-white/20 hover:bg-white/5 font-bold h-14 px-8 text-lg rounded-xl">
-                JOIN AS MECHANIC
-              </Button>
+              <Link to="/verify">
+                <Button size="lg" variant="outline" className="border-white/20 hover:bg-white/5 font-bold h-14 px-8 text-lg rounded-xl w-full sm:w-auto">
+                  JOIN AS MECHANIC
+                </Button>
+              </Link>
             </div>
           </motion.div>
 

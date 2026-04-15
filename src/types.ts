@@ -32,6 +32,11 @@ export interface Vehicle {
   mileage: number;
   serviceHistory: ServiceRecord[];
   faults: string[];
+  isOwnershipVerified?: boolean;
+  ownershipDocs?: {
+    registrationUrl?: string;
+    logbookUrl?: string;
+  };
 }
 
 export interface ServiceRecord {
@@ -59,7 +64,52 @@ export interface ServiceRequest {
   totalAmount?: number;
   paymentStatus: 'unpaid' | 'partial' | 'paid';
   createdAt: string;
+  appointmentDate?: string;
   checklist?: SafetyChecklist;
+  tasks?: ApprenticeTask[];
+}
+
+export interface ApprenticeTask {
+  id: string;
+  title: string;
+  description: string;
+  status: 'pending' | 'completed' | 'signed-off';
+  specialistSignOff?: {
+    uid: string;
+    timestamp: any;
+    comments?: string;
+  };
+}
+
+export interface WorkplaceReport {
+  id: string;
+  userId: string;
+  role: UserRole;
+  periodStart: string;
+  periodEnd: string;
+  totalHours: number;
+  tasksCompleted: string[];
+  signatures: {
+    specialist?: { uid: string; timestamp: any };
+    skillsAuthority?: { uid: string; timestamp: any; name: string };
+    peerReviewer?: { uid: string; timestamp: any; industryId: string };
+  };
+  status: 'draft' | 'submitted' | 'validated';
+}
+
+export interface PortfolioOfEvidence {
+  id: string;
+  userId: string;
+  title: string;
+  description: string;
+  documents: { title: string; url: string; type: string }[];
+  validationStatus: 'pending' | 'validated' | 'rejected';
+  validations: {
+    validatorUid: string;
+    role: 'specialist' | 'skills-authority' | 'peer-reviewer';
+    timestamp: any;
+    comments?: string;
+  }[];
 }
 
 export interface SafetyChecklist {
@@ -69,6 +119,14 @@ export interface SafetyChecklist {
     toolboxCheck: boolean;
     oilSpillMatsPlaced: boolean;
     siteSafe: boolean;
+  };
+  ohsaCompliance?: {
+    workshopSetup: boolean;
+    ppeWorn: boolean;
+    hazardSignage: boolean;
+    fireExtinguisherReady: boolean;
+    firstAidKitAvailable: boolean;
+    photoEvidence?: string[];
   };
   postWork: {
     siteCleared: boolean;

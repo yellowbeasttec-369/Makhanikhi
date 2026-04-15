@@ -6,6 +6,7 @@ import { Hero } from './components/Hero';
 import { Dashboard } from './components/Dashboard';
 import { ServiceBooking } from './components/ServiceBooking';
 import { VerificationCenter } from './components/VerificationCenter';
+import { BottomNav } from './components/BottomNav';
 import { Toaster } from 'sonner';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -17,7 +18,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 const AppContent: React.FC = () => {
   return (
-    <div className="min-h-screen bg-industrial-charcoal selection:bg-technic-yellow selection:text-industrial-charcoal">
+    <div className="min-h-screen bg-industrial-charcoal selection:bg-technic-yellow selection:text-industrial-charcoal pb-20 md:pb-0">
       <Navbar />
       <Routes>
         <Route path="/" element={<Hero />} />
@@ -46,6 +47,8 @@ const AppContent: React.FC = () => {
           } 
         />
       </Routes>
+      
+      <BottomNav />
       
       <footer className="border-t border-white/5 py-12 bg-black/20">
         <div className="max-w-7xl mx-auto px-4 text-center">

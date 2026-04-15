@@ -4,8 +4,9 @@ import { useAuth } from '../lib/AuthContext';
 import { auth } from '../lib/firebase';
 import { signOut, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { Button } from './ui/button';
-import { Wrench, LogOut, User as UserIcon, Shield, Wallet } from 'lucide-react';
+import { Wrench, LogOut, User as UserIcon, Shield, Wallet, Home, Calendar, LayoutDashboard, Menu } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { BrowserProvider } from 'ethers';
 import { toast } from 'sonner';
 
@@ -79,9 +80,6 @@ export const Navbar: React.FC = () => {
                     </span>
                   </div>
                 )}
-                <Link to="/dashboard" className="text-sm font-medium hover:text-technic-yellow transition-colors">
-                  Dashboard
-                </Link>
                 <div className="flex items-center gap-3 pl-4 border-l border-white/10">
                   <div className="text-right hidden sm:block">
                     <p className="text-sm font-bold leading-none">{profile?.displayName}</p>
@@ -89,13 +87,54 @@ export const Navbar: React.FC = () => {
                       {profile?.role} {profile?.isVerified && <Shield className="inline w-2.5 h-2.5 ml-0.5" />}
                     </p>
                   </div>
-                  <Avatar className="h-8 w-8 border-2 border-technic-yellow/20">
-                    <AvatarImage src={user.photoURL || ''} />
-                    <AvatarFallback><UserIcon className="w-4 h-4" /></AvatarFallback>
-                  </Avatar>
-                  <Button variant="ghost" size="icon" onClick={handleLogout} className="hover:text-red-500">
-                    <LogOut className="w-5 h-5" />
-                  </Button>
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger render={<Button variant="ghost" className="relative flex items-center gap-2 h-10 px-2 rounded-full hover:bg-white/5" />}>
+                      <Avatar className="h-8 w-8 border-2 border-technic-yellow/20">
+                        <AvatarImage src={user.photoURL || ''} />
+                        <AvatarFallback><UserIcon className="w-4 h-4" /></AvatarFallback>
+                      </Avatar>
+                      <Menu className="w-4 h-4 text-text-dim" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56 bg-industrial-charcoal border-white/10 text-digital-white" align="end">
+                      <DropdownMenuLabel className="font-display font-bold uppercase text-[10px] tracking-widest text-text-dim">
+                        Navigation
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator className="bg-white/5" />
+                      <Link to="/">
+                        <DropdownMenuItem className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
+                          <Home className="mr-2 h-4 w-4" />
+                          <span>Home</span>
+                        </DropdownMenuItem>
+                      </Link>
+                      <Link to="/dashboard">
+                        <DropdownMenuItem className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
+                          <LayoutDashboard className="mr-2 h-4 w-4" />
+                          <span>Dashboard</span>
+                        </DropdownMenuItem>
+                      </Link>
+                      <Link to="/dashboard">
+                        <DropdownMenuItem className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
+                          <Wrench className="mr-2 h-4 w-4" />
+                          <span>Jobs</span>
+                        </DropdownMenuItem>
+                      </Link>
+                      <Link to="/book">
+                        <DropdownMenuItem className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
+                          <Calendar className="mr-2 h-4 w-4" />
+                          <span>Booking</span>
+                        </DropdownMenuItem>
+                      </Link>
+                      <DropdownMenuSeparator className="bg-white/5" />
+                      <DropdownMenuItem 
+                        onClick={handleLogout}
+                        className="focus:bg-red-500/10 focus:text-red-500 cursor-pointer text-red-400"
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Log out</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </>
             ) : (
