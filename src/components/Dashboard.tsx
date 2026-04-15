@@ -37,6 +37,7 @@ export const Dashboard: React.FC = () => {
   const [showOHSA, setShowOHSA] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
 
   const isSpecialist = profile?.role === 'specialist' || profile?.role === 'apprentice';
   const isOwner = profile?.role === 'owner';
@@ -159,14 +160,28 @@ export const Dashboard: React.FC = () => {
     if (!activeRequestId) return;
     try {
       const request = requests.find(r => r.id === activeRequestId);
-      const currentEvidence = request?.checklist?.ohsaCompliance?.photoEvidence || [];
       
-      await updateDoc(doc(db, 'serviceRequests', activeRequestId), {
-        'checklist.ohsaCompliance.photoEvidence': [...currentEvidence, imgUrl]
-      });
-      toast.success("Evidence captured and uploaded.");
+      if (activeTaskId) {
+        // Task evidence
+        const updatedTasks = (request?.tasks || []).map(t => 
+          t.id === activeTaskId ? { ...t, photoEvidence: imgUrl } : t
+        );
+        await updateDoc(doc(db, 'serviceRequests', activeRequestId), {
+          tasks: updatedTasks
+        });
+        toast.success("Task evidence captured.");
+      } else {
+        // OHSA evidence
+        const currentEvidence = request?.checklist?.ohsaCompliance?.photoEvidence || [];
+        await updateDoc(doc(db, 'serviceRequests', activeRequestId), {
+          'checklist.ohsaCompliance.photoEvidence': [...currentEvidence, imgUrl]
+        });
+        toast.success("OHSA evidence captured.");
+      }
     } catch (error) {
       toast.error("Failed to save evidence.");
+    } finally {
+      setActiveTaskId(null);
     }
   };
 
@@ -497,31 +512,50 @@ export const Dashboard: React.FC = () => {
                               <div key={task.id} className={`p-3 rounded-xl border transition-all ${task.status === 'signed-off' ? 'bg-success-green/5 border-success-green/20' : 'bg-white/5 border-white/10'}`}>
                                 <div className="flex justify-between items-start mb-1">
                                   <span className="text-[10px] font-bold uppercase tracking-tight">{task.title}</span>
-                                  {task.status === 'signed-off' ? (
-                                    <CheckCircle2 className="w-3 h-3 text-success-green" />
-                                  ) : (
-                                    <Clock className="w-3 h-3 text-text-dim" />
-                                  )}
+                                  <div className="flex items-center gap-2">
+                                    {task.photoEvidence && (
+                                      <div className="w-4 h-4 rounded bg-success-green/20 flex items-center justify-center">
+                                        <CameraIcon className="w-2.5 h-2.5 text-success-green" />
+                                      </div>
+                                    )}
+                                    {task.status === 'signed-off' ? (
+                                      <CheckCircle2 className="w-3 h-3 text-success-green" />
+                                    ) : (
+                                      <Clock className="w-3 h-3 text-text-dim" />
+                                    )}
+                                  </div>
                                 </div>
                                 <p className="text-[10px] text-text-dim leading-tight mb-3">{task.description}</p>
-                                {profile?.role === 'specialist' && task.status === 'completed' && (
-                                  <Button 
-                                    size="sm" 
-                                    onClick={() => signOffTask(req.id, task.id)}
-                                    className="w-full h-7 text-[9px] bg-white/10 hover:bg-technic-yellow hover:text-industrial-charcoal font-bold uppercase"
-                                  >
-                                    SIGN OFF
-                                  </Button>
-                                )}
-                                {profile?.role === 'apprentice' && task.status === 'pending' && (
-                                  <Button 
-                                    size="sm" 
-                                    onClick={() => markTaskCompleted(req.id, task.id)}
-                                    className="w-full h-7 text-[9px] bg-white/10 hover:bg-technic-yellow hover:text-industrial-charcoal font-bold uppercase"
-                                  >
-                                    MARK COMPLETED
-                                  </Button>
-                                )}
+                                <div className="flex gap-2">
+                                  {profile?.role === 'apprentice' && task.status === 'pending' && (
+                                    <>
+                                      <Button 
+                                        size="sm" 
+                                        onClick={() => markTaskCompleted(req.id, task.id)}
+                                        className="flex-1 h-7 text-[9px] bg-white/10 hover:bg-technic-yellow hover:text-industrial-charcoal font-bold uppercase"
+                                      >
+                                        MARK COMPLETED
+                                      </Button>
+                                      <Button 
+                                        size="sm" 
+                                        variant="outline"
+                                        onClick={() => { setActiveRequestId(req.id); setActiveTaskId(task.id); setShowCamera(true); }}
+                                        className="w-7 h-7 p-0 border-white/10"
+                                      >
+                                        <CameraIcon className="w-3 h-3" />
+                                      </Button>
+                                    </>
+                                  )}
+                                  {profile?.role === 'specialist' && task.status === 'completed' && (
+                                    <Button 
+                                      size="sm" 
+                                      onClick={() => signOffTask(req.id, task.id)}
+                                      className="w-full h-7 text-[9px] bg-white/10 hover:bg-technic-yellow hover:text-industrial-charcoal font-bold uppercase"
+                                    >
+                                      SIGN OFF
+                                    </Button>
+                                  )}
+                                </div>
                                 {task.status === 'completed' && profile?.role === 'apprentice' && (
                                   <div className="flex items-center gap-1 text-[8px] text-technic-yellow font-bold uppercase">
                                     <Clock className="w-2.5 h-2.5" /> Awaiting specialist sign-off

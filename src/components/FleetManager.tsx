@@ -18,6 +18,8 @@ export const FleetManager: React.FC = () => {
   const [requests, setRequests] = useState<ServiceRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [makeFilter, setMakeFilter] = useState('all');
+  const [modelFilter, setModelFilter] = useState('all');
 
   useEffect(() => {
     if (!user) return;
@@ -40,11 +42,17 @@ export const FleetManager: React.FC = () => {
     };
   }, [user]);
 
-  const filteredVehicles = vehicles.filter(v => 
-    v.make.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    v.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    v.vin?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredVehicles = vehicles.filter(v => {
+    const matchesSearch = v.make.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         v.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         v.vin?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesMake = makeFilter === 'all' || v.make === makeFilter;
+    const matchesModel = modelFilter === 'all' || v.model === modelFilter;
+    return matchesSearch && matchesMake && matchesModel;
+  });
+
+  const uniqueMakes = Array.from(new Set(vehicles.map(v => v.make)));
+  const uniqueModels = Array.from(new Set(vehicles.filter(v => makeFilter === 'all' || v.make === makeFilter).map(v => v.model)));
 
   const totalInvestment = vehicles.reduce((acc, v) => {
     const history = v.serviceHistory || [];
@@ -80,14 +88,36 @@ export const FleetManager: React.FC = () => {
       </div>
 
       <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-        <div className="relative w-full md:w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-dim" />
-          <Input 
-            placeholder="Search VIN, Make or Model..." 
-            className="pl-10 bg-white/5 border-white/10 rounded-xl"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto flex-1">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-dim" />
+            <Input 
+              placeholder="Search VIN, Make or Model..." 
+              className="pl-10 bg-white/5 border-white/10 rounded-xl"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <select 
+            className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-widest text-digital-white outline-none focus:ring-1 focus:ring-technic-yellow"
+            value={makeFilter}
+            onChange={(e) => { setMakeFilter(e.target.value); setModelFilter('all'); }}
+          >
+            <option value="all" className="bg-industrial-charcoal">All Makes</option>
+            {uniqueMakes.map(make => (
+              <option key={make} value={make} className="bg-industrial-charcoal">{make}</option>
+            ))}
+          </select>
+          <select 
+            className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-widest text-digital-white outline-none focus:ring-1 focus:ring-technic-yellow"
+            value={modelFilter}
+            onChange={(e) => setModelFilter(e.target.value)}
+          >
+            <option value="all" className="bg-industrial-charcoal">All Models</option>
+            {uniqueModels.map(model => (
+              <option key={model} value={model} className="bg-industrial-charcoal">{model}</option>
+            ))}
+          </select>
         </div>
         <Link to="/book">
           <Button className="bg-technic-yellow text-industrial-charcoal font-black rounded-xl uppercase text-xs tracking-widest">

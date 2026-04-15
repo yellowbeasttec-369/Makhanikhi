@@ -23,6 +23,8 @@ export const VehicleLogBook: React.FC = () => {
   const [showVerifyDialog, setShowVerifyDialog] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
+  const [activeLogId, setActiveLogId] = useState<string | null>(null);
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [newVehicle, setNewVehicle] = useState({
     make: '',
     model: '',
@@ -177,6 +179,33 @@ export const VehicleLogBook: React.FC = () => {
     });
 
     updateDoc(doc(db, 'vehicleLogs', logId), { tasks: updatedTasks });
+  };
+
+  const handleCaptureEvidence = async (imgUrl: string) => {
+    if (showVerifyDialog && selectedVehicleId) {
+      handleVerifyOwnership(selectedVehicleId, imgUrl);
+      return;
+    }
+
+    if (activeLogId && activeTaskId) {
+      const log = logs.find(l => l.id === activeLogId);
+      if (!log) return;
+
+      const updatedTasks = log.tasks.map((t: any) => 
+        t.id === activeTaskId ? { ...t, photoEvidence: imgUrl } : t
+      );
+
+      try {
+        await updateDoc(doc(db, 'vehicleLogs', activeLogId), { tasks: updatedTasks });
+        toast.success("Task evidence captured.");
+      } catch (error) {
+        toast.error("Failed to save evidence.");
+      } finally {
+        setActiveLogId(null);
+        setActiveTaskId(null);
+        setShowCamera(false);
+      }
+    }
   };
 
   const totalInvestment = logs.reduce((acc, log) => acc + (parseFloat(log.cost.replace(/[^0-9.]/g, '')) || 0), 0);
@@ -414,6 +443,18 @@ export const VehicleLogBook: React.FC = () => {
                               <span className={`text-[9px] uppercase font-bold ${task.status === 'signed-off' ? 'text-success-green' : task.status === 'completed' ? 'text-technic-yellow' : 'text-text-dim'}`}>
                                 {task.title}
                               </span>
+                              {task.photoEvidence ? (
+                                <div className="w-3 h-3 rounded bg-success-green/20 flex items-center justify-center">
+                                  <CameraIcon className="w-2 h-2 text-success-green" />
+                                </div>
+                              ) : (
+                                <button 
+                                  onClick={() => { setActiveLogId(record.id); setActiveTaskId(task.id); setShowCamera(true); }}
+                                  className="text-text-dim hover:text-technic-yellow"
+                                >
+                                  <CameraIcon className="w-3 h-3" />
+                                </button>
+                              )}
                             </div>
                           ))}
                           {(!record.tasks || record.tasks.length === 0) && <span className="text-[9px] text-text-dim italic">No tasks recorded</span>}
@@ -469,8 +510,8 @@ export const VehicleLogBook: React.FC = () => {
 
       {showCamera && (
         <CameraCapture 
-          title="Scan Registration Document"
-          onCapture={(img) => selectedVehicleId && handleVerifyOwnership(selectedVehicleId, img)}
+          title={showVerifyDialog ? "Scan Registration Document" : "Capture Task Evidence"}
+          onCapture={handleCaptureEvidence}
           onClose={() => setShowCamera(false)}
         />
       )}

@@ -74,6 +74,7 @@ export interface ApprenticeTask {
   title: string;
   description: string;
   status: 'pending' | 'completed' | 'signed-off';
+  photoEvidence?: string;
   specialistSignOff?: {
     uid: string;
     timestamp: any;
