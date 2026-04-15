@@ -9,7 +9,10 @@ import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
 import { Link } from 'react-router-dom';
-import { Wrench, Car, ClipboardCheck, History, TrendingUp, UserCheck, AlertTriangle, Shield, Clock, CheckCircle2, PlayCircle, XCircle, MapPin, Loader2, Users, Award, BarChart3, Camera as CameraIcon } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
+import { signOut } from 'firebase/auth';
+import { auth } from '../lib/firebase';
+import { Wrench, Car, ClipboardCheck, History, TrendingUp, UserCheck, AlertTriangle, Shield, Clock, CheckCircle2, PlayCircle, XCircle, MapPin, Loader2, Users, Award, BarChart3, Camera as CameraIcon, Menu, LogOut, Home } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 
@@ -167,6 +170,8 @@ export const Dashboard: React.FC = () => {
     }
   };
 
+  const handleLogout = () => signOut(auth);
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
@@ -194,10 +199,57 @@ export const Dashboard: React.FC = () => {
           <h1 className="text-3xl font-display font-black tracking-tight uppercase">Command Center</h1>
           <p className="text-text-dim text-sm">Welcome back, {profile?.displayName}. Your mobile workshop is ready.</p>
         </div>
-        <div className="flex gap-2">
-          <div className="bento-badge">
+        <div className="flex gap-2 items-center">
+          <div className="bento-badge hidden sm:block">
             {profile?.role?.toUpperCase()}
           </div>
+          
+          <div className="md:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger render={<Button variant="outline" size="icon" className="border-white/10 rounded-xl bg-white/5" />}>
+                <Menu className="w-5 h-5 text-technic-yellow" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56 bg-industrial-charcoal border-white/10 text-digital-white" align="end">
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel className="font-display font-bold uppercase text-[10px] tracking-widest text-text-dim">
+                    Dashboard Menu
+                  </DropdownMenuLabel>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator className="bg-white/5" />
+                <DropdownMenuItem onClick={() => setActiveTab('overview')} className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
+                  <TrendingUp className="mr-2 h-4 w-4" />
+                  <span>Overview</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveTab('jobs')} className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
+                  <Wrench className="mr-2 h-4 w-4" />
+                  <span>{isSpecialist ? 'Active Jobs' : 'My Requests'}</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveTab('vehicles')} className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
+                  <Car className="mr-2 h-4 w-4" />
+                  <span>{isSpecialist ? 'Fleet Records' : 'My Garage'}</span>
+                </DropdownMenuItem>
+                {isOwner && (
+                  <DropdownMenuItem onClick={() => setActiveTab('fleet')} className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
+                    <BarChart3 className="mr-2 h-4 w-4" />
+                    <span>Fleet Manager</span>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={() => setActiveTab('safety')} className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
+                  <ClipboardCheck className="mr-2 h-4 w-4" />
+                  <span>Safety</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-white/5" />
+                <DropdownMenuItem 
+                  onClick={handleLogout}
+                  className="focus:bg-red-500/10 focus:text-red-500 cursor-pointer text-red-400"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Sign Out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
           {profile?.isVerified ? (
             <div className="bg-success-green/10 text-success-green px-2 py-1 rounded-[4px] text-[11px] font-bold border border-success-green/20">
               VERIFIED
@@ -214,8 +266,8 @@ export const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-8" onValueChange={setActiveTab}>
-        <TabsList className="bg-card-bg border border-border-dim p-1 rounded-xl h-auto flex-wrap justify-start">
+      <Tabs value={activeTab} className="space-y-8" onValueChange={setActiveTab}>
+        <TabsList className="hidden md:flex bg-card-bg border border-border-dim p-1 rounded-xl h-auto flex-wrap justify-start">
           <TabsTrigger value="overview" className="data-[state=active]:bg-technic-yellow data-[state=active]:text-industrial-charcoal rounded-lg px-6 py-2.5 font-bold transition-all text-xs tracking-widest uppercase">
             <TrendingUp className="w-4 h-4 mr-2" /> OVERVIEW
           </TabsTrigger>

@@ -6,7 +6,7 @@ import { signOut, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { Button } from './ui/button';
 import { Wrench, LogOut, User as UserIcon, Shield, Wallet, Home, Calendar, LayoutDashboard, Menu } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { BrowserProvider } from 'ethers';
 import { toast } from 'sonner';
 
@@ -97,9 +97,11 @@ export const Navbar: React.FC = () => {
                       <Menu className="w-4 h-4 text-text-dim" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-56 bg-industrial-charcoal border-white/10 text-digital-white" align="end">
-                      <DropdownMenuLabel className="font-display font-bold uppercase text-[10px] tracking-widest text-text-dim">
-                        Navigation
-                      </DropdownMenuLabel>
+                      <DropdownMenuGroup>
+                        <DropdownMenuLabel className="font-display font-bold uppercase text-[10px] tracking-widest text-text-dim">
+                          Navigation
+                        </DropdownMenuLabel>
+                      </DropdownMenuGroup>
                       <DropdownMenuSeparator className="bg-white/5" />
                       <Link to="/">
                         <DropdownMenuItem className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
