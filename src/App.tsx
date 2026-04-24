@@ -60,7 +60,11 @@ const AppContent: React.FC = () => {
         />
         <Route 
           path="/register" 
-          element={<RegistrationFlow />} 
+          element={
+            <ProtectedRoute>
+              <RegistrationFlow />
+            </ProtectedRoute>
+          } 
         />
       </Routes>
       

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { UserProfile } from '../types';
 
@@ -25,46 +25,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAuthReady, setIsAuthReady] = useState(false);
 
   useEffect(() => {
-    let userDocUnsubscribe: (() => void) | null = null;
-
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
-        // Listen for changes to the user document
-        userDocUnsubscribe = onSnapshot(doc(db, 'users', firebaseUser.uid), (docSnapshot) => {
-          if (docSnapshot.exists()) {
-            setProfile(docSnapshot.data() as UserProfile);
-          } else {
-            // Create default profile if not exists
-            const newProfile: UserProfile = {
-              uid: firebaseUser.uid,
-              email: firebaseUser.email || '',
-              displayName: firebaseUser.displayName || 'User',
-              role: 'owner',
-              isVerified: false,
-              isProfileComplete: false,
-            };
-            setDoc(doc(db, 'users', firebaseUser.uid), newProfile);
-            setProfile(newProfile);
-          }
-        });
-      } else {
-        if (userDocUnsubscribe) {
-          userDocUnsubscribe();
-          userDocUnsubscribe = null;
+        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+        if (userDoc.exists()) {
+          setProfile(userDoc.data() as UserProfile);
+        } else {
+          // Create default profile if not exists
+          const newProfile: UserProfile = {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email || '',
+            displayName: firebaseUser.displayName || 'User',
+            role: 'owner',
+            isVerified: false,
+            isProfileComplete: false,
+          };
+          await setDoc(doc(db, 'users', firebaseUser.uid), newProfile);
+          setProfile(newProfile);
         }
+      } else {
         setProfile(null);
       }
       setLoading(false);
       setIsAuthReady(true);
     });
 
-    return () => {
-      unsubscribe();
-      if (userDocUnsubscribe) {
-        userDocUnsubscribe();
-      }
-    };
+    return () => unsubscribe();
   }, []);
 
   return (

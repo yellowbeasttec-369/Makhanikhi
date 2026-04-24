@@ -22,8 +22,6 @@ export interface UserProfile {
   isProfileComplete?: boolean;
   dob?: string;
   idNumber?: string;
-  mentorId?: string;
-  mentorName?: string;
   trainingPath?: 'traditional' | 'practical';
   apprenticeStartAge?: number;
   apprenticeStatus?: 'awaiting-match' | 'matched' | 'co-opted';
