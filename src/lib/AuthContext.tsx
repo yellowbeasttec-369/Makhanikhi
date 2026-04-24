@@ -18,7 +18,11 @@ const AuthContext = createContext<AuthContextType>({
   isAuthReady: false,
 });
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+interface AuthProviderProps {
+  children: React.ReactNode;
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,7 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               isVerified: false,
               isProfileComplete: false,
             };
-            setDoc(doc(db, 'users', firebaseUser.uid), newProfile);
+            void setDoc(doc(db, 'users', firebaseUser.uid), newProfile);
             setProfile(newProfile);
           }
         });
