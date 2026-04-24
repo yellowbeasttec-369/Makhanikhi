@@ -1,10 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Wrench, Shield, Zap, Users, CheckCircle2, ArrowRight } from 'lucide-react';
 import { Button } from './ui/button';
+import { AuthDialog } from './AuthDialog';
 
 export const Hero: React.FC = () => {
+  const [authDialogOpen, setAuthDialogOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('register');
+
+  const openAuthDialog = (mode: 'login' | 'register') => {
+    setAuthMode(mode);
+    setAuthDialogOpen(true);
+  };
+
   return (
     <div className="relative overflow-hidden pt-16 pb-32">
       <div className="absolute inset-0 z-0">
@@ -34,7 +43,7 @@ export const Hero: React.FC = () => {
               Eliminating the friction of traditional car service. Specialist mobile mechanics, 
               apprentice skills transfer, and transparent digital record keeping.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
               <Link to="/book">
                 <Button size="lg" className="bg-technic-yellow text-industrial-charcoal hover:bg-technic-yellow/90 font-black h-14 px-8 text-lg rounded-xl w-full sm:w-auto">
                   BOOK A SPECIALIST <ArrowRight className="ml-2 w-5 h-5" />
@@ -45,6 +54,24 @@ export const Hero: React.FC = () => {
                   JOIN AS MECHANIC
                 </Button>
               </Link>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => openAuthDialog('register')}
+                className="border-white/20 hover:bg-white/5 font-bold h-12 px-6 text-base rounded-xl w-full sm:w-auto"
+              >
+                Sign Up
+              </Button>
+              <Button
+                size="lg"
+                variant="ghost"
+                onClick={() => openAuthDialog('login')}
+                className="hover:bg-white/5 font-bold h-12 px-6 text-base rounded-xl w-full sm:w-auto"
+              >
+                Sign In
+              </Button>
             </div>
           </motion.div>
 
@@ -71,6 +98,11 @@ export const Hero: React.FC = () => {
           </motion.div>
         </div>
       </div>
+      <AuthDialog
+        isOpen={authDialogOpen}
+        onClose={() => setAuthDialogOpen(false)}
+        initialMode={authMode}
+      />
     </div>
   );
 };
