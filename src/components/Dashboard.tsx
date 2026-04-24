@@ -41,13 +41,14 @@ export const Dashboard: React.FC = () => {
   const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [isSigning, setIsSigning] = useState(false);
+  const [specialistName, setSpecialistName] = useState('');
   const [specialistSignature, setSpecialistSignature] = useState('');
 
   const isSpecialist = profile?.role === 'specialist' || profile?.role === 'apprentice';
 
   const signContractAsSpecialist = async (requestId: string) => {
-    if (!specialistSignature.trim()) {
-      toast.error("Please provide your signature.");
+    if (!specialistName.trim() || !specialistSignature.trim()) {
+      toast.error("Please provide both your name and signature.");
       return;
     }
     setIsSigning(true);
@@ -56,11 +57,13 @@ export const Dashboard: React.FC = () => {
         'signatures.specialist': {
           uid: user?.uid,
           timestamp: new Date().toISOString(),
-          name: specialistSignature
+          name: specialistName,
+          signature: specialistSignature
         },
         contractSigned: true
       });
       toast.success("Contract signed and work authorized.");
+      setSpecialistName('');
       setSpecialistSignature('');
     } catch (error) {
       toast.error("Failed to sign contract.");
@@ -474,20 +477,28 @@ export const Dashboard: React.FC = () => {
                               </p>
                             </div>
                           </div>
-                          <div className="flex gap-3">
+                          <div className="flex flex-col gap-3">
                             <Input 
-                              placeholder="Type your full name to sign" 
-                              className="bg-industrial-charcoal border-white/20 h-11 text-sm font-display italic"
-                              value={specialistSignature}
-                              onChange={(e) => setSpecialistSignature(e.target.value)}
+                              placeholder="Specialist Full Name" 
+                              className="bg-industrial-charcoal border-white/20 h-11 text-sm font-bold uppercase tracking-tight"
+                              value={specialistName}
+                              onChange={(e) => setSpecialistName(e.target.value)}
                             />
-                            <Button 
-                              onClick={() => signContractAsSpecialist(req.id)}
-                              disabled={isSigning || !specialistSignature.trim()}
-                              className="bg-technic-yellow text-industrial-charcoal font-black h-11 px-6 text-xs uppercase"
-                            >
-                              {isSigning ? <Loader2 className="w-4 h-4 animate-spin" /> : 'SIGN & AUTHORIZE'}
-                            </Button>
+                            <div className="flex gap-3">
+                              <Input 
+                                placeholder="Type your signature (e.g. /s/ J. Doe)" 
+                                className="bg-industrial-charcoal border-white/20 h-11 text-sm font-display italic flex-1"
+                                value={specialistSignature}
+                                onChange={(e) => setSpecialistSignature(e.target.value)}
+                              />
+                              <Button 
+                                onClick={() => signContractAsSpecialist(req.id)}
+                                disabled={isSigning || !specialistName.trim() || !specialistSignature.trim()}
+                                className="bg-technic-yellow text-industrial-charcoal font-black h-11 px-6 text-xs uppercase"
+                              >
+                                {isSigning ? <Loader2 className="w-4 h-4 animate-spin" /> : 'SIGN & AUTHORIZE'}
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       )}
