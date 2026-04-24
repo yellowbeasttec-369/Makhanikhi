@@ -22,8 +22,8 @@ export interface UserProfile {
   isProfileComplete?: boolean;
   dob?: string;
   idNumber?: string;
-  trainingPath?: 'traditional' | 'practical';
-  apprenticeStartAge?: number;
+  mentorId?: string;
+  mentorName?: string;
   verificationStatus?: VerificationStatus;
   verificationDocs?: {
     identityUrl?: string;
