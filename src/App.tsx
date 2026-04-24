@@ -20,20 +20,6 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 };
 
 const AppContent: React.FC = () => {
-  const { error } = useAuth();
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-industrial-charcoal text-digital-white flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Service Unavailable</h1>
-          <p className="text-text-dim">{error}</p>
-          <p className="text-sm text-text-dim mt-4">Please try refreshing the page or contact support.</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-industrial-charcoal selection:bg-technic-yellow selection:text-industrial-charcoal pb-20 md:pb-0">
       <Navbar />

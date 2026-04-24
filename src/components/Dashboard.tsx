@@ -349,6 +349,37 @@ export const Dashboard: React.FC = () => {
             <TabsContent value="overview" className="mt-0">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
+                  {profile?.role === 'apprentice' && (profile as any).apprenticeStatus === 'awaiting-match' && (
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="p-8 rounded-[32px] bg-blue-500/10 border border-blue-500/30 relative overflow-hidden group"
+                    >
+                      <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Users className="w-24 h-24 text-blue-400" />
+                      </div>
+                      <div className="relative z-10">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold uppercase tracking-widest mb-6">
+                          <Clock className="w-3 h-3" /> Status: Awaiting Match
+                        </div>
+                        <h2 className="text-3xl font-display font-black uppercase tracking-tighter mb-4 text-digital-white">
+                          Matching in <br />
+                          <span className="text-blue-400">Progress...</span>
+                        </h2>
+                        <p className="text-text-dim text-sm max-w-md leading-relaxed mb-8">
+                          Your profile is active in the specialist network. Master technicians can now view your skills and co-opt you into their mobile workshops for validated workplace experience.
+                        </p>
+                        <div className="flex gap-4">
+                          <Link to="/verify">
+                            <Button className="bg-blue-500 text-white hover:bg-blue-600 font-bold h-11 px-6 rounded-xl text-xs uppercase">
+                              Check Verification
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                  
                   <CalendarView requests={requests} />
                   
                   <div className="bento-card">
