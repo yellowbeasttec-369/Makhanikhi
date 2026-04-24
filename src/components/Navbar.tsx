@@ -15,27 +15,27 @@ export const Navbar: React.FC = () => {
   const [walletAddress, setWalletAddress] = React.useState<string | null>(null);
 
   const connectWallet = async () => {
-    if (typeof window.ethereum !== 'undefined') {
+    if (window.ethereum) {
       try {
-        // Request accounts using the standard EIP-1193 method
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        // Use BrowserProvider from ethers (v6)
+        const provider = new BrowserProvider(window.ethereum);
+        // Request accounts
+        const accounts = await provider.send("eth_requestAccounts", []);
         
         if (accounts && accounts.length > 0) {
           setWalletAddress(accounts[0]);
           toast.success(`Connected: ${accounts[0].slice(0, 6)}...${accounts[0].slice(-4)}`);
-        } else {
-          throw new Error("No accounts found.");
         }
       } catch (error: any) {
-        console.error('MetaMask connection failed', error);
+        console.error('MetaMask connection error:', error);
         
         // Handle specific MetaMask error codes
         if (error.code === 4001) {
-          toast.error("Connection rejected. Please approve the request in MetaMask.");
+          toast.error("Connection request rejected. Please approve it in MetaMask.");
         } else if (error.code === -32002) {
-          toast.error("Request already pending. Please check your MetaMask extension.");
+          toast.error("MetaMask request already pending. Check your extension.");
         } else {
-          toast.error(`Failed to connect to MetaMask: ${error.message || 'Please ensure it is unlocked.'}`);
+          toast.error("Failed to connect to MetaMask. Ensure it is installed and unlocked.");
         }
       }
     } else {
@@ -148,9 +148,16 @@ export const Navbar: React.FC = () => {
                 >
                   <Wallet className="w-4 h-4" /> Connect Wallet
                 </Button>
-                <Button onClick={handleLogin} className="bg-technic-yellow text-industrial-charcoal hover:bg-technic-yellow/90 font-bold">
-                  Login with Google
-                </Button>
+                <Link to="/login">
+                  <Button className="bg-technic-yellow text-industrial-charcoal hover:bg-technic-yellow/90 font-bold">
+                    Login
+                  </Button>
+                </Link>
+                <Link to="/register">
+                  <Button className="border-technic-yellow/30 text-technic-yellow hover:bg-technic-yellow/5 font-bold" variant="outline">
+                    Register
+                  </Button>
+                </Link>
               </div>
             )}
           </div>

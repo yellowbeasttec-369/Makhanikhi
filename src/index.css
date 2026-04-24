@@ -9,8 +9,8 @@
   --color-industrial-charcoal: #0F0F0F;
   --color-technic-yellow: #FFD200;
   --color-digital-white: #FFFFFF;
-  --color-text-dim: #CCCCCC;
-  --color-border-dim: #2A2A2A;
+  --color-text-dim: #BBBBBB;
+  --color-border-dim: #333333;
   --color-card-bg: #1A1A1A;
   --color-success-green: #00FF88;
   --color-danger-red: #FF4444;
@@ -40,14 +40,12 @@
 @layer base {
   body {
     @apply bg-industrial-charcoal text-digital-white font-sans antialiased;
-    color: var(--color-digital-white);
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-display tracking-tight;
   }
   input, textarea, select {
     @apply !text-digital-white;
-    color: var(--color-digital-white);
   }
 }
 
@@ -97,6 +95,16 @@
 
   .bento-danger-warning {
     @apply bg-danger-red/10 border border-danger-red p-2.5 rounded-[8px] text-[11px] text-danger-red flex items-center gap-2;
+  }
+
+  .faded-img {
+    mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+    @apply opacity-60 hover:opacity-100 transition-opacity duration-700;
+  }
+
+  .faded-img-sides {
+    mask-image: radial-gradient(circle, black 40%, transparent 100%);
+    @apply opacity-70;
   }
 }
 

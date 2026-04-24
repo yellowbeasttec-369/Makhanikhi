@@ -7,16 +7,30 @@ export interface UserProfile {
   email: string;
   displayName: string;
   role: UserRole;
+  phone?: string;
+  emergencyContact?: string;
+  address?: string;
   specialization?: string;
-  experience?: number;
+  yearsOfExperience?: number;
+  certifications?: string[];
+  affiliations?: string[];
+  accreditations?: string[];
+  accomplishments?: string;
   bio?: string;
   photoURL?: string;
   isVerified?: boolean;
+  isProfileComplete?: boolean;
+  dob?: string;
+  idNumber?: string;
+  trainingPath?: 'traditional' | 'practical';
+  apprenticeStartAge?: number;
   verificationStatus?: VerificationStatus;
   verificationDocs?: {
     identityUrl?: string;
     certificationUrl?: string;
     experienceUrl?: string;
+    affidavitUrl?: string;
+    documents?: { title: string; url: string; category: string }[];
   };
   rating?: number;
   flagged?: boolean;
@@ -65,8 +79,16 @@ export interface ServiceRequest {
   paymentStatus: 'unpaid' | 'partial' | 'paid';
   createdAt: string;
   appointmentDate?: string;
+  vehicleMake?: string;
+  vehicleModel?: string;
+  location?: string;
   checklist?: SafetyChecklist;
   tasks?: ApprenticeTask[];
+  signatures?: {
+    owner?: { uid: string; timestamp: string; name?: string; signature?: string };
+    specialist?: { uid: string; timestamp: string; name?: string; signature?: string };
+  };
+  contractSigned?: boolean;
 }
 
 export interface ApprenticeTask {
