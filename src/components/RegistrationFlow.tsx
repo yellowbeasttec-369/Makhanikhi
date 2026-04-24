@@ -48,6 +48,23 @@ export const RegistrationFlow: React.FC = () => {
       model: '',
       year: '',
       registration: '',
+    },
+    experience: {
+      years: '',
+      certifications: [] as string[],
+      affiliations: [] as string[],
+      accreditations: [] as string[],
+      accomplishments: '',
+      verificationMethod: 'credentials' as 'credentials' | 'references' | 'affidavit',
+      references: [] as {name: string, contact: string}[],
+      documents: [] as {title: string, url: string, category: string}[]
+    },
+    apprentice: {
+      nomination: 'self' as 'self' | 'co-opted',
+      mentorId: '',
+      mentorName: '',
+      trainingPath: 'practical' as 'traditional' | 'practical',
+      startAge: ''
     }
   });
 
@@ -76,6 +93,24 @@ export const RegistrationFlow: React.FC = () => {
         isProfileComplete: true,
         updatedAt: new Date().toISOString(),
       };
+
+      if (formData.role === 'specialist') {
+        updateData.yearsOfExperience = parseInt(formData.experience.years) || 0;
+        updateData.certifications = formData.experience.certifications;
+        updateData.affiliations = formData.experience.affiliations;
+        updateData.accreditations = formData.experience.accreditations;
+        updateData.accomplishments = formData.experience.accomplishments;
+        updateData.verificationDocs = {
+          documents: formData.experience.documents
+        };
+      }
+
+      if (formData.role === 'apprentice') {
+        updateData.trainingPath = formData.apprentice.trainingPath;
+        updateData.apprenticeStartAge = parseInt(formData.apprentice.startAge) || 0;
+        updateData.mentorId = formData.apprentice.mentorId;
+        updateData.mentorName = formData.apprentice.mentorName;
+      }
 
       await updateDoc(doc(db, 'users', user.uid), updateData);
       
@@ -134,14 +169,22 @@ export const RegistrationFlow: React.FC = () => {
           <ShieldCheck className="w-3 h-3" /> Professional Onboarding
         </div>
         <h1 className="text-4xl font-display font-black uppercase tracking-tighter mb-2 text-digital-white">
-          {step === 1 ? 'Select Discipline' : step === 2 ? 'Bio Details' : 'Vehicle Registry'}
+          {step === 1 ? 'Select Discipline' : 
+           step === 2 ? 'Bio Details' : 
+           (formData.role === 'owner' ? 'Vehicle Registry' : 
+            formData.role === 'specialist' ? 'Experience Verification' : 
+            'Apprentice Nomination')}
         </h1>
         <p className="text-text-dim">
           {step === 1 
             ? 'Choose how you will participate in the ecosystem.' 
             : step === 2 
               ? 'Let the community know who you are.'
-              : 'Add your vehicle to start tracking digital records.'}
+              : formData.role === 'owner'
+                ? 'Add your vehicle to start tracking digital records.'
+                : formData.role === 'specialist'
+                  ? 'Verify your professional experience and credentials.'
+                  : 'Connect with a mentor or self-nominate for apprenticeship.'}
         </p>
       </header>
 
@@ -323,75 +366,315 @@ export const RegistrationFlow: React.FC = () => {
                     <ArrowLeft className="mr-2 w-4 h-4" /> BACK
                   </Button>
                   <Button 
-                    onClick={() => formData.role === 'owner' ? handleNext() : handleCompleteRegistration()} 
+                    onClick={handleNext} 
                     disabled={loading} 
                     className="bento-btn flex-[2] h-14 text-sm"
                   >
-                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : formData.role === 'owner' ? 'NEXT STEP' : 'SAVE & FINISH'} <ArrowRight className="ml-2 w-4 h-4" />
+                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'NEXT STEP'} <ArrowRight className="ml-2 w-4 h-4" />
                   </Button>
                 </div>
               </div>
             </div>
           )}
 
-          {step === 3 && formData.role === 'owner' && (
-            <div className="bento-card">
-              <div className="bento-card-title"><div className="bento-dot"></div> Ownership Details</div>
-              <p className="text-xs text-text-dim mb-6 leading-relaxed uppercase tracking-widest font-bold">Register your vehicle to build its digital service history.</p>
-              
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-text-dim text-[10px] uppercase tracking-widest font-bold">Make</Label>
-                    <Input 
-                      value={formData.vehicle.make}
-                      onChange={(e) => setFormData({...formData, vehicle: { ...formData.vehicle, make: e.target.value }})}
-                      className="bg-white/5 border-white/10 rounded-xl h-12"
-                      placeholder="e.g. BMW"
-                    />
+          {step === 3 && (
+            formData.role === 'owner' ? (
+              <div className="bento-card">
+                <div className="bento-card-title"><div className="bento-dot"></div> Ownership Details</div>
+                <p className="text-xs text-text-dim mb-6 leading-relaxed uppercase tracking-widest font-bold">Register your vehicle to build its digital service history.</p>
+                
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-text-dim text-[10px] uppercase tracking-widest font-bold">Make</Label>
+                      <Input 
+                        value={formData.vehicle.make}
+                        onChange={(e) => setFormData({...formData, vehicle: { ...formData.vehicle, make: e.target.value }})}
+                        className="bg-white/5 border-white/10 rounded-xl h-12"
+                        placeholder="e.g. BMW"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-text-dim text-[10px] uppercase tracking-widest font-bold">Model</Label>
+                      <Input 
+                        value={formData.vehicle.model}
+                        onChange={(e) => setFormData({...formData, vehicle: { ...formData.vehicle, model: e.target.value }})}
+                        className="bg-white/5 border-white/10 rounded-xl h-12"
+                        placeholder="e.g. 320i"
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-text-dim text-[10px] uppercase tracking-widest font-bold">Model</Label>
-                    <Input 
-                      value={formData.vehicle.model}
-                      onChange={(e) => setFormData({...formData, vehicle: { ...formData.vehicle, model: e.target.value }})}
-                      className="bg-white/5 border-white/10 rounded-xl h-12"
-                      placeholder="e.g. 320i"
-                    />
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-text-dim text-[10px] uppercase tracking-widest font-bold">Year</Label>
-                    <Input 
-                      value={formData.vehicle.year}
-                      onChange={(e) => setFormData({...formData, vehicle: { ...formData.vehicle, year: e.target.value }})}
-                      className="bg-white/5 border-white/10 rounded-xl h-12"
-                      placeholder="e.g. 2021"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-text-dim text-[10px] uppercase tracking-widest font-bold">Year</Label>
+                      <Input 
+                        value={formData.vehicle.year}
+                        onChange={(e) => setFormData({...formData, vehicle: { ...formData.vehicle, year: e.target.value }})}
+                        className="bg-white/5 border-white/10 rounded-xl h-12"
+                        placeholder="e.g. 2021"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-text-dim text-[10px] uppercase tracking-widest font-bold">Registration / VIN</Label>
+                      <Input 
+                        value={formData.vehicle.registration}
+                        onChange={(e) => setFormData({...formData, vehicle: { ...formData.vehicle, registration: e.target.value }})}
+                        className="bg-white/5 border-white/10 rounded-xl h-12"
+                        placeholder="e.g. GP 123 456"
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-text-dim text-[10px] uppercase tracking-widest font-bold">Registration / VIN</Label>
-                    <Input 
-                      value={formData.vehicle.registration}
-                      onChange={(e) => setFormData({...formData, vehicle: { ...formData.vehicle, registration: e.target.value }})}
-                      className="bg-white/5 border-white/10 rounded-xl h-12"
-                      placeholder="e.g. GP 123 456"
-                    />
-                  </div>
-                </div>
 
-                <div className="pt-4 flex gap-4">
-                  <Button variant="outline" onClick={handleBack} className="flex-1 h-14 text-xs font-bold border-white/10">
-                    <ArrowLeft className="mr-2 w-4 h-4" /> BACK
-                  </Button>
-                  <Button onClick={handleCompleteRegistration} disabled={loading} className="bento-btn flex-[2] h-14 text-sm">
-                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'COMPLETE REGISTRATION'} <ArrowRight className="ml-2 w-4 h-4" />
-                  </Button>
+                  <div className="pt-4 flex gap-4">
+                    <Button variant="outline" onClick={handleBack} className="flex-1 h-14 text-xs font-bold border-white/10">
+                      <ArrowLeft className="mr-2 w-4 h-4" /> BACK
+                    </Button>
+                    <Button onClick={handleCompleteRegistration} disabled={loading} className="bento-btn flex-[2] h-14 text-sm">
+                      {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'COMPLETE REGISTRATION'} <ArrowRight className="ml-2 w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : formData.role === 'specialist' ? (
+              <div className="bento-card">
+                <div className="bento-card-title"><div className="bento-dot"></div> Professional Experience</div>
+                <p className="text-xs text-text-dim mb-6 leading-relaxed uppercase tracking-widest font-bold">Verify your expertise through credentials, references, or affidavit.</p>
+                
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Label className="text-text-dim text-[10px] uppercase tracking-widest font-bold">Verification Method</Label>
+                    <div className="flex gap-4">
+                      <button 
+                        onClick={() => setFormData({...formData, experience: { ...formData.experience, verificationMethod: 'credentials' }})}
+                        className={`flex-1 p-3 rounded-xl border transition-all ${formData.experience.verificationMethod === 'credentials' ? 'border-technic-yellow bg-technic-yellow/10' : 'border-white/10 bg-white/5'}`}
+                      >
+                        <div className="text-center">
+                          <Award className="w-6 h-6 mx-auto mb-2 text-technic-yellow" />
+                          <div className="text-xs font-bold uppercase">Credentials</div>
+                          <div className="text-[8px] text-text-dim">Certifications & Accreditations</div>
+                        </div>
+                      </button>
+                      <button 
+                        onClick={() => setFormData({...formData, experience: { ...formData.experience, verificationMethod: 'references' }})}
+                        className={`flex-1 p-3 rounded-xl border transition-all ${formData.experience.verificationMethod === 'references' ? 'border-technic-yellow bg-technic-yellow/10' : 'border-white/10 bg-white/5'}`}
+                      >
+                        <div className="text-center">
+                          <Users className="w-6 h-6 mx-auto mb-2 text-technic-yellow" />
+                          <div className="text-xs font-bold uppercase">References</div>
+                          <div className="text-[8px] text-text-dim">Professional References</div>
+                        </div>
+                      </button>
+                      <button 
+                        onClick={() => setFormData({...formData, experience: { ...formData.experience, verificationMethod: 'affidavit' }})}
+                        className={`flex-1 p-3 rounded-xl border transition-all ${formData.experience.verificationMethod === 'affidavit' ? 'border-technic-yellow bg-technic-yellow/10' : 'border-white/10 bg-white/5'}`}
+                      >
+                        <div className="text-center">
+                          <ShieldCheck className="w-6 h-6 mx-auto mb-2 text-technic-yellow" />
+                          <div className="text-xs font-bold uppercase">Affidavit</div>
+                          <div className="text-[8px] text-text-dim">Sworn Statement</div>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-text-dim text-[10px] uppercase tracking-widest font-bold">Years of Experience</Label>
+                    <Input 
+                      type="number"
+                      value={formData.experience.years}
+                      onChange={(e) => setFormData({...formData, experience: { ...formData.experience, years: e.target.value }})}
+                      className="bg-white/5 border-white/10 rounded-xl h-12"
+                      placeholder="e.g. 5"
+                    />
+                  </div>
+
+                  {formData.experience.verificationMethod === 'credentials' && (
+                    <>
+                      <div className="space-y-2">
+                        <Label className="text-text-dim text-[10px] uppercase tracking-widest font-bold">Certifications (comma separated)</Label>
+                        <Input 
+                          value={formData.experience.certifications.join(', ')}
+                          onChange={(e) => setFormData({...formData, experience: { ...formData.experience, certifications: e.target.value.split(',').map(s => s.trim()) }})}
+                          className="bg-white/5 border-white/10 rounded-xl h-12"
+                          placeholder="e.g. ASE Master Technician, Bosch Certified"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-text-dim text-[10px] uppercase tracking-widest font-bold">Affiliations (comma separated)</Label>
+                        <Input 
+                          value={formData.experience.affiliations.join(', ')}
+                          onChange={(e) => setFormData({...formData, experience: { ...formData.experience, affiliations: e.target.value.split(',').map(s => s.trim()) }})}
+                          className="bg-white/5 border-white/10 rounded-xl h-12"
+                          placeholder="e.g. SAMSA, RMI"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-text-dim text-[10px] uppercase tracking-widest font-bold">Accreditations (comma separated)</Label>
+                        <Input 
+                          value={formData.experience.accreditations.join(', ')}
+                          onChange={(e) => setFormData({...formData, experience: { ...formData.experience, accreditations: e.target.value.split(',').map(s => s.trim()) }})}
+                          className="bg-white/5 border-white/10 rounded-xl h-12"
+                          placeholder="e.g. NAMB Accreditation, ISO Certified"
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {formData.experience.verificationMethod === 'references' && (
+                    <div className="space-y-2">
+                      <Label className="text-text-dim text-[10px] uppercase tracking-widest font-bold">Professional References</Label>
+                      <Textarea 
+                        value={formData.experience.references.map(r => `${r.name}: ${r.contact}`).join('\n')}
+                        onChange={(e) => {
+                          const lines = e.target.value.split('\n');
+                          const refs = lines.map(line => {
+                            const [name, contact] = line.split(': ');
+                            return { name: name || '', contact: contact || '' };
+                          });
+                          setFormData({...formData, experience: { ...formData.experience, references: refs }});
+                        }}
+                        className="bg-white/5 border-white/10 rounded-xl min-h-[80px]"
+                        placeholder="Name: Contact Info (one per line)"
+                      />
+                    </div>
+                  )}
+
+                  {formData.experience.verificationMethod === 'affidavit' && (
+                    <div className="space-y-2">
+                      <Label className="text-text-dim text-[10px] uppercase tracking-widest font-bold">Affidavit Details</Label>
+                      <Textarea 
+                        value={formData.experience.accomplishments}
+                        onChange={(e) => setFormData({...formData, experience: { ...formData.experience, accomplishments: e.target.value }})}
+                        className="bg-white/5 border-white/10 rounded-xl min-h-[80px]"
+                        placeholder="Describe your experience and any supporting details for affidavit..."
+                      />
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label className="text-text-dim text-[10px] uppercase tracking-widest font-bold">Key Accomplishments</Label>
+                    <Textarea 
+                      value={formData.experience.accomplishments}
+                      onChange={(e) => setFormData({...formData, experience: { ...formData.experience, accomplishments: e.target.value }})}
+                      className="bg-white/5 border-white/10 rounded-xl min-h-[80px]"
+                      placeholder="Describe your notable achievements..."
+                    />
+                  </div>
+
+                  <div className="pt-4 flex gap-4">
+                    <Button variant="outline" onClick={handleBack} className="flex-1 h-14 text-xs font-bold border-white/10">
+                      <ArrowLeft className="mr-2 w-4 h-4" /> BACK
+                    </Button>
+                    <Button onClick={handleCompleteRegistration} disabled={loading} className="bento-btn flex-[2] h-14 text-sm">
+                      {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'COMPLETE REGISTRATION'} <ArrowRight className="ml-2 w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bento-card">
+                <div className="bento-card-title"><div className="bento-dot"></div> Apprenticeship Setup</div>
+                <p className="text-xs text-text-dim mb-6 leading-relaxed uppercase tracking-widest font-bold">Connect with a mentor or self-nominate for skills development.</p>
+                
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Label className="text-text-dim text-[10px] uppercase tracking-widest font-bold">Nomination Type</Label>
+                    <div className="flex gap-4">
+                      <button 
+                        onClick={() => setFormData({...formData, apprentice: { ...formData.apprentice, nomination: 'self' }})}
+                        className={`flex-1 p-3 rounded-xl border transition-all ${formData.apprentice.nomination === 'self' ? 'border-technic-yellow bg-technic-yellow/10' : 'border-white/10 bg-white/5'}`}
+                      >
+                        <div className="text-center">
+                          <Users className="w-6 h-6 mx-auto mb-2 text-technic-yellow" />
+                          <div className="text-xs font-bold uppercase">Self Nominated</div>
+                        </div>
+                      </button>
+                      <button 
+                        onClick={() => setFormData({...formData, apprentice: { ...formData.apprentice, nomination: 'co-opted' }})}
+                        className={`flex-1 p-3 rounded-xl border transition-all ${formData.apprentice.nomination === 'co-opted' ? 'border-technic-yellow bg-technic-yellow/10' : 'border-white/10 bg-white/5'}`}
+                      >
+                        <div className="text-center">
+                          <Award className="w-6 h-6 mx-auto mb-2 text-technic-yellow" />
+                          <div className="text-xs font-bold uppercase">Co-opted by Mechanic</div>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
+                  {formData.apprentice.nomination === 'co-opted' && (
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label className="text-text-dim text-[10px] uppercase tracking-widest font-bold">Mentor Name</Label>
+                        <Input 
+                          value={formData.apprentice.mentorName}
+                          onChange={(e) => setFormData({...formData, apprentice: { ...formData.apprentice, mentorName: e.target.value }})}
+                          className="bg-white/5 border-white/10 rounded-xl h-12"
+                          placeholder="Full name of your mentor"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-text-dim text-[10px] uppercase tracking-widest font-bold">Mentor Contact</Label>
+                        <Input 
+                          value={formData.apprentice.mentorId}
+                          onChange={(e) => setFormData({...formData, apprentice: { ...formData.apprentice, mentorId: e.target.value }})}
+                          className="bg-white/5 border-white/10 rounded-xl h-12"
+                          placeholder="Email or phone of mentor"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label className="text-text-dim text-[10px] uppercase tracking-widest font-bold">Training Path</Label>
+                    <div className="flex gap-4">
+                      <button 
+                        onClick={() => setFormData({...formData, apprentice: { ...formData.apprentice, trainingPath: 'traditional' }})}
+                        className={`flex-1 p-3 rounded-xl border transition-all ${formData.apprentice.trainingPath === 'traditional' ? 'border-technic-yellow bg-technic-yellow/10' : 'border-white/10 bg-white/5'}`}
+                      >
+                        <div className="text-center">
+                          <Wrench className="w-6 h-6 mx-auto mb-2 text-technic-yellow" />
+                          <div className="text-xs font-bold uppercase">Traditional</div>
+                          <div className="text-[8px] text-text-dim">Formal apprenticeship</div>
+                        </div>
+                      </button>
+                      <button 
+                        onClick={() => setFormData({...formData, apprentice: { ...formData.apprentice, trainingPath: 'practical' }})}
+                        className={`flex-1 p-3 rounded-xl border transition-all ${formData.apprentice.trainingPath === 'practical' ? 'border-technic-yellow bg-technic-yellow/10' : 'border-white/10 bg-white/5'}`}
+                      >
+                        <div className="text-center">
+                          <ShieldCheck className="w-6 h-6 mx-auto mb-2 text-technic-yellow" />
+                          <div className="text-xs font-bold uppercase">Practical</div>
+                          <div className="text-[8px] text-text-dim">Workplace experience</div>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-text-dim text-[10px] uppercase tracking-widest font-bold">Age Started Training</Label>
+                    <Input 
+                      type="number"
+                      value={formData.apprentice.startAge}
+                      onChange={(e) => setFormData({...formData, apprentice: { ...formData.apprentice, startAge: e.target.value }})}
+                      className="bg-white/5 border-white/10 rounded-xl h-12"
+                      placeholder="e.g. 18"
+                    />
+                  </div>
+
+                  <div className="pt-4 flex gap-4">
+                    <Button variant="outline" onClick={handleBack} className="flex-1 h-14 text-xs font-bold border-white/10">
+                      <ArrowLeft className="mr-2 w-4 h-4" /> BACK
+                    </Button>
+                    <Button onClick={handleCompleteRegistration} disabled={loading} className="bento-btn flex-[2] h-14 text-sm">
+                      {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'COMPLETE REGISTRATION'} <ArrowRight className="ml-2 w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )
           )}
         </motion.div>
       </AnimatePresence>
