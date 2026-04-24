@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
 import { db } from '../lib/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, collection, setDoc } from 'firebase/firestore';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -110,17 +110,29 @@ export const RegistrationFlow: React.FC = () => {
         updateData.apprenticeStartAge = parseInt(formData.apprentice.startAge) || 0;
         updateData.mentorId = formData.apprentice.mentorId;
         updateData.mentorName = formData.apprentice.mentorName;
+        updateData.apprenticeStatus = 'awaiting-match';
       }
 
       await updateDoc(doc(db, 'users', user.uid), updateData);
       
       // If owner, add the vehicle too
       if (formData.role === 'owner' && formData.vehicle.make) {
-        // Here we could add to a vehicles collection, but for now we just finish the flow
-        // The Dashboard will handle vehicle management
+        const vehicleRef = doc(collection(db, 'vehicles'));
+        await setDoc(vehicleRef, {
+          ...formData.vehicle,
+          ownerId: user.uid,
+          createdAt: new Date().toISOString(),
+          mileage: 0,
+          serviceHistory: [],
+          faults: []
+        });
       }
 
-      toast.success("Registration complete!");
+      if (formData.role === 'apprentice') {
+        toast.success("Registration complete! You are now awaiting matching with a Specialist.");
+      } else {
+        toast.success("Registration complete!");
+      }
       
       if (formData.role === 'owner') {
         navigate('/dashboard');

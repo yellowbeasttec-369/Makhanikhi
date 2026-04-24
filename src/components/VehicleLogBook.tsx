@@ -300,6 +300,29 @@ export const VehicleLogBook: React.FC = () => {
                 )}
               </div>
             ))}
+            
+            {vehicles.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center border-2 border-dashed border-white/5 rounded-2xl">
+                <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3">
+                  <Plus className="w-6 h-6 text-text-dim" />
+                </div>
+                <p className="text-xs text-text-dim uppercase font-bold tracking-widest mb-4">Garage is Empty</p>
+                <Button 
+                  onClick={() => setShowAddVehicle(true)} 
+                  className="bg-technic-yellow text-industrial-charcoal font-black text-[10px] h-8 px-6 rounded-lg uppercase tracking-widest"
+                >
+                  Register First Vehicle
+                </Button>
+              </div>
+            ) : (
+              <Button 
+                variant="outline" 
+                onClick={() => setShowAddVehicle(true)}
+                className="w-full border-dashed border-white/10 h-12 text-[10px] uppercase font-bold tracking-widest text-text-dim hover:text-technic-yellow hover:border-technic-yellow/50 transition-all"
+              >
+                <Plus className="w-3 h-3 mr-2" /> Add Another Vehicle
+              </Button>
+            )}
           </div>
         </div>
 

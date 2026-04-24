@@ -15,23 +15,6 @@
   --color-success-green: #00FF88;
   --color-danger-red: #FF4444;
 
-  /* Shadcn compatible variables */
-  --color-primary: var(--color-technic-yellow);
-  --color-primary-foreground: var(--color-industrial-charcoal);
-  --color-secondary: var(--color-card-bg);
-  --color-secondary-foreground: var(--color-digital-white);
-  --color-muted: var(--color-border-dim);
-  --color-muted-foreground: var(--color-text-dim);
-  --color-background: var(--color-industrial-charcoal);
-  --color-foreground: var(--color-digital-white);
-  --color-card: var(--color-card-bg);
-  --color-card-foreground: var(--color-digital-white);
-  --color-input: var(--color-card-bg);
-  --color-border: var(--color-border-dim);
-  --color-ring: var(--color-technic-yellow);
-  --color-destructive: var(--color-danger-red);
-  --color-destructive-foreground: var(--color-digital-white);
-
   --radius-lg: 16px;
   --radius-md: 12px;
   --radius-sm: 8px;
@@ -113,6 +96,7 @@
 }
 
 @import "tw-animate-css";
+@import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
 
 @custom-variant dark (&:is(.dark *));

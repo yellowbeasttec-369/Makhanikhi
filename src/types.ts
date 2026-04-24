@@ -24,6 +24,9 @@ export interface UserProfile {
   idNumber?: string;
   mentorId?: string;
   mentorName?: string;
+  trainingPath?: 'traditional' | 'practical';
+  apprenticeStartAge?: number;
+  apprenticeStatus?: 'awaiting-match' | 'matched' | 'co-opted';
   verificationStatus?: VerificationStatus;
   verificationDocs?: {
     identityUrl?: string;

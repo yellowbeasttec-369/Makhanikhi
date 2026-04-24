@@ -47,7 +47,11 @@ export const Navbar: React.FC = () => {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-    } catch (error) {
+    } catch (error: any) {
+      // Gracefully handle popup cancellation/closed errors
+      if (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user') {
+        return;
+      }
       console.error('Login failed', error);
       toast.error("Login failed. Please try again.");
     }
