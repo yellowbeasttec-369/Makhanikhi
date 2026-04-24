@@ -8,15 +8,24 @@ export interface UserProfile {
   displayName: string;
   role: UserRole;
   specialization?: string;
-  experience?: number;
+  yearsOfExperience?: number;
+  certifications?: string[];
+  affiliations?: string[];
+  accreditations?: string[];
+  accomplishments?: string;
   bio?: string;
   photoURL?: string;
   isVerified?: boolean;
+  isProfileComplete?: boolean;
+  trainingPath?: 'traditional' | 'practical';
+  apprenticeStartAge?: number;
   verificationStatus?: VerificationStatus;
   verificationDocs?: {
     identityUrl?: string;
     certificationUrl?: string;
     experienceUrl?: string;
+    affidavitUrl?: string;
+    documents?: { title: string; url: string; category: string }[];
   };
   rating?: number;
   flagged?: boolean;
@@ -67,6 +76,11 @@ export interface ServiceRequest {
   appointmentDate?: string;
   checklist?: SafetyChecklist;
   tasks?: ApprenticeTask[];
+  signatures?: {
+    owner?: { uid: string; timestamp: any };
+    specialist?: { uid: string; timestamp: any };
+  };
+  contractSigned?: boolean;
 }
 
 export interface ApprenticeTask {

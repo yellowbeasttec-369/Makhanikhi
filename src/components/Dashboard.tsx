@@ -5,6 +5,7 @@ import { collection, query, where, onSnapshot, orderBy, doc, updateDoc, getDocs 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Button } from './ui/button';
+import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
@@ -22,6 +23,7 @@ import { SkillsValidation } from './SkillsValidation';
 import { FleetManager } from './FleetManager';
 import { OHSAGuidelines } from './OHSAGuidelines';
 import { CameraCapture } from './CameraCapture';
+import { CalendarView } from './CalendarView';
 import { ServiceRequest, UserProfile, ApprenticeTask } from '../types';
 
 export const Dashboard: React.FC = () => {
@@ -38,8 +40,34 @@ export const Dashboard: React.FC = () => {
   const [showCamera, setShowCamera] = useState(false);
   const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+  const [isSigning, setIsSigning] = useState(false);
+  const [specialistSignature, setSpecialistSignature] = useState('');
 
   const isSpecialist = profile?.role === 'specialist' || profile?.role === 'apprentice';
+
+  const signContractAsSpecialist = async (requestId: string) => {
+    if (!specialistSignature.trim()) {
+      toast.error("Please provide your signature.");
+      return;
+    }
+    setIsSigning(true);
+    try {
+      await updateDoc(doc(db, 'serviceRequests', requestId), {
+        'signatures.specialist': {
+          uid: user?.uid,
+          timestamp: new Date().toISOString(),
+          name: specialistSignature
+        },
+        contractSigned: true
+      });
+      toast.success("Contract signed and work authorized.");
+      setSpecialistSignature('');
+    } catch (error) {
+      toast.error("Failed to sign contract.");
+    } finally {
+      setIsSigning(false);
+    }
+  };
   const isOwner = profile?.role === 'owner';
 
   const fetchApprentices = async () => {
@@ -316,148 +344,86 @@ export const Dashboard: React.FC = () => {
             transition={{ duration: 0.2 }}
           >
             <TabsContent value="overview" className="mt-0">
-              <div className="bento-grid">
-                {/* Active Request Card (Span 2x2) */}
-                <div className="bento-card col-span-1 md:col-span-2 row-span-2">
-                  <div className="bento-card-title"><div className="bento-dot"></div>Active Service Request</div>
-                  <div className="bento-badge">Major Engine Overhaul</div>
-                  <h2 className="text-3xl font-display font-black mb-2">BMW 320i (G20)</h2>
-                  <p className="bento-status">● Specialist En Route (ETA 12 Mins)</p>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 space-y-6">
+                  <CalendarView requests={requests} />
                   
-                  <div className="space-y-4 mt-4">
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
-                      <div className="w-10 h-10 rounded-full bg-white/10 border border-technic-yellow flex items-center justify-center font-bold">TM</div>
-                      <div>
-                        <h4 className="text-sm font-bold">Thabo Mokoena <span className="text-success-green">✓ Verified</span></h4>
-                        <p className="text-[11px] text-text-dim">Master Specialist • 12 Years Exp.</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-3 p-3 rounded-xl border border-dashed border-white/20">
-                      <div className="w-10 h-10 rounded-full bg-white/5 border border-white/20 flex items-center justify-center font-bold text-text-dim">NK</div>
-                      <div>
-                        <h4 className="text-sm font-bold">Neo Khumalo</h4>
-                        <p className="text-[11px] text-text-dim">Apprentice • Skills Transfer Program</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <Button className="bento-btn mt-auto">View Smart Contract Details</Button>
-                </div>
-
-                {/* Safety Checklist (Span 1x2) */}
-                <div className="bento-card col-span-1 md:col-span-1 row-span-2">
-                  <div className="bento-card-title">Pre-Work Safety Protocol</div>
-                  <ul className="space-y-3">
-                    {[
-                      { text: "Visual PPE Inspection", checked: true },
-                      { text: "Barricading & Danger Tape", checked: true },
-                      { text: "Oil Spill Mats Deployed", checked: true },
-                      { text: "Toolbox Inventory", checked: true },
-                      { text: "Site Clearance (Pets/Children)", checked: false },
-                    ].map((item, i) => (
-                      <li key={i} className="flex items-center gap-3 text-[13px]">
-                        <div className={`w-[18px] h-[18px] border border-white/20 rounded-[4px] flex items-center justify-center text-[12px] ${item.checked ? 'bg-success-green border-success-green text-industrial-charcoal' : ''}`}>
-                          {item.checked ? '✓' : ''}
+                  <div className="bento-card">
+                    <div className="bento-card-title"><div className="bento-dot"></div> ACTIVE SERVICE QUEUE</div>
+                    <div className="space-y-4 mt-6">
+                      {requests.filter(r => r.status === 'in-progress' || r.status === 'pending').slice(0, 5).map(req => (
+                        <div key={req.id} className="p-4 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-technic-yellow/10 flex items-center justify-center">
+                              <Wrench className="w-5 h-5 text-technic-yellow" />
+                            </div>
+                            <div>
+                              <h4 className="text-xs font-black uppercase">{(req as any).vehicleMake} {(req as any).vehicleModel}</h4>
+                              <p className="text-[10px] text-text-dim uppercase tracking-widest">{req.type} SERVICE</p>
+                            </div>
+                          </div>
+                          {getStatusBadge(req.status)}
                         </div>
-                        {item.text}
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="bento-danger-warning mt-6">
-                    <AlertTriangle className="w-4 h-4" /> IF HAZARD DETECTED: WORK STOPS IMMEDIATELY
-                  </div>
-                  <p className="text-[11px] text-text-dim mt-4">
-                    The apprentice handles digital documentation and site safety monitoring during labor.
-                  </p>
-                </div>
-
-                {/* Financial Summary (Span 1x1) */}
-                <div className="bento-card col-span-1">
-                  <div className="bento-card-title"><div className="bento-dot"></div> Live Quote & Billing</div>
-                  <div className="space-y-2 mt-2">
-                    <div className="flex justify-between text-[13px]">
-                      <span className="text-text-dim">Diagnostics</span> 
-                      <span className="font-mono">R 450.00</span>
-                    </div>
-                    <div className="flex justify-between text-[13px]">
-                      <span className="text-text-dim">Call-out</span> 
-                      <span className="font-mono">R 250.00</span>
-                    </div>
-                    <div className="flex justify-between text-[13px]">
-                      <span className="text-text-dim">Consumables</span> 
-                      <span className="font-mono">R 1,200.00</span>
-                    </div>
-                    <div className="border-t border-white/10 pt-2 mt-2 font-black text-lg text-technic-yellow flex justify-between uppercase tracking-tighter">
-                      <span>Total</span>
-                      <span>R 1,900.00</span>
-                    </div>
-                  </div>
-                  <p className="text-[9px] text-text-dim mt-auto pt-4 italic">Payment gateway secured via Yellow Beast R&D.</p>
-                </div>
-
-                {/* Regional Stats (Span 1x1) */}
-                <div className="bento-card col-span-1">
-                  <div className="bento-card-title">Regional Insights</div>
-                  <div className="text-2xl font-bold">Alternators</div>
-                  <div className="text-[12px] text-text-dim">Most failed part in Gauteng (Central)</div>
-                  <div className="h-10 bg-white/10 rounded-[4px] mt-3 relative overflow-hidden">
-                    <div className="h-full bg-technic-yellow w-[72%]" />
-                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-digital-white">72% Freq.</span>
-                  </div>
-                </div>
-
-                {/* Car Logbook (Span 2x1) */}
-                <div className="bento-card col-span-1 md:col-span-2">
-                  <div className="bento-card-title">Digital Vehicle Logbook</div>
-                  <div className="grid grid-cols-2 gap-5">
-                    <div className="bento-log-entry">
-                      <div className="bento-log-date">14 Mar 2023</div>
-                      <div className="bento-log-task">Brake Pad Replacement (Front)</div>
-                    </div>
-                    <div className="bento-log-entry">
-                      <div className="bento-log-date">02 Jan 2023</div>
-                      <div className="bento-log-task">Minor Service - Synthetic Oil</div>
+                      ))}
+                      {requests.filter(r => r.status === 'in-progress' || r.status === 'pending').length === 0 && (
+                        <p className="text-center py-8 text-[10px] text-text-dim uppercase tracking-widest font-bold">No active requests</p>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                {/* Trust & Verification (Span 1x1) */}
-                <div className="bento-card col-span-1">
-                  <div className="bento-card-title"><div className="bento-dot"></div> Verification Status</div>
-                  {profile?.isVerified ? (
-                    <div className="flex flex-col items-center justify-center h-full py-4">
-                      <div className="w-12 h-12 bg-success-green/20 rounded-full flex items-center justify-center mb-2">
-                        <Shield className="w-6 h-6 text-success-green" />
+                <div className="space-y-6">
+                  <div className="bento-card">
+                    <div className="bento-card-title"><div className="bento-dot"></div> STATUS OVERVIEW</div>
+                    <div className="grid grid-cols-2 gap-4 mt-6">
+                      <div className="p-4 bg-white/5 border border-white/10 rounded-2xl text-center">
+                        <div className="text-2xl font-display font-black text-technic-yellow">{requests.length}</div>
+                        <div className="text-[9px] text-text-dim uppercase tracking-widest font-bold">Total Jobs</div>
                       </div>
-                      <div className="text-xl font-display font-black uppercase text-success-green">Verified</div>
-                      <p className="text-[10px] text-text-dim mt-1">Identity & Certs Confirmed</p>
+                      <div className="p-4 bg-white/5 border border-white/10 rounded-2xl text-center">
+                        <div className="text-2xl font-display font-black text-success-green">{requests.filter(r => r.status === 'completed').length}</div>
+                        <div className="text-[9px] text-text-dim uppercase tracking-widest font-bold">Completed</div>
+                      </div>
                     </div>
-                  ) : (
+                  </div>
+
+                  <div className="bento-card">
+                    <div className="bento-card-title"><div className="bento-dot"></div> QUICK ACTIONS</div>
+                    <div className="space-y-3 mt-6">
+                      <Button asChild className="w-full bento-btn">
+                        <Link to="/book">NEW SERVICE BOOKING</Link>
+                      </Button>
+                      <Button variant="outline" className="w-full border-white/10 rounded-xl h-12 text-[10px] items-center gap-2 uppercase tracking-widest font-bold" onClick={() => setActiveTab('vehicles')}>
+                        <Car className="w-4 h-4" /> VIEW GARAGE
+                      </Button>
+                      {!profile?.isProfileComplete && (
+                        <Button asChild variant="outline" className="w-full border-technic-yellow/30 text-technic-yellow rounded-xl h-12 text-[10px] uppercase tracking-widest font-bold">
+                          <Link to="/register">COMPLETE BIO PROFILE</Link>
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="bento-card">
+                    <div className="bento-card-title"><div className="bento-dot"></div> VERIFICATION</div>
                     <div className="flex flex-col h-full">
                       <div className="text-2xl font-display font-black uppercase mb-1">
-                        {profile?.verificationStatus === 'pending' ? 'Pending' : 'Unverified'}
+                        {profile?.verificationStatus === 'pending' ? 'Pending' : profile?.isVerified ? 'Verified' : 'Unverified'}
                       </div>
-                      <p className="text-[11px] text-text-dim mb-4">
-                        {profile?.verificationStatus === 'pending' 
-                          ? 'Our team is reviewing your documents.' 
-                          : 'Identity, Certs & Experience verification required.'}
+                      <p className="text-[11px] text-text-dim mb-4 leading-relaxed uppercase tracking-widest">
+                        {profile?.isVerified 
+                          ? 'All credentials validated.' 
+                          : profile?.verificationStatus === 'pending' 
+                            ? 'Our team is reviewing your documents.' 
+                            : 'Identity & Professional validation required for specialists.'}
                       </p>
-                      {profile?.verificationStatus !== 'pending' && (
+                      {!profile?.isVerified && profile?.verificationStatus !== 'pending' && (isSpecialist) && (
                         <Link to="/verify" className="mt-auto">
                           <Button className="bento-btn">Start Verification</Button>
                         </Link>
                       )}
                     </div>
-                  )}
-                </div>
-
-                {/* History (Span 1x1) */}
-                <div className="bento-card col-span-1">
-                  <div className="bento-card-title">Record Keeping</div>
-                  <p className="text-[13px] leading-snug">
-                    Secure invoicing for all parts replaced. High-resolution photo evidence available in archives.
-                  </p>
+                  </div>
                 </div>
               </div>
             </TabsContent>
@@ -495,6 +461,36 @@ export const Dashboard: React.FC = () => {
                           </Button>
                         )}
                       </div>
+
+                      {/* Specialist Signature Requirement */}
+                      {req.status === 'in-progress' && !(req as any).signatures?.specialist && profile?.role === 'specialist' && (
+                        <div className="mt-6 p-6 rounded-2xl bg-technic-yellow/5 border border-technic-yellow/30 w-full animate-pulse-slow">
+                          <div className="flex items-start gap-4 mb-4">
+                            <Shield className="w-6 h-6 text-technic-yellow shrink-0 mt-1" />
+                            <div>
+                              <h4 className="text-sm font-black uppercase text-technic-yellow mb-1 tracking-tight">Contract Authorization Required</h4>
+                              <p className="text-[10px] text-text-dim uppercase leading-relaxed tracking-wider">
+                                Before commencing physical works, you must counter-sign the digital service agreement. This authorizes the call-out and protects your specialist rating.
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex gap-3">
+                            <Input 
+                              placeholder="Type your full name to sign" 
+                              className="bg-industrial-charcoal border-white/20 h-11 text-sm font-display italic"
+                              value={specialistSignature}
+                              onChange={(e) => setSpecialistSignature(e.target.value)}
+                            />
+                            <Button 
+                              onClick={() => signContractAsSpecialist(req.id)}
+                              disabled={isSigning || !specialistSignature.trim()}
+                              className="bg-technic-yellow text-industrial-charcoal font-black h-11 px-6 text-xs uppercase"
+                            >
+                              {isSigning ? <Loader2 className="w-4 h-4 animate-spin" /> : 'SIGN & AUTHORIZE'}
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                       
                       {/* Apprentice Tasks Section */}
                       {req.status === 'in-progress' && req.apprenticeId && req.tasks && (

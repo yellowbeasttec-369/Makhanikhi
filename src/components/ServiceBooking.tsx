@@ -46,6 +46,7 @@ export const ServiceBooking: React.FC = () => {
     vehicleVin: '',
   });
   const [smartContract, setSmartContract] = useState<any>(null);
+  const [signature, setSignature] = useState('');
   const [vehicleSearch, setVehicleSearch] = useState('');
   const [showVehicleResults, setShowVehicleResults] = useState(false);
 
@@ -62,6 +63,10 @@ export const ServiceBooking: React.FC = () => {
 
   const handleNext = async () => {
     if (step === 2) {
+      if (!formData.vehicleMake || !formData.vehicleModel || !formData.appointmentDate || !formData.appointmentTime) {
+        toast.error("Please complete all vehicle and appointment details.");
+        return;
+      }
       setLoading(true);
       try {
         const contract = await generateSmartContract(formData);
@@ -78,6 +83,10 @@ export const ServiceBooking: React.FC = () => {
   };
 
   const handleSubmit = async () => {
+    if (!signature.trim()) {
+      toast.error("Please provide your digital signature to authorize works.");
+      return;
+    }
     setLoading(true);
     try {
       await addDoc(collection(db, 'serviceRequests'), {
@@ -88,6 +97,14 @@ export const ServiceBooking: React.FC = () => {
         paymentStatus: 'unpaid',
         createdAt: serverTimestamp(),
         smartContract,
+        signatures: {
+          owner: { 
+            uid: profile?.uid, 
+            timestamp: new Date().toISOString(),
+            name: signature 
+          }
+        },
+        contractSignedByOwner: true,
       });
       toast.success("Service request submitted successfully!");
       setStep(4);
@@ -320,10 +337,22 @@ export const ServiceBooking: React.FC = () => {
                 <div className="bento-danger-warning">
                   <CheckCircle2 className="w-4 h-4 shrink-0" />
                   <p className="text-[10px]">
-                    By proceeding, you agree to the call-out fee and diagnostic quote. This agreement is digitally signed and binding.
+                    By proceeding, you agree to the call-out fee and diagnostic quote. This agreement is digitally signed and binding according to the Electronic Communications and Transactions Act.
                   </p>
                 </div>
-                <div className="flex gap-4 mt-6">
+
+                <div className="space-y-2 mt-4">
+                  <Label className="text-text-dim text-[10px] uppercase tracking-widest font-bold">Authorizing Signature (Full Name)</Label>
+                  <Input 
+                    placeholder="Type your full name as digital signature" 
+                    className="bg-white/5 border-white/10 rounded-xl font-display italic text-lg"
+                    value={signature}
+                    onChange={(e) => setSignature(e.target.value)}
+                  />
+                  <p className="text-[8px] text-text-dim uppercase tracking-widest">Signed digitally by {profile?.displayName} on {new Date().toLocaleDateString()}</p>
+                </div>
+
+                <div className="flex gap-4 mt-8">
                   <Button variant="outline" onClick={() => setStep(2)} className="flex-1 border-white/10 rounded-xl">BACK</Button>
                   <Button onClick={handleSubmit} disabled={loading} className="bento-btn flex-1">
                     {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'CONFIRM & BOOK'}
