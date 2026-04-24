@@ -8,13 +8,14 @@ import { ServiceBooking } from './components/ServiceBooking';
 import { VerificationCenter } from './components/VerificationCenter';
 import { OwnerRegistration } from './components/OwnerRegistration';
 import { RegistrationFlow } from './components/RegistrationFlow';
+import { Login } from './components/Login';
 import { BottomNav } from './components/BottomNav';
 import { Toaster } from 'sonner';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return <div className="h-screen flex items-center justify-center bg-industrial-charcoal text-technic-yellow font-black text-2xl animate-pulse">MAKHANIKHI...</div>;
-  if (!user) return <Navigate to="/" />;
+  if (!user) return <Navigate to="/login" />;
   return <>{children}</>;
 };
 
@@ -24,6 +25,7 @@ const AppContent: React.FC = () => {
       <Navbar />
       <Routes>
         <Route path="/" element={<Hero />} />
+        <Route path="/login" element={<Login />} />
         <Route 
           path="/dashboard" 
           element={

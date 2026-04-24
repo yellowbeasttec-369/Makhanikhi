@@ -40,16 +40,71 @@ export const Hero: React.FC = () => {
               apprentice skills transfer, and transparent digital record keeping.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link to="/login">
+                <Button size="lg" className="bg-technic-yellow text-industrial-charcoal hover:bg-technic-yellow/90 font-black h-14 px-8 text-lg rounded-xl w-full sm:w-auto shadow-[0_0_20px_rgba(255,210,0,0.2)]">
+                  LOGIN / SIGN IN <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+              </Link>
               <Link to="/register">
-                <Button size="lg" className="bg-technic-yellow text-industrial-charcoal hover:bg-technic-yellow/90 font-black h-14 px-8 text-lg rounded-xl w-full sm:w-auto">
-                  GET STARTED / REGISTER <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-              </Link>
-              <Link to="/book">
                 <Button size="lg" variant="outline" className="border-white/20 hover:bg-white/5 font-bold h-14 px-8 text-lg rounded-xl w-full sm:w-auto">
-                  BOOK SERVICE
+                  REGISTER NOW
                 </Button>
               </Link>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mt-32 p-12 rounded-[40px] bg-white/[0.02] border border-white/5 relative group"
+          >
+            <div className="absolute top-0 right-0 p-8">
+              <Wrench className="w-24 h-24 text-technic-yellow/5 group-hover:text-technic-yellow/10 transition-colors" />
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center text-left">
+              <div>
+                <span className="text-technic-yellow font-black uppercase text-xs tracking-[4px] mb-4 block">Specialist Network</span>
+                <h2 className="text-4xl md:text-5xl font-display font-black tracking-tighter mb-6 leading-none">
+                  ARE YOU A <span className="text-technic-yellow">SPECIALIST</span> OR <span className="text-technic-yellow">APPRENTICE?</span>
+                </h2>
+                <p className="text-digital-white/60 mb-8 text-lg">
+                  Join Polokwane's premier mobile workshop ecosystem. Digitise your track record, manage fleet logs, and mentor the next generation of technicians.
+                </p>
+                <div className="flex flex-wrap gap-4">
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-widest">
+                    <Shield className="w-4 h-4 text-technic-yellow" /> Certified Route
+                  </div>
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-widest">
+                    <Users className="w-4 h-4 text-technic-yellow" /> Skills Transfer
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <Link to="/register" className="block">
+                  <div className="bento-card hover:border-technic-yellow/40 transition-all cursor-pointer group">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h4 className="font-black uppercase tracking-tight text-xl">Apply as Specialist</h4>
+                        <p className="text-xs text-text-dim mt-1">For master technicians with proven track records.</p>
+                      </div>
+                      <ArrowRight className="w-6 h-6 text-technic-yellow group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </div>
+                </Link>
+                <Link to="/register" className="block">
+                  <div className="bento-card hover:border-technic-yellow/40 transition-all cursor-pointer group">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h4 className="font-black uppercase tracking-tight text-xl">Join as Apprentice</h4>
+                        <p className="text-xs text-text-dim mt-1">For early-career mechanics looking for validated XP.</p>
+                      </div>
+                      <ArrowRight className="w-6 h-6 text-technic-yellow group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </div>
+                </Link>
+              </div>
             </div>
           </motion.div>
 

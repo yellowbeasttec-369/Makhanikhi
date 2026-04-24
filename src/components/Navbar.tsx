@@ -148,9 +148,11 @@ export const Navbar: React.FC = () => {
                 >
                   <Wallet className="w-4 h-4" /> Connect Wallet
                 </Button>
-                <Button onClick={handleLogin} className="bg-technic-yellow text-industrial-charcoal hover:bg-technic-yellow/90 font-bold">
-                  Login
-                </Button>
+                <Link to="/login">
+                  <Button className="bg-technic-yellow text-industrial-charcoal hover:bg-technic-yellow/90 font-bold">
+                    Login
+                  </Button>
+                </Link>
                 <Link to="/register">
                   <Button className="border-technic-yellow/30 text-technic-yellow hover:bg-technic-yellow/5 font-bold" variant="outline">
                     Register

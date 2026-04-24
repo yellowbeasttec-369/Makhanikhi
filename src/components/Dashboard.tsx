@@ -361,7 +361,7 @@ export const Dashboard: React.FC = () => {
                               <Wrench className="w-5 h-5 text-technic-yellow" />
                             </div>
                             <div>
-                              <h4 className="text-xs font-black uppercase">{(req as any).vehicleMake} {(req as any).vehicleModel}</h4>
+                              <h4 className="text-xs font-black uppercase">{req.vehicleMake} {req.vehicleModel}</h4>
                               <p className="text-[10px] text-text-dim uppercase tracking-widest">{req.type} SERVICE</p>
                             </div>
                           </div>
@@ -442,14 +442,14 @@ export const Dashboard: React.FC = () => {
                       <div className="flex-1">
                         <div className="flex flex-wrap items-center gap-3 mb-1">
                           <h3 className="text-lg font-display font-black uppercase tracking-tight">
-                            {(req as any).vehicleMake} {(req as any).vehicleModel}
+                            {req.vehicleMake} {req.vehicleModel}
                           </h3>
                           {getStatusBadge(req.status)}
                         </div>
                         <p className="text-sm text-text-dim">{req.type.toUpperCase()} SERVICE • {req.description.slice(0, 60)}{req.description.length > 60 ? '...' : ''}</p>
                         <div className="flex items-center gap-4 mt-3 text-[11px] text-text-dim font-bold uppercase tracking-widest">
                           <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date((req.createdAt as any)?.seconds * 1000).toLocaleDateString()}</span>
-                          <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {(req as any).location}</span>
+                          <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {req.location}</span>
                         </div>
                       </div>
                       <div className="flex gap-2 w-full md:w-auto">
@@ -466,7 +466,7 @@ export const Dashboard: React.FC = () => {
                       </div>
 
                       {/* Specialist Signature Requirement */}
-                      {req.status === 'in-progress' && !(req as any).signatures?.specialist && profile?.role === 'specialist' && (
+                      {req.status === 'in-progress' && !req.signatures?.specialist && profile?.role === 'specialist' && (
                         <div className="mt-6 p-6 rounded-2xl bg-technic-yellow/5 border border-technic-yellow/30 w-full animate-pulse-slow">
                           <div className="flex items-start gap-4 mb-4">
                             <Shield className="w-6 h-6 text-technic-yellow shrink-0 mt-1" />
@@ -503,6 +503,19 @@ export const Dashboard: React.FC = () => {
                         </div>
                       )}
                       
+                      {/* Display Specialist Signature when present */}
+                      {req.signatures?.specialist && (
+                        <div className="mt-4 p-4 rounded-xl bg-success-green/5 border border-success-green/10 w-full">
+                          <div className="flex items-center gap-2 mb-1">
+                            <CheckCircle2 className="w-4 h-4 text-success-green" />
+                            <span className="text-[10px] font-black uppercase text-success-green tracking-tight">Contract Authorized</span>
+                          </div>
+                          <p className="text-[11px] text-digital-white/70">
+                            Signed by <span className="font-bold text-digital-white">{req.signatures.specialist.name || 'Authorised Specialist'}</span> on {new Date(req.signatures.specialist.timestamp).toLocaleString()}
+                          </p>
+                        </div>
+                      )}
+
                       {/* Apprentice Tasks Section */}
                       {req.status === 'in-progress' && req.apprenticeId && req.tasks && (
                         <div className="mt-6 pt-6 border-t border-white/5 w-full">

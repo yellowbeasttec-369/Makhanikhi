@@ -79,11 +79,14 @@ export interface ServiceRequest {
   paymentStatus: 'unpaid' | 'partial' | 'paid';
   createdAt: string;
   appointmentDate?: string;
+  vehicleMake?: string;
+  vehicleModel?: string;
+  location?: string;
   checklist?: SafetyChecklist;
   tasks?: ApprenticeTask[];
   signatures?: {
-    owner?: { uid: string; timestamp: any };
-    specialist?: { uid: string; timestamp: any };
+    owner?: { uid: string; timestamp: string; name?: string; signature?: string };
+    specialist?: { uid: string; timestamp: string; name?: string; signature?: string };
   };
   contractSigned?: boolean;
 }

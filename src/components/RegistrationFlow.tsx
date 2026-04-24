@@ -105,7 +105,7 @@ export const RegistrationFlow: React.FC = () => {
       <div className="min-h-[80vh] flex flex-col items-center justify-center p-4">
         <h1 className="text-2xl font-black uppercase text-technic-yellow mb-4">Auth Required</h1>
         <p className="text-text-dim mb-8">Please login with Google first to begin registration.</p>
-        <Button onClick={() => navigate('/')} className="bento-btn">Back to Home</Button>
+        <Button onClick={() => navigate('/login')} className="bento-btn">Go to Login</Button>
       </div>
     );
   }
