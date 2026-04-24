@@ -38,6 +38,9 @@ export const RegistrationFlow: React.FC = () => {
     displayName: profile?.displayName || user?.displayName || '',
     phone: '',
     address: '',
+    emergencyContact: '',
+    dob: profile?.dob || '',
+    idNumber: profile?.idNumber || '',
     bio: '',
     photoURL: profile?.photoURL || user?.photoURL || '',
     vehicle: {
@@ -63,7 +66,10 @@ export const RegistrationFlow: React.FC = () => {
       const updateData: any = {
         displayName: formData.displayName,
         phone: formData.phone,
+        emergencyContact: formData.emergencyContact,
         address: formData.address,
+        dob: formData.dob,
+        idNumber: formData.idNumber,
         bio: formData.bio,
         photoURL: formData.photoURL,
         role: formData.role,
@@ -245,6 +251,27 @@ export const RegistrationFlow: React.FC = () => {
                   />
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-text-dim text-[10px] uppercase tracking-widest font-bold">ID / Passport Number</Label>
+                    <Input 
+                      value={formData.idNumber}
+                      onChange={(e) => setFormData({...formData, idNumber: e.target.value})}
+                      className="bg-white/5 border-white/10 rounded-xl h-12"
+                      placeholder="Identity Number"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-text-dim text-[10px] uppercase tracking-widest font-bold">Date of Birth</Label>
+                    <Input 
+                      type="date"
+                      value={formData.dob}
+                      onChange={(e) => setFormData({...formData, dob: e.target.value})}
+                      className="bg-white/5 border-white/10 rounded-xl h-12 text-sm"
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <Label className="text-text-dim text-[10px] uppercase tracking-widest font-bold flex items-center gap-2">
                     <Phone className="w-3 h-3" /> Contact Phone
@@ -254,6 +281,18 @@ export const RegistrationFlow: React.FC = () => {
                     onChange={(e) => setFormData({...formData, phone: e.target.value})}
                     className="bg-white/5 border-white/10 rounded-xl h-12"
                     placeholder="+27 (0) ..."
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-text-dim text-[10px] uppercase tracking-widest font-bold flex items-center gap-2">
+                    <Phone className="w-3 h-3" /> Emergency Contact (Next of Kin)
+                  </Label>
+                  <Input 
+                    value={formData.emergencyContact}
+                    onChange={(e) => setFormData({...formData, emergencyContact: e.target.value})}
+                    className="bg-white/5 border-white/10 rounded-xl h-12"
+                    placeholder="Name & Relationship - Phone"
                   />
                 </div>
 

@@ -297,8 +297,11 @@ export const VerificationCenter: React.FC = () => {
                 ) : (
                   <div className="p-4 bg-technic-yellow/5 border border-technic-yellow/20 rounded-2xl">
                     <p className="text-[10px] text-technic-yellow font-bold uppercase tracking-widest mb-1 italic">Notice: Practical Expert Path</p>
-                    <p className="text-[10px] text-text-dim leading-relaxed">
-                      If you lack formal certificates but possess master-level skills, you must submit a **Sworn Affidavit** under oath attesting to your ability to diagnose and repair vehicles safely.
+                    <p className="text-[10px] text-text-dim leading-relaxed uppercase tracking-widest font-black">
+                      Official SAPS Affidavit Required
+                    </p>
+                    <p className="text-[9px] text-text-dim leading-relaxed mt-1">
+                      If you lack formal certificates but possess master-level skills, you must submit a **Sworn Affidavit** from the SAPS (South African Police Service) attesting to your ability to diagnose and repair vehicles safely.
                     </p>
                   </div>
                 )}
@@ -307,7 +310,7 @@ export const VerificationCenter: React.FC = () => {
                   {formData.trainingPath === 'traditional' ? (
                     <CaptureButton target="certificationUrl" label="Certification Scan" current={formData.certificationUrl} />
                   ) : (
-                    <CaptureButton target="affidavitUrl" label="Sworn Affidavit Scan" current={formData.affidavitUrl} />
+                    <CaptureButton target="affidavitUrl" label="SAPS Sworn Affidavit Scan" current={formData.affidavitUrl} />
                   )}
                   <CaptureButton target="experienceUrl" label="Workshop Reference / Log" current={formData.experienceUrl} />
                 </div>

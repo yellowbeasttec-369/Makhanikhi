@@ -7,6 +7,9 @@ export interface UserProfile {
   email: string;
   displayName: string;
   role: UserRole;
+  phone?: string;
+  emergencyContact?: string;
+  address?: string;
   specialization?: string;
   yearsOfExperience?: number;
   certifications?: string[];
@@ -17,6 +20,8 @@ export interface UserProfile {
   photoURL?: string;
   isVerified?: boolean;
   isProfileComplete?: boolean;
+  dob?: string;
+  idNumber?: string;
   trainingPath?: 'traditional' | 'practical';
   apprenticeStartAge?: number;
   verificationStatus?: VerificationStatus;
