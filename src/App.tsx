@@ -9,6 +9,7 @@ import { VerificationCenter } from './components/VerificationCenter';
 import { OwnerRegistration } from './components/OwnerRegistration';
 import { RegistrationFlow } from './components/RegistrationFlow';
 import { Login } from './components/Login';
+import { WorkshopRegistry } from './components/WorkshopRegistry';
 import { BottomNav } from './components/BottomNav';
 import { Toaster } from 'sonner';
 
@@ -26,6 +27,7 @@ const AppContent: React.FC = () => {
       <Routes>
         <Route path="/" element={<Hero />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/registry" element={<WorkshopRegistry />} />
         <Route 
           path="/dashboard" 
           element={

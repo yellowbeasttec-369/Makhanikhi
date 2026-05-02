@@ -1,30 +1,47 @@
 import React from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
-import { auth } from '../lib/firebase';
+import { auth, db } from '../lib/firebase';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 import { Button } from './ui/button';
-import { Wrench, Shield, ArrowRight, User, Users, Award, Lock, ChevronRight } from 'lucide-react';
+import { Wrench, Shield, ArrowRight, UserCheck, Users, Award, Lock, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { motion } from 'motion/react';
 import { toast } from 'sonner';
 
 export const Login: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const intendedRole = queryParams.get('role');
 
   React.useEffect(() => {
     if (user) {
-      navigate('/dashboard');
+      const checkProfile = async () => {
+        const docRef = doc(db, 'users', user.uid);
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+          navigate('/dashboard');
+        } else {
+          // New user, send to registration with the intended role
+          navigate(`/register${intendedRole ? `?role=${intendedRole}` : ''}`);
+        }
+      };
+      checkProfile();
     }
-  }, [user, navigate]);
+  }, [user, navigate, intendedRole]);
 
   const handleLogin = async () => {
     const provider = new GoogleAuthProvider();
     try {
+      if (intendedRole) {
+        localStorage.setItem('makhanikhi_session_role', intendedRole);
+      }
       await signInWithPopup(auth, provider);
-      navigate('/dashboard');
+      // Logic inside useEffect handles redirection
     } catch (error: any) {
-      // Gracefully handle popup cancellation/closed errors
       if (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user') {
         return;
       }
@@ -48,14 +65,14 @@ export const Login: React.FC = () => {
         <div className="bento-card flex flex-col justify-between p-10 h-full">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-technic-yellow/10 border border-technic-yellow/20 text-technic-yellow text-[10px] font-bold uppercase tracking-widest mb-8">
-              <Lock className="w-3 h-3" /> Secure Access
+              <Lock className="w-3 h-3" /> Digital Registry Access
             </div>
             <h1 className="text-4xl font-display font-black uppercase tracking-tighter mb-4 text-digital-white">
-              Command <br />
+              {intendedRole === 'pro' ? 'Technical' : intendedRole === 'owner' ? 'Car Owner' : 'Command'} <br />
               <span className="text-technic-yellow">Center Login</span>
             </h1>
             <p className="text-text-dim text-sm mb-10 max-w-xs leading-relaxed">
-              Access your digital wrench, service logs, and specialist dashboard.
+              Sign in to secure your workplace, validate your value, and access the digital registry.
             </p>
           </div>
 
@@ -64,64 +81,74 @@ export const Login: React.FC = () => {
               onClick={handleLogin} 
               className="w-full bg-technic-yellow text-industrial-charcoal hover:bg-technic-yellow/90 font-black h-14 text-sm rounded-xl uppercase tracking-widest shadow-[0_0_20px_rgba(255,210,0,0.15)] group"
             >
-              Sign in with Google <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              Secure Login with Google <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Button>
-            <p className="text-[10px] text-center text-text-dim uppercase tracking-widest font-bold">
-              By logging in, you agree to our <span className="text-technic-yellow underline">Terms of Service</span>
-            </p>
+            <div className="flex justify-center gap-4 py-2">
+               <Link to="/" className="text-[10px] text-text-dim uppercase tracking-widest font-bold hover:text-technic-yellow transition-colors">
+                 Change Role Selection
+               </Link>
+            </div>
           </div>
         </div>
 
-        {/* Info/Onboarding Options */}
+        {/* Info/Expert Protection Section */}
         <div className="space-y-6">
-          <div className="bento-card border-l-4 border-l-technic-yellow">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-technic-yellow/10 flex items-center justify-center shrink-0">
-                <Wrench className="w-6 h-6 text-technic-yellow" />
+          <div className="p-8 rounded-[32px] bg-success-green/5 border border-success-green/20 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+              <ShieldCheck className="w-24 h-24 text-success-green" />
+            </div>
+            <div className="relative z-10">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-success-green/20 text-success-green text-[9px] font-black uppercase tracking-widest mb-6">
+                Zero Suspicion
               </div>
-              <div>
-                <h3 className="font-black uppercase tracking-tight text-lg mb-1">Mechanic Onboarding</h3>
-                <p className="text-xs text-text-dim leading-relaxed mb-4">Master technicians providing mobile services. Join our elite specialist network.</p>
-                <Link to="/register">
-                  <Button variant="ghost" className="h-8 px-0 text-[10px] uppercase font-bold tracking-widest text-technic-yellow hover:text-technic-yellow/80 hover:bg-transparent">
-                    Apply as Specialist <ChevronRight className="ml-1 w-3 h-3" />
-                  </Button>
-                </Link>
+              <h3 className="text-2xl font-display font-black uppercase tracking-tight mb-4 text-digital-white">
+                Eliminate <span className="text-success-green">Disputes</span>
+              </h3>
+              <p className="text-text-dim text-sm leading-relaxed mb-6">
+                Specialists capture part receipts and photo evidence in real-time. Even if physical slips are non-itemized, our digital chain of custody validates every cent for total car owner peace of mind.
+              </p>
+            </div>
+          </div>
+
+          <div className="p-8 rounded-[32px] bg-red-500/5 border border-red-500/20 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+              <AlertTriangle className="w-24 h-24 text-red-500" />
+            </div>
+            <div className="relative z-10">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/20 text-red-400 text-[9px] font-black uppercase tracking-widest mb-6">
+                Protecting Talent
+              </div>
+              <h3 className="text-2xl font-display font-black uppercase tracking-tight mb-4 text-digital-white">
+                No More <span className="text-red-500">Unpaid</span> Expert Work
+              </h3>
+              <p className="text-text-dim text-sm leading-relaxed mb-6">
+                Tired of unpaid emergency calls? Makhanikhi ensures your value is validated upfront and your time is compensated fairly through our secure registry.
+              </p>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 text-xs text-digital-white/80">
+                  <CheckCircle2 className="w-4 h-4 text-success-green shrink-0" /> Verified Expert Valuation
+                </div>
+                <div className="flex items-center gap-3 text-xs text-digital-white/80">
+                  <CheckCircle2 className="w-4 h-4 text-success-green shrink-0" /> Secure Upfront Documentation
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="bento-card border-l-4 border-l-blue-500">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
-                <Users className="w-6 h-6 text-blue-400" />
-              </div>
-              <div>
-                <h3 className="font-black uppercase tracking-tight text-lg mb-1">Apprentice Track</h3>
-                <p className="text-xs text-text-dim leading-relaxed mb-4">Start your journey under master mentorship. Real workplace experience logging.</p>
-                <Link to="/register">
-                  <Button variant="ghost" className="h-8 px-0 text-[10px] uppercase font-bold tracking-widest text-blue-400 hover:text-blue-400/80 hover:bg-transparent">
-                    Join Apprenticeship <ChevronRight className="ml-1 w-3 h-3" />
-                  </Button>
-                </Link>
-              </div>
+          <div className="p-8 rounded-[32px] bg-blue-500/5 border border-blue-500/20 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+              <Shield className="w-24 h-24 text-blue-500" />
             </div>
-          </div>
-
-          <div className="bento-card border-l-4 border-l-success-green">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-success-green/10 flex items-center justify-center shrink-0">
-                <Shield className="w-6 h-6 text-success-green" />
+            <div className="relative z-10">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-[9px] font-black uppercase tracking-widest mb-6">
+                Safety First
               </div>
-              <div>
-                <h3 className="font-black uppercase tracking-tight text-lg mb-1">Car Owners</h3>
-                <p className="text-xs text-text-dim leading-relaxed mb-4">Book verified mechanics and build a digital service history for your vehicle.</p>
-                <Link to="/register">
-                  <Button variant="ghost" className="h-8 px-0 text-[10px] uppercase font-bold tracking-widest text-success-green hover:text-success-green/80 hover:bg-transparent">
-                    Register Vehicle <ChevronRight className="ml-1 w-3 h-3" />
-                  </Button>
-                </Link>
-              </div>
+              <h3 className="text-2xl font-display font-black uppercase tracking-tight mb-4 text-digital-white">
+                Trusted Talent <br /> <span className="text-blue-400">Near Home</span>
+              </h3>
+              <p className="text-text-dim text-sm leading-relaxed">
+                Found incompetence in "the street"? No more. We professionalize local experts with admin tools and verified records, bringing service-center quality to your neighborhood.
+              </p>
             </div>
           </div>
         </div>
@@ -139,12 +166,12 @@ export const Login: React.FC = () => {
           <span className="text-[10px] font-black uppercase tracking-[3px]">Verified Professionals</span>
         </div>
         <div className="flex items-center gap-2">
-          <Lock className="w-4 h-4" />
-          <span className="text-[10px] font-black uppercase tracking-[3px]">E2E Encryption</span>
+          <Shield className="w-4 h-4" />
+          <span className="text-[10px] font-black uppercase tracking-[3px]">Expert Protection</span>
         </div>
         <div className="flex items-center gap-2">
-          <Users className="w-4 h-4" />
-          <span className="text-[10px] font-black uppercase tracking-[3px]">Community R&D</span>
+          <UserCheck className="w-4 h-4" />
+          <span className="text-[10px] font-black uppercase tracking-[3px]">Validated Identities</span>
         </div>
       </motion.div>
     </div>

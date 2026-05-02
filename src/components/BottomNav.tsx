@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Wrench, Car, User, ShieldCheck } from 'lucide-react';
+import { Home, Wrench, Car, User, ShieldCheck, Users } from 'lucide-react';
 import { useAuth } from '../lib/AuthContext';
 
 export const BottomNav: React.FC = () => {
@@ -12,6 +12,7 @@ export const BottomNav: React.FC = () => {
   const navItems = [
     { icon: Home, label: 'Home', path: '/' },
     { icon: Wrench, label: 'Jobs', path: '/dashboard' },
+    { icon: Users, label: 'Registry', path: '/registry' },
     { icon: Car, label: 'Book', path: '/book' },
     { icon: ShieldCheck, label: 'Verify', path: '/verify' },
   ];

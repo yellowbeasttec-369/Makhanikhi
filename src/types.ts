@@ -25,6 +25,10 @@ export interface UserProfile {
   trainingPath?: 'traditional' | 'practical';
   apprenticeStartAge?: number;
   apprenticeStatus?: 'awaiting-match' | 'matched' | 'co-opted';
+  mentorId?: string;
+  offersMentorship?: boolean;
+  latitude?: number;
+  longitude?: number;
   verificationStatus?: VerificationStatus;
   verificationDocs?: {
     identityUrl?: string;
@@ -64,6 +68,16 @@ export interface ServiceRecord {
 
 export type ServiceStatus = 'pending' | 'quoted' | 'accepted' | 'in-progress' | 'completed' | 'cancelled';
 
+export interface ProjectMilestone {
+  id: string;
+  title: string;
+  description: string;
+  status: 'pending' | 'in-progress' | 'completed';
+  photoEvidence?: string;
+  timestamp?: string;
+  order: number;
+}
+
 export interface ServiceRequest {
   id: string;
   ownerId: string;
@@ -85,6 +99,7 @@ export interface ServiceRequest {
   location?: string;
   checklist?: SafetyChecklist;
   tasks?: ApprenticeTask[];
+  milestones?: ProjectMilestone[];
   signatures?: {
     owner?: { uid: string; timestamp: string; name?: string; signature?: string };
     specialist?: { uid: string; timestamp: string; name?: string; signature?: string };
@@ -143,6 +158,9 @@ export interface SafetyChecklist {
     toolboxCheck: boolean;
     oilSpillMatsPlaced: boolean;
     siteSafe: boolean;
+    sixConesPlaced: boolean;
+    dangerTapeSet: boolean;
+    safetyBriefHeld: boolean;
   };
   ohsaCompliance?: {
     workshopSetup: boolean;
@@ -151,6 +169,7 @@ export interface SafetyChecklist {
     fireExtinguisherReady: boolean;
     firstAidKitAvailable: boolean;
     photoEvidence?: string[];
+    siteSetupPhoto?: string;
   };
   postWork: {
     siteCleared: boolean;

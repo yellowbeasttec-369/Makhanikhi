@@ -301,7 +301,7 @@ export const VerificationCenter: React.FC = () => {
                       Official SAPS Affidavit Required
                     </p>
                     <p className="text-[9px] text-text-dim leading-relaxed mt-1">
-                      If you lack formal certificates but possess master-level skills, you must submit a **Sworn Affidavit** from the SAPS (South African Police Service) attesting to your ability to diagnose and repair vehicles safely.
+                      If you lack formal certificates but possess master-level skills, you must submit a Sworn Affidavit from the SAPS (South African Police Service) attesting to your ability to diagnose and repair vehicles safely.
                     </p>
                   </div>
                 )}

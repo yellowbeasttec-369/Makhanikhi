@@ -9,11 +9,11 @@ import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { signOut } from 'firebase/auth';
 import { auth } from '../lib/firebase';
-import { Wrench, Car, ClipboardCheck, History, TrendingUp, UserCheck, AlertTriangle, Shield, Clock, CheckCircle2, PlayCircle, XCircle, MapPin, Loader2, Users, Award, BarChart3, Camera as CameraIcon, Menu, LogOut, Home } from 'lucide-react';
+import { Wrench, Car, ClipboardCheck, History, TrendingUp, UserCheck, AlertTriangle, Shield, Clock, CheckCircle2, PlayCircle, XCircle, MapPin, Loader2, Users, Award, BarChart3, Camera as CameraIcon, Menu, LogOut, Home, User, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 
@@ -28,6 +28,7 @@ import { ServiceRequest, UserProfile, ApprenticeTask } from '../types';
 
 export const Dashboard: React.FC = () => {
   const { user, profile } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [requests, setRequests] = useState<ServiceRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,15 +37,52 @@ export const Dashboard: React.FC = () => {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [availableApprentices, setAvailableApprentices] = useState<UserProfile[]>([]);
   const [selectedApprenticeId, setSelectedApprenticeId] = useState<string | null>(null);
+  const [mentorProfile, setMentorProfile] = useState<UserProfile | null>(null);
   const [showOHSA, setShowOHSA] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
+  const [cameraMode, setCameraMode] = useState<'document' | 'part' | 'evidence'>('evidence');
+  const [cameraTitle, setCameraTitle] = useState('Capture Evidence');
   const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [isSigning, setIsSigning] = useState(false);
   const [specialistName, setSpecialistName] = useState('');
   const [specialistSignature, setSpecialistSignature] = useState('');
+  const [showSafetyModal, setShowSafetyModal] = useState(false);
+  const [safetyChecklist, setSafetyChecklist] = useState({
+    ppeWorn: false,
+    sixConesPlaced: false,
+    dangerTapeSet: false,
+    oilSpillMats: false,
+    toolboxBrief: false
+  });
 
-  const isSpecialist = profile?.role === 'specialist' || profile?.role === 'apprentice';
+  useEffect(() => {
+    if (profile?.role === 'apprentice' && profile.mentorId) {
+      const fetchMentor = async () => {
+        try {
+          const q = query(collection(db, 'users'), where('uid', '==', profile.mentorId));
+          const querySnapshot = await getDocs(q);
+          if (!querySnapshot.empty) {
+            setMentorProfile(querySnapshot.docs[0].data() as UserProfile);
+          }
+        } catch (error) {
+          console.error("Error fetching mentor profile:", error);
+        }
+      };
+      fetchMentor();
+    }
+  }, [profile]);
+
+  // Determine active platform view
+  const sessionRole = localStorage.getItem('makhanikhi_session_role');
+  const activeRole = (sessionRole === 'pro' && (profile?.role === 'specialist' || profile?.role === 'apprentice')) 
+    ? profile.role 
+    : (sessionRole === 'owner' || profile?.role === 'owner') 
+      ? 'owner' 
+      : profile?.role || 'owner';
+
+  const isSpecialist = activeRole === 'specialist' || activeRole === 'apprentice';
+  const isOwner = activeRole === 'owner';
 
   const signContractAsSpecialist = async (requestId: string) => {
     if (!specialistName.trim() || !specialistSignature.trim()) {
@@ -71,18 +109,27 @@ export const Dashboard: React.FC = () => {
       setIsSigning(false);
     }
   };
-  const isOwner = profile?.role === 'owner';
 
   const fetchApprentices = async () => {
     try {
-      const q = query(collection(db, 'users'), where('role', '==', 'apprentice'), where('isVerified', '==', true));
+      const q = query(
+        collection(db, 'users'), 
+        where('role', '==', 'apprentice'), 
+        where('apprenticeStatus', '==', 'awaiting-match')
+      );
       const querySnapshot = await getDocs(q);
-      const apps = querySnapshot.docs.map(doc => doc.data() as UserProfile);
+      const apps = querySnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile));
       setAvailableApprentices(apps);
     } catch (error) {
       console.error("Error fetching apprentices:", error);
     }
   };
+
+  useEffect(() => {
+    if (activeTab === 'marketplace') {
+      fetchApprentices();
+    }
+  }, [activeTab]);
 
   const handleAcceptJobClick = (requestId: string) => {
     if (profile?.role === 'specialist') {
@@ -100,24 +147,84 @@ export const Dashboard: React.FC = () => {
     try {
       const requestRef = doc(db, 'serviceRequests', requestId);
       const initialTasks: ApprenticeTask[] = [
-        { id: 't1', title: 'Site Safety Setup', description: 'Barricading and PPE check', status: 'pending' },
-        { id: 't2', title: 'Diagnostic Scan', description: 'Initial OBD-II scan and fault logging', status: 'pending' },
+        { id: 't1', title: 'PPE & Safety Brief', description: 'Mandatory toolbox talk and PPE inspection', status: 'pending' },
+        { id: 't2', title: 'Site Perimeter Setup', description: '6 cones/bottles + danger tape perimeter', status: 'pending' },
         { id: 't3', title: 'Work Area Prep', description: 'Oil spill mats and tool layout', status: 'pending' }
+      ];
+
+      const initialMilestones = [
+        { id: 'm1', title: 'Safety & Site Prep', description: 'Site secured and safety brief conducted', status: 'pending', order: 1 },
+        { id: 'm2', title: 'Diagnosis & Teardown', description: 'Initial diagnostics and component access', status: 'pending', order: 2 },
+        { id: 'm3', title: 'Part Replacement/Repair', description: 'Primary technical work execution', status: 'pending', order: 3 },
+        { id: 'm4', title: 'Testing & Reassembly', description: 'Work validation and site clearance', status: 'pending', order: 4 }
       ];
 
       await updateDoc(requestRef, {
         status: 'in-progress',
         specialistId: user.uid,
         apprenticeId: apprenticeId || (profile?.role === 'apprentice' ? user.uid : null),
-        tasks: initialTasks
+        tasks: initialTasks,
+        milestones: initialMilestones
       });
-      toast.success("Job accepted! Time to get to work.");
+      toast.success("Job accepted! Complete safety setup to begin works.");
       setShowApprenticeDialog(false);
+      setActiveRequestId(requestId);
+      setShowSafetyModal(true);
     } catch (error) {
       console.error("Error accepting job:", error);
       toast.error("Failed to accept job. Please try again.");
     } finally {
       setProcessingId(null);
+    }
+  };
+
+  const verifySafetySetup = async () => {
+    if (!activeRequestId) return;
+    if (!safetyChecklist.ppeWorn || !safetyChecklist.sixConesPlaced || !safetyChecklist.dangerTapeSet || !safetyChecklist.toolboxBrief) {
+      toast.error("All safety requirements must be met before starting works.");
+      return;
+    }
+    
+    setCameraMode('evidence');
+    setCameraTitle('Capture 6-Cone Site Perimeter');
+    setShowCamera(true);
+  };
+
+  const completeSafetyGateway = async (photoUrl: string) => {
+    if (!activeRequestId) return;
+    try {
+      const request = requests.find(r => r.id === activeRequestId);
+      if (!request) return;
+
+      const updatedMilestones = (request.milestones || []).map(m => 
+        m.id === 'm1' ? { ...m, status: 'completed', photoEvidence: photoUrl, timestamp: new Date().toISOString() } : m
+      );
+
+      const updatedTasks = (request.tasks || []).map(t => 
+        (t.id === 't1' || t.id === 't2') ? { ...t, status: 'signed-off' as const, photoEvidence: photoUrl } : t
+      );
+
+      await updateDoc(doc(db, 'serviceRequests', activeRequestId), {
+        'checklist.preWork': {
+          ppeInspected: true,
+          areaBarricaded: true,
+          toolboxCheck: true,
+          oilSpillMatsPlaced: true,
+          siteSafe: true,
+          sixConesPlaced: true,
+          dangerTapeSet: true,
+          safetyBriefHeld: true
+        },
+        'checklist.ohsaCompliance.siteSetupPhoto': photoUrl,
+        milestones: updatedMilestones,
+        tasks: updatedTasks,
+        safetyBriefCompleted: true
+      });
+
+      toast.success("Safety gateway passed. You are cleared to commence works.");
+      setShowSafetyModal(false);
+    } catch (error) {
+      toast.error("Failed to verify safety setup.");
     }
   };
 
@@ -189,8 +296,29 @@ export const Dashboard: React.FC = () => {
 
   const handleCaptureEvidence = async (imgUrl: string) => {
     if (!activeRequestId) return;
+    
+    // Check if we are in the safety gateway validation step
+    if (showSafetyModal) {
+      await completeSafetyGateway(imgUrl);
+      return;
+    }
+
     try {
       const request = requests.find(r => r.id === activeRequestId);
+      if (!request) return;
+
+      // Handle Milestone update
+      if (activeTaskId?.startsWith('m')) {
+        const updatedMilestones = (request.milestones || []).map(m => 
+          m.id === activeTaskId ? { ...m, status: 'completed' as const, photoEvidence: imgUrl, timestamp: new Date().toISOString() } : m
+        );
+        await updateDoc(doc(db, 'serviceRequests', activeRequestId), {
+          milestones: updatedMilestones
+        });
+        toast.success("Project milestone updated.");
+        setActiveTaskId(null);
+        return;
+      }
       
       if (activeTaskId) {
         // Task evidence
@@ -216,7 +344,11 @@ export const Dashboard: React.FC = () => {
     }
   };
 
-  const handleLogout = () => signOut(auth);
+  const handleLogout = async () => {
+    localStorage.removeItem('makhanikhi_session_role');
+    await signOut(auth);
+    navigate('/');
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -242,12 +374,14 @@ export const Dashboard: React.FC = () => {
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-display font-black tracking-tight uppercase">Command Center</h1>
-          <p className="text-text-dim text-sm">Welcome back, {profile?.displayName}. Your mobile workshop is ready.</p>
+          <h1 className="text-3xl font-display font-black tracking-tight uppercase">
+            {isSpecialist ? 'Specialist' : 'Owner'} Platform
+          </h1>
+          <p className="text-text-dim text-sm">Welcome back, {profile?.displayName}. Accessing {isSpecialist ? 'Technical Tools' : 'Asset Records'}.</p>
         </div>
         <div className="flex gap-2 items-center">
-          <div className="bento-badge hidden sm:block">
-            {profile?.role?.toUpperCase()}
+          <div className="bento-badge hidden sm:block bg-technic-yellow/10 text-technic-yellow border border-technic-yellow/20">
+            {activeRole?.toUpperCase()} MODE
           </div>
           
           <div className="md:hidden">
@@ -274,6 +408,12 @@ export const Dashboard: React.FC = () => {
                   <Car className="mr-2 h-4 w-4" />
                   <span>{isSpecialist ? 'Fleet Records' : 'My Garage'}</span>
                 </DropdownMenuItem>
+                {profile?.role === 'specialist' && (
+                  <DropdownMenuItem onClick={() => setActiveTab('marketplace')} className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
+                    <Users className="mr-2 h-4 w-4" />
+                    <span>Recruit Apprentices</span>
+                  </DropdownMenuItem>
+                )}
                 {isOwner && (
                   <DropdownMenuItem onClick={() => setActiveTab('fleet')} className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
                     <BarChart3 className="mr-2 h-4 w-4" />
@@ -328,6 +468,11 @@ export const Dashboard: React.FC = () => {
               <BarChart3 className="w-4 h-4 mr-2" /> FLEET MANAGER
             </TabsTrigger>
           )}
+          {profile?.role === 'specialist' && (
+            <TabsTrigger value="marketplace" className="data-[state=active]:bg-technic-yellow data-[state=active]:text-industrial-charcoal rounded-lg px-6 py-2.5 font-bold transition-all text-xs tracking-widest uppercase">
+              <Users className="w-4 h-4 mr-2" /> RECRUIT
+            </TabsTrigger>
+          )}
           <TabsTrigger value="safety" className="data-[state=active]:bg-technic-yellow data-[state=active]:text-industrial-charcoal rounded-lg px-6 py-2.5 font-bold transition-all text-xs tracking-widest uppercase">
             <ClipboardCheck className="w-4 h-4 mr-2" /> SAFETY
           </TabsTrigger>
@@ -349,7 +494,46 @@ export const Dashboard: React.FC = () => {
             <TabsContent value="overview" className="mt-0">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-6">
-                  {profile?.role === 'apprentice' && (profile as any).apprenticeStatus === 'awaiting-match' && (
+                  {profile?.role === 'apprentice' && profile.apprenticeStatus === 'co-opted' && mentorProfile && (
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="p-8 rounded-[32px] bg-success-green/10 border border-success-green/30 relative overflow-hidden group"
+                    >
+                      <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <Award className="w-24 h-24 text-success-green" />
+                      </div>
+                      <div className="relative z-10">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-success-green/20 text-success-green text-[10px] font-bold uppercase tracking-widest mb-6">
+                          <CheckCircle2 className="w-3 h-3" /> Status: Co-opted
+                        </div>
+                        <h2 className="text-3xl font-display font-black uppercase tracking-tighter mb-4 text-digital-white">
+                          Learning with <br />
+                          <span className="text-success-green">{mentorProfile.displayName}</span>
+                        </h2>
+                        <p className="text-text-dim text-sm max-w-md leading-relaxed mb-6">
+                          You are currently co-opted into {mentorProfile.displayName}'s mobile workshop. Your tasks and workplace experience will be validated by this specialist.
+                        </p>
+                        <div className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/10 w-fit">
+                           <div className="w-10 h-10 rounded-full overflow-hidden bg-white/10 border border-white/20">
+                             {mentorProfile.photoURL ? (
+                               <img src={mentorProfile.photoURL} alt={mentorProfile.displayName} className="w-full h-full object-cover" />
+                             ) : (
+                               <div className="w-full h-full flex items-center justify-center text-technic-yellow">
+                                 <User className="w-5 h-5" />
+                               </div>
+                             )}
+                           </div>
+                           <div>
+                             <div className="text-[8px] font-black uppercase text-text-dim tracking-widest">Mentor Specialist</div>
+                             <div className="text-xs font-bold uppercase">{mentorProfile.specialization || 'General'} Specialist</div>
+                           </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {profile?.role === 'apprentice' && profile.apprenticeStatus === 'awaiting-match' && (
                     <motion.div 
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
@@ -463,6 +647,19 @@ export const Dashboard: React.FC = () => {
             </TabsContent>
 
             <TabsContent value="jobs" className="mt-0">
+              {isOwner && (
+                <div className="mb-6 p-6 rounded-[24px] bg-success-green/5 border border-success-green/20 flex gap-4 items-center">
+                  <div className="w-12 h-12 rounded-full bg-success-green/10 flex items-center justify-center shrink-0 border border-success-green/20">
+                    <ShieldCheck className="w-6 h-6 text-success-green" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black uppercase text-success-green mb-1 tracking-tight">Professional Assurance</h4>
+                    <p className="text-[10px] text-text-dim uppercase leading-relaxed tracking-wider">
+                      Your specialist is mandated to capture all part receipts and task evidence digitally in real-time. This eliminates suspicion and ensures you only pay for verified, itemized costs.
+                    </p>
+                  </div>
+                </div>
+              )}
               <div className="space-y-4">
                 {requests.length > 0 ? (
                   requests.map((req) => (
@@ -544,6 +741,90 @@ export const Dashboard: React.FC = () => {
                           <p className="text-[11px] text-digital-white/70">
                             Signed by <span className="font-bold text-digital-white">{req.signatures.specialist.name || 'Authorised Specialist'}</span> on {new Date(req.signatures.specialist.timestamp).toLocaleString()}
                           </p>
+                        </div>
+                      )}
+
+                      {/* Project Milestones Timeline */}
+                      {req.status === 'in-progress' && req.milestones && (
+                        <div className="mt-8 pt-8 border-t border-white/5 w-full">
+                          <div className="flex items-center justify-between mb-8">
+                            <div className="flex items-center gap-3">
+                               <div className="w-8 h-8 rounded-lg bg-technic-yellow/10 flex items-center justify-center">
+                                 <BarChart3 className="w-4 h-4 text-technic-yellow" />
+                               </div>
+                               <div>
+                                 <h4 className="text-xs font-black uppercase tracking-widest text-digital-white">Project Milestones</h4>
+                                 <p className="text-[10px] text-text-dim uppercase tracking-wider font-bold">Real-time status updates via evidence</p>
+                               </div>
+                            </div>
+                            <div className="text-right">
+                               <div className="text-xl font-display font-black text-technic-yellow">
+                                 {Math.round((req.milestones.filter(m => m.status === 'completed').length / req.milestones.length) * 100)}%
+                               </div>
+                               <div className="text-[8px] font-black uppercase text-text-dim tracking-widest">Total Completion</div>
+                            </div>
+                          </div>
+
+                          <div className="relative space-y-8 pl-4">
+                            {/* Vertical Line */}
+                            <div className="absolute left-[7px] top-2 bottom-8 w-[2px] bg-white/5" />
+
+                            {req.milestones.map((milestone, idx) => (
+                              <div key={milestone.id} className="relative pl-8 group">
+                                {/* Dot */}
+                                <div className={`absolute left-0 top-1.5 w-4 h-4 rounded-full border-2 transition-all z-10 ${
+                                  milestone.status === 'completed' 
+                                    ? 'bg-success-green border-success-green shadow-[0_0_10px_rgba(34,197,94,0.5)]' 
+                                    : milestone.status === 'in-progress'
+                                      ? 'bg-technic-yellow border-technic-yellow animate-pulse'
+                                      : 'bg-industrial-charcoal border-white/20 group-hover:border-white/40'
+                                }`} />
+
+                                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5 transition-all hover:bg-white/[0.04]">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-3 mb-1">
+                                      <h5 className={`text-xs font-black uppercase tracking-tight ${milestone.status === 'completed' ? 'text-success-green' : 'text-digital-white'}`}>
+                                        {idx + 1}. {milestone.title}
+                                      </h5>
+                                      {milestone.status === 'completed' && <Badge className="bg-success-green/10 text-success-green text-[8px] h-4 uppercase">Verified</Badge>}
+                                    </div>
+                                    <p className="text-[11px] text-text-dim leading-relaxed max-w-md">{milestone.description}</p>
+                                    
+                                    {milestone.timestamp && (
+                                      <div className="mt-2 text-[9px] font-bold text-text-dim uppercase tracking-widest">
+                                        Completed: {new Date(milestone.timestamp).toLocaleTimeString()}
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <div className="flex items-center gap-3">
+                                    {milestone.photoEvidence ? (
+                                      <div className="w-16 h-16 rounded-xl overflow-hidden border border-white/10 group-hover:border-technic-yellow/30 transition-all cursor-pointer">
+                                        <img src={milestone.photoEvidence} alt={milestone.title} className="w-full h-full object-cover" />
+                                      </div>
+                                    ) : (
+                                      profile?.role === 'specialist' && milestone.status !== 'completed' && (
+                                        <Button 
+                                          variant="outline" 
+                                          size="sm" 
+                                          className="border-white/10 rounded-xl h-10 px-4 text-[10px] font-bold uppercase tracking-widest bg-white/5 hover:bg-technic-yellow hover:text-industrial-charcoal"
+                                          onClick={() => {
+                                            setActiveRequestId(req.id);
+                                            setActiveTaskId(milestone.id); // Re-use Task state for milestone updates
+                                            setCameraMode('evidence');
+                                            setCameraTitle(`Capture Evidence: ${milestone.title}`);
+                                            setShowCamera(true);
+                                          }}
+                                        >
+                                          <CameraIcon className="w-3.5 h-3.5 mr-2" /> UPDATE
+                                        </Button>
+                                      )
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
 
@@ -672,6 +953,100 @@ export const Dashboard: React.FC = () => {
               <FleetManager />
             </TabsContent>
 
+            <TabsContent value="marketplace" className="mt-0">
+              <div className="bento-card">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                  <div>
+                    <h2 className="text-2xl font-display font-black uppercase tracking-tight">Apprentice Marketplace</h2>
+                    <p className="text-xs text-text-dim uppercase tracking-widest font-bold">Discover and co-opt rising talent into your workshop.</p>
+                  </div>
+                  <Button 
+                    onClick={fetchApprentices} 
+                    variant="outline" 
+                    size="sm"
+                    className="border-white/10 rounded-xl text-[10px] uppercase font-bold tracking-widest h-10 px-4"
+                  >
+                    Refresh List
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {availableApprentices.map((apprentice) => (
+                    <motion.div 
+                      key={apprentice.uid}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-technic-yellow/30 transition-all group"
+                    >
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="w-12 h-12 rounded-full overflow-hidden bg-white/10 border border-white/20">
+                          {apprentice.photoURL ? (
+                            <img src={apprentice.photoURL} alt={apprentice.displayName} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-technic-yellow">
+                              <User className="w-6 h-6" />
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <h4 className="font-black uppercase tracking-tight text-sm">{apprentice.displayName}</h4>
+                          <div className="flex items-center gap-2">
+                             <Badge variant="outline" className={`text-[8px] h-4 uppercase ${apprentice.isVerified ? 'text-success-green border-success-green/20 bg-success-green/5' : 'text-text-dim border-white/10 bg-white/5'}`}>
+                               {apprentice.isVerified ? 'Verified' : 'Pending Verification'}
+                             </Badge>
+                             <span className="text-[10px] text-text-dim font-bold uppercase transition-colors">{apprentice.trainingPath} TRACK</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <p className="text-[11px] text-text-dim leading-relaxed mb-6 line-clamp-3">
+                        {apprentice.bio || "No biography provided yet."}
+                      </p>
+
+                      <div className="grid grid-cols-2 gap-3 mb-6">
+                         <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                            <span className="block text-[8px] uppercase text-text-dim font-bold tracking-[2px] mb-1">Start Age</span>
+                            <span className="font-black text-xs text-digital-white">{apprentice.apprenticeStartAge} Years</span>
+                         </div>
+                         <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                            <span className="block text-[8px] uppercase text-text-dim font-bold tracking-[2px] mb-1">Status</span>
+                            <span className="font-black text-xs text-blue-400 capitalize">{apprentice.apprenticeStatus?.replace('-', ' ')}</span>
+                         </div>
+                      </div>
+
+                      <Button 
+                        onClick={async () => {
+                          try {
+                            setProcessingId(apprentice.uid);
+                            await updateDoc(doc(db, 'users', apprentice.uid), {
+                              apprenticeStatus: 'co-opted',
+                              mentorId: user?.uid
+                            });
+                            toast.success(`Co-opted ${apprentice.displayName} successfully!`);
+                            fetchApprentices();
+                          } catch (error) {
+                            toast.error("Failed to co-opt apprentice.");
+                          } finally {
+                            setProcessingId(null);
+                          }
+                        }}
+                        disabled={processingId === apprentice.uid}
+                        className="w-full bento-btn h-10 text-[10px]"
+                      >
+                        {processingId === apprentice.uid ? <Loader2 className="w-4 h-4 animate-spin" /> : 'CO-OPT INTO WORKSHOP'}
+                      </Button>
+                    </motion.div>
+                  ))}
+                  {availableApprentices.length === 0 && (
+                    <div className="col-span-full py-20 text-center border-2 border-dashed border-white/10 rounded-[32px]">
+                       <Users className="w-12 h-12 text-white/10 mx-auto mb-4" />
+                       <p className="text-[10px] text-text-dim uppercase tracking-widest font-black">No apprentices currently available for co-opting.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+
             <TabsContent value="safety" className="mt-0 space-y-6">
               <div className="flex justify-between items-center">
                 <h3 className="text-sm font-bold uppercase tracking-widest text-technic-yellow flex items-center gap-2">
@@ -732,6 +1107,8 @@ export const Dashboard: React.FC = () => {
                                   const activeJob = requests.find(r => r.status === 'in-progress');
                                   if (activeJob) {
                                     setActiveRequestId(activeJob.id);
+                                    setCameraMode('evidence');
+                                    setCameraTitle('Capture Site Safety Evidence');
                                     setShowCamera(true);
                                   } else {
                                     toast.error("No active job to attach evidence to.");
@@ -861,9 +1238,72 @@ export const Dashboard: React.FC = () => {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={showSafetyModal} onOpenChange={setShowSafetyModal}>
+        <DialogContent className="bg-industrial-charcoal border-white/10 text-digital-white max-w-lg rounded-[32px] p-0 overflow-hidden">
+          <div className="bg-technic-yellow p-6 text-industrial-charcoal">
+            <div className="flex items-center gap-2 mb-2">
+              <ShieldCheck className="w-6 h-6" />
+              <h2 className="text-xl font-display font-black uppercase tracking-tight">Mandatory Safety Gateway</h2>
+            </div>
+            <p className="text-xs font-bold uppercase tracking-widest leading-relaxed opacity-80">
+              Works cannot commence until the site is secured and a toolbox talk is completed.
+            </p>
+          </div>
+          
+          <div className="p-8 space-y-6">
+            <div className="space-y-4">
+              {[
+                { id: 'ppeWorn', label: 'PPE Donned (All Personnel)', icon: <UserCheck className="w-4 h-4" /> },
+                { id: 'sixConesPlaced', label: '6 Cones/Bottles Perimeter Set', icon: <MapPin className="w-4 h-4" /> },
+                { id: 'dangerTapeSet', label: 'Danger Tape Deployed', icon: <AlertTriangle className="w-4 h-4" /> },
+                { id: 'toolboxBrief', label: 'Safety Brief & Toolbox Talk Held', icon: <Users className="w-4 h-4" /> },
+                { id: 'oilSpillMats', label: 'Oil Spill Mats in Position', icon: <ClipboardCheck className="w-4 h-4" /> },
+              ].map((item) => (
+                <div 
+                  key={item.id} 
+                  onClick={() => setSafetyChecklist(prev => ({ ...prev, [item.id]: !prev[item.id as keyof typeof safetyChecklist] }))}
+                  className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all ${safetyChecklist[item.id as keyof typeof safetyChecklist] ? 'border-success-green bg-success-green/10' : 'border-white/5 bg-white/5 hover:border-white/10'}`}
+                >
+                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center border ${safetyChecklist[item.id as keyof typeof safetyChecklist] ? 'bg-success-green border-success-green' : 'bg-transparent border-white/20'}`}>
+                    {safetyChecklist[item.id as keyof typeof safetyChecklist] && <CheckCircle2 className="w-4 h-4 text-industrial-charcoal" />}
+                  </div>
+                  <div className="flex items-center gap-2 flex-1">
+                    <span className="text-text-dim">{item.icon}</span>
+                    <span className="text-sm font-bold uppercase tracking-tight">{item.label}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+              <div className="flex gap-3 items-start">
+                <AlertTriangle className="w-5 h-5 text-technic-yellow shrink-0 mt-1" />
+                <p className="text-[10px] text-text-dim uppercase leading-relaxed tracking-wider">
+                  Specialist and Client must both ensure the 6-cone perimeter is established before any tools touch the vehicle. Photographic evidence of the perimeter is required for validation.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="p-8 pt-0 flex gap-3">
+            <Button variant="outline" onClick={() => setShowSafetyModal(false)} className="flex-1 border-white/10 rounded-xl font-bold">
+              POSTPONE
+            </Button>
+            <Button 
+              onClick={verifySafetySetup}
+              disabled={!Object.values(safetyChecklist).every(v => v)}
+              className="flex-1 bg-technic-yellow text-industrial-charcoal font-black rounded-xl uppercase tracking-widest text-xs"
+            >
+               PROCEED TO OVERVIEW PHOTO
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {showCamera && (
         <CameraCapture 
-          title="Capture Safety Evidence"
+          title={cameraTitle}
+          mode={cameraMode}
           onCapture={handleCaptureEvidence}
           onClose={() => setShowCamera(false)}
         />

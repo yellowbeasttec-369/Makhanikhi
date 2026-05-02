@@ -22,6 +22,8 @@ export const VehicleLogBook: React.FC = () => {
   const [showAddVehicle, setShowAddVehicle] = useState(false);
   const [showVerifyDialog, setShowVerifyDialog] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
+  const [cameraMode, setCameraMode] = useState<'document' | 'part' | 'evidence'>('evidence');
+  const [cameraTitle, setCameraTitle] = useState('Capture Evidence');
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const [activeLogId, setActiveLogId] = useState<string | null>(null);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
@@ -472,7 +474,13 @@ export const VehicleLogBook: React.FC = () => {
                                 </div>
                               ) : (
                                 <button 
-                                  onClick={() => { setActiveLogId(record.id); setActiveTaskId(task.id); setShowCamera(true); }}
+                                  onClick={() => { 
+                                    setActiveLogId(record.id); 
+                                    setActiveTaskId(task.id); 
+                                    setCameraMode('evidence');
+                                    setCameraTitle('Capture Task Evidence');
+                                    setShowCamera(true); 
+                                  }}
                                   className="text-text-dim hover:text-technic-yellow"
                                 >
                                   <CameraIcon className="w-3 h-3" />
@@ -508,7 +516,11 @@ export const VehicleLogBook: React.FC = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
-            <div className="p-8 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center gap-4 hover:border-technic-yellow/50 transition-all cursor-pointer group" onClick={() => setShowCamera(true)}>
+            <div className="p-8 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center gap-4 hover:border-technic-yellow/50 transition-all cursor-pointer group" onClick={() => {
+              setCameraMode('document');
+              setCameraTitle('Scan Registration Document');
+              setShowCamera(true);
+            }}>
               <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
                 <CameraIcon className="w-8 h-8 text-technic-yellow" />
               </div>
@@ -533,7 +545,8 @@ export const VehicleLogBook: React.FC = () => {
 
       {showCamera && (
         <CameraCapture 
-          title={showVerifyDialog ? "Scan Registration Document" : "Capture Task Evidence"}
+          title={cameraTitle}
+          mode={cameraMode}
           onCapture={handleCaptureEvidence}
           onClose={() => setShowCamera(false)}
         />

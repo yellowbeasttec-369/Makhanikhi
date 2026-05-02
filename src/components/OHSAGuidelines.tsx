@@ -9,10 +9,11 @@ export const OHSAGuidelines: React.FC = () => {
       title: "Workshop Setup & Demarcation",
       icon: <Construction className="w-5 h-5 text-technic-yellow" />,
       items: [
-        "Ensure the work area is level and stable.",
-        "Use safety cones or high-visibility tape to demarcate a 2-meter safety zone around the vehicle.",
-        "Place 'Work in Progress' signage clearly at all entry points.",
-        "Ensure adequate lighting (minimum 300 lux) for the task area."
+        "A minimum of 6 safety cones (or sand-filled bottles) must be placed around the vehicle perimeter.",
+        "Yellow danger tape must be strung between cones to create a visible physical barrier.",
+        "Ensure the work area is level and stable for jacking operations.",
+        "Ensure adequate lighting (minimum 300 lux) for the task area.",
+        "Place 'Work in Progress' signage clearly at all entry points."
       ]
     },
     {

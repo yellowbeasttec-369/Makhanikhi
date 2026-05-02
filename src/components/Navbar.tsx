@@ -4,7 +4,7 @@ import { useAuth } from '../lib/AuthContext';
 import { auth } from '../lib/firebase';
 import { signOut, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { Button } from './ui/button';
-import { Wrench, LogOut, User as UserIcon, Shield, Wallet, Home, Calendar, LayoutDashboard, Menu } from 'lucide-react';
+import { Wrench, LogOut, User as UserIcon, Shield, Wallet, Home, Calendar, LayoutDashboard, Menu, Users } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { BrowserProvider } from 'ethers';
@@ -117,6 +117,12 @@ export const Navbar: React.FC = () => {
                         <DropdownMenuItem className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
                           <LayoutDashboard className="mr-2 h-4 w-4" />
                           <span>Dashboard</span>
+                        </DropdownMenuItem>
+                      </Link>
+                      <Link to="/registry">
+                        <DropdownMenuItem className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
+                          <Users className="mr-2 h-4 w-4" />
+                          <span>Database Registry</span>
                         </DropdownMenuItem>
                       </Link>
                       <Link to="/dashboard">

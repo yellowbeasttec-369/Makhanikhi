@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
 import { db } from '../lib/firebase';
 import { doc, updateDoc, collection, setDoc } from 'firebase/firestore';
@@ -21,7 +21,10 @@ import {
   Camera, 
   Trash2, 
   Award,
-  Loader2
+  Loader2,
+  AlertTriangle,
+  CheckCircle2,
+  Shield
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CameraCapture } from './CameraCapture';
@@ -29,6 +32,10 @@ import { CameraCapture } from './CameraCapture';
 export const RegistrationFlow: React.FC = () => {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const queryRole = queryParams.get('role');
+
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
@@ -43,6 +50,14 @@ export const RegistrationFlow: React.FC = () => {
     idNumber: profile?.idNumber || '',
     bio: '',
     photoURL: profile?.photoURL || user?.photoURL || '',
+    // Role specific fields
+    specialization: '',
+    yearsOfExperience: 0,
+    offersMentorship: false,
+    trainingPath: 'practical' as 'traditional' | 'practical',
+    apprenticeStartAge: 18,
+    certifications: [] as string[],
+    interests: [] as string[],
     vehicle: {
       make: '',
       model: '',
@@ -50,6 +65,15 @@ export const RegistrationFlow: React.FC = () => {
       registration: '',
     }
   });
+
+  useEffect(() => {
+    if (queryRole === 'owner') {
+      setFormData(prev => ({ ...prev, role: 'owner' }));
+      setStep(2); // Skip role selection if they already chose owner
+    } else if (queryRole === 'pro') {
+      // Stay on step 1 to choose between specialist or apprentice
+    }
+  }, [queryRole]);
 
   const handleNext = () => setStep(step + 1);
   const handleBack = () => setStep(step - 1);
@@ -79,9 +103,17 @@ export const RegistrationFlow: React.FC = () => {
 
       if (formData.role === 'apprentice') {
         updateData.apprenticeStatus = 'awaiting-match';
+        updateData.trainingPath = formData.trainingPath;
+        updateData.apprenticeStartAge = formData.apprenticeStartAge;
       }
 
-      await updateDoc(doc(db, 'users', user.uid), updateData);
+      if (formData.role === 'specialist') {
+        updateData.specialization = formData.specialization;
+        updateData.yearsOfExperience = formData.yearsOfExperience;
+        updateData.offersMentorship = formData.offersMentorship;
+      }
+
+      await setDoc(doc(db, 'users', user.uid), updateData, { merge: true });
       
       // If owner, add the vehicle too
       if (formData.role === 'owner' && formData.vehicle.make) {
@@ -149,13 +181,13 @@ export const RegistrationFlow: React.FC = () => {
           <ShieldCheck className="w-3 h-3" /> Professional Onboarding
         </div>
         <h1 className="text-4xl font-display font-black uppercase tracking-tighter mb-2 text-digital-white">
-          {step === 1 ? 'Select Discipline' : step === 2 ? 'Bio Details' : 'Vehicle Registry'}
+          {step === 1 ? 'Technical Stream' : step === 2 ? 'Identity Check' : 'Vehicle Registry'}
         </h1>
         <p className="text-text-dim">
           {step === 1 
-            ? 'Choose how you will participate in the ecosystem.' 
+            ? 'Refine your participation in the technical ecosystem.' 
             : step === 2 
-              ? 'Let the community know who you are.'
+              ? 'Complete your digital profile to start working.'
               : 'Add your vehicle to start tracking digital records.'}
         </p>
       </header>
@@ -169,55 +201,49 @@ export const RegistrationFlow: React.FC = () => {
           transition={{ duration: 0.3 }}
         >
           {step === 1 && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="grid grid-cols-1 gap-4">
                 <button 
-                  onClick={() => { setFormData({...formData, role: 'owner'}); handleNext(); }}
-                  className={`bento-card text-left transition-all hover:border-technic-yellow/50 group ${formData.role === 'owner' ? 'border-technic-yellow ring-1 ring-technic-yellow' : ''}`}
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-technic-yellow/10 flex items-center justify-center shrink-0">
-                      <User className="w-6 h-6 text-technic-yellow" />
-                    </div>
-                    <div>
-                      <h3 className="font-black uppercase tracking-tight text-lg">Car Owner</h3>
-                      <p className="text-xs text-text-dim mt-1 leading-relaxed">Book specialists, track maintenance logs, and manage your vehicle fleet digitally.</p>
-                    </div>
-                  </div>
-                </button>
-
-                <button 
                   onClick={() => { setFormData({...formData, role: 'specialist'}); handleNext(); }}
-                  className={`bento-card text-left transition-all hover:border-technic-yellow/50 group ${formData.role === 'specialist' ? 'border-technic-yellow ring-1 ring-technic-yellow' : ''}`}
+                  className={`p-8 rounded-[32px] bg-white/[0.02] border transition-all text-left group flex items-start gap-6 ${formData.role === 'specialist' ? 'border-technic-yellow ring-1 ring-technic-yellow' : 'border-white/10 hover:border-technic-yellow/50'}`}
                 >
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-technic-yellow/10 flex items-center justify-center shrink-0">
-                      <Award className="w-6 h-6 text-technic-yellow" />
-                    </div>
-                    <div>
-                      <h3 className="font-black uppercase tracking-tight text-lg">Specialist Mechanic</h3>
-                      <p className="text-xs text-text-dim mt-1 leading-relaxed">Master technician providing mobile services. Requires professional validation.</p>
-                    </div>
+                  <div className="w-14 h-14 rounded-2xl bg-technic-yellow/10 flex items-center justify-center shrink-0 border border-technic-yellow/20">
+                    <Award className="w-7 h-7 text-technic-yellow" />
+                  </div>
+                  <div>
+                    <h3 className="font-black uppercase tracking-tight text-xl mb-2 text-digital-white">Master Specialist</h3>
+                    <p className="text-xs text-text-dim leading-relaxed">For skilled technicians with master-level experience seeking safe, paid engagements.</p>
                   </div>
                 </button>
 
                 <button 
                   onClick={() => { setFormData({...formData, role: 'apprentice'}); handleNext(); }}
-                  className={`bento-card text-left transition-all hover:border-technic-yellow/50 group ${formData.role === 'apprentice' ? 'border-technic-yellow ring-1 ring-technic-yellow' : ''}`}
+                  className={`p-8 rounded-[32px] bg-white/[0.02] border transition-all text-left group flex items-start gap-6 ${formData.role === 'apprentice' ? 'border-technic-yellow ring-1 ring-technic-yellow' : 'border-white/10 hover:border-technic-yellow/50'}`}
                 >
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-technic-yellow/10 flex items-center justify-center shrink-0">
-                      <Users className="w-6 h-6 text-technic-yellow" />
-                    </div>
-                    <div>
-                      <h3 className="font-black uppercase tracking-tight text-lg">Apprentice</h3>
-                      <p className="text-xs text-text-dim mt-1 leading-relaxed">Learning the trade under specialist mentorship. Workplace experience validation.</p>
-                    </div>
+                  <div className="w-14 h-14 rounded-2xl bg-technic-yellow/10 flex items-center justify-center shrink-0 border border-technic-yellow/20">
+                    <Users className="w-7 h-7 text-technic-yellow" />
+                  </div>
+                  <div>
+                    <h3 className="font-black uppercase tracking-tight text-xl mb-2 text-digital-white">Technical Apprentice</h3>
+                    <p className="text-xs text-text-dim leading-relaxed">For aspiring mechanics looking to validate skills under expert mentorship.</p>
                   </div>
                 </button>
               </div>
 
-              <div className="pt-8 flex justify-center">
+              {/* Expert Protection Bubble */}
+              <div className="p-6 rounded-2xl bg-blue-500/5 border border-blue-500/20 flex gap-4">
+                <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
+                  <Shield className="w-5 h-5 text-blue-400" />
+                </div>
+                <div>
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">Safety & Value Guarantee</h4>
+                  <p className="text-[10px] text-text-dim leading-relaxed">
+                    By registering, you access a secure environment that prevents unpaid emergency exploitation and validates your technical worth upfront.
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-4 flex justify-center">
                 <Button variant="ghost" onClick={handleCancel} className="text-[10px] uppercase font-bold tracking-widest text-text-dim hover:text-white">
                   Cancel Registration
                 </Button>
@@ -226,8 +252,9 @@ export const RegistrationFlow: React.FC = () => {
           )}
 
           {step === 2 && (
-            <div className="bento-card">
-              <div className="bento-card-title"><div className="bento-dot"></div> Profile Setup</div>
+            <div className="bento-card relative">
+              {/* Profile setup UI remains similar but with added safety bubbles */}
+              <div className="bento-card-title"><div className="bento-dot"></div> Registry Profile</div>
               
               <div className="flex flex-col items-center mb-8">
                 <div className="relative group">
@@ -329,9 +356,98 @@ export const RegistrationFlow: React.FC = () => {
                     value={formData.bio}
                     onChange={(e) => setFormData({...formData, bio: e.target.value})}
                     className="bg-white/5 border-white/10 rounded-xl min-h-[100px]"
-                    placeholder="Tell us about yourself or your workshop interests..."
+                    placeholder={formData.role === 'specialist' ? "Describe your workshop experience and specialities..." : "Tell us about your interest in mechanics and what you hope to learn..."}
                   />
                 </div>
+
+                {formData.role === 'specialist' && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="space-y-6 pt-4 border-t border-white/5"
+                  >
+                    <div className="bento-card-title"><div className="bento-dot bg-technic-yellow"></div> Specialist Credentials</div>
+                    
+                    <div className="space-y-2">
+                       <Label className="text-text-dim text-[10px] uppercase tracking-widest font-bold">Main Specialization</Label>
+                       <select 
+                         value={formData.specialization}
+                         onChange={(e) => setFormData({...formData, specialization: e.target.value})}
+                         className="w-full bg-white/5 border-white/10 rounded-xl h-12 px-4 text-digital-white focus:outline-none focus:ring-1 focus:ring-technic-yellow"
+                       >
+                         <option value="" className="bg-industrial-charcoal">Select Specialization</option>
+                         <option value="european" className="bg-industrial-charcoal">European (BMW, Merc, VAG)</option>
+                         <option value="asian" className="bg-industrial-charcoal">Asian (Toyota, Honda, Kia)</option>
+                         <option value="diesel" className="bg-industrial-charcoal">Diesel & Heavy Duty</option>
+                         <option value="hybrid-ev" className="bg-industrial-charcoal">Hybrid & Electric</option>
+                         <option value="general" className="bg-industrial-charcoal">General Maintenance</option>
+                       </select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-text-dim text-[10px] uppercase tracking-widest font-bold">Years of Experience</Label>
+                      <Input 
+                        type="number"
+                        min="0"
+                        value={formData.yearsOfExperience}
+                        onChange={(e) => setFormData({...formData, yearsOfExperience: parseInt(e.target.value) || 0})}
+                        className="bg-white/5 border-white/10 rounded-xl h-12"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-3 p-4 rounded-xl bg-white/5 border border-white/10 cursor-pointer group hover:border-technic-yellow/30 transition-all"
+                         onClick={() => setFormData({...formData, offersMentorship: !formData.offersMentorship})}>
+                      <div className={`w-10 h-6 rounded-full relative transition-colors ${formData.offersMentorship ? 'bg-technic-yellow' : 'bg-white/20'}`}>
+                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-industrial-charcoal transition-all ${formData.offersMentorship ? 'left-5' : 'left-1'}`} />
+                      </div>
+                      <div>
+                        <Label className="text-digital-white text-xs font-bold uppercase tracking-tight cursor-pointer">Offer Workshop Learning</Label>
+                        <p className="text-[10px] text-text-dim uppercase font-bold tracking-widest">Willing to mentor and co-opt apprentices</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {formData.role === 'apprentice' && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="space-y-6 pt-4 border-t border-white/5"
+                  >
+                    <div className="bento-card-title"><div className="bento-dot bg-blue-500"></div> Apprentice Track</div>
+                    
+                    <div className="space-y-2">
+                       <Label className="text-text-dim text-[10px] uppercase tracking-widest font-bold">Training Path</Label>
+                       <div className="flex gap-4">
+                         <button 
+                           onClick={() => setFormData({...formData, trainingPath: 'traditional'})}
+                           className={`flex-1 p-4 rounded-xl border transition-all text-left ${formData.trainingPath === 'traditional' ? 'border-blue-500 bg-blue-500/10' : 'border-white/10 bg-white/5'}`}
+                         >
+                           <div className="font-black text-xs uppercase mb-1">Traditional</div>
+                           <div className="text-[10px] text-text-dim">TVET / College Student</div>
+                         </button>
+                         <button 
+                           onClick={() => setFormData({...formData, trainingPath: 'practical'})}
+                           className={`flex-1 p-4 rounded-xl border transition-all text-left ${formData.trainingPath === 'practical' ? 'border-blue-500 bg-blue-500/10' : 'border-white/10 bg-white/5'}`}
+                         >
+                           <div className="font-black text-xs uppercase mb-1">Practical</div>
+                           <div className="text-[10px] text-text-dim">Workshop Learning</div>
+                         </button>
+                       </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-text-dim text-[10px] uppercase tracking-widest font-bold">Approx. Start Age</Label>
+                      <Input 
+                        type="number"
+                        min="16"
+                        value={formData.apprenticeStartAge}
+                        onChange={(e) => setFormData({...formData, apprenticeStartAge: parseInt(e.target.value) || 18})}
+                        className="bg-white/5 border-white/10 rounded-xl h-12"
+                      />
+                    </div>
+                  </motion.div>
+                )}
 
                 <div className="pt-4 flex gap-4">
                   <Button variant="outline" onClick={handleBack} className="flex-1 h-14 text-xs font-bold border-white/10">

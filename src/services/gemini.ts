@@ -11,12 +11,13 @@ export const generateSmartContract = async (serviceDetails: any) => {
     Return a JSON object with:
     - title: A professional title for the agreement
     - scopeOfWork: Array of specific tasks
-    - safetyObligations: Array of safety requirements
+    - safetyObligations: Array of safety requirements (including site clearance and hazard management)
     - paymentTerms: Object with callOutFee, diagnosticFee, laborEstimate, and partsEstimate (numeric values)
-    - warrantyInfo: String describing the warranty
-    - legalDisclaimer: A concise legal disclaimer
+    - warrantyInfo: A concise but comprehensive warranty statement covering workmanship (typically 6 months / 10,000km) and parts (manufacturer warranty). Include that warranty is void if evidence photos are not captured during service.
+    - legalDisclaimer: A concise legal disclaimer covering liability and site safety conditions. Include a clause stating that all parts costs are verified via real-time receipt capture and that lack of immediate digital documentation may delay reimbursement.
     
-    Ensure the tone is professional and natural, avoiding markdown bolding like **.`,
+    CRITICAL: Ensure the tone is professional, human, and natural. DO NOT use double asterisks (**) for bolding. Use standard sentence casing and layout.
+    Focus on creating TRUST through TRANSPARENCY regarding part purchases and task validation.`,
     config: {
       responseMimeType: "application/json",
       responseSchema: {

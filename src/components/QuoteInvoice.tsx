@@ -70,6 +70,16 @@ export const QuoteInvoice: React.FC<QuoteInvoiceProps> = ({ data, isInvoice = fa
 
         <Separator className="bg-white/10" />
 
+        <section className="bg-success-green/5 p-4 rounded-xl border border-success-green/20 mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Shield className="w-4 h-4 text-success-green" />
+            <h4 className="text-xs font-bold uppercase tracking-wider text-success-green">Professional Transparency</h4>
+          </div>
+          <p className="text-[10px] text-text-dim leading-relaxed uppercase tracking-widest font-bold">
+            Note: All parts costs are validated via real-time digital receipt capture. If a physical till slip is non-itemized, our registry cross-verifies the cost for total peace of mind.
+          </p>
+        </section>
+
         <section className="bg-black/20 p-4 rounded-xl border border-white/5">
           <div className="flex items-center gap-2 mb-3">
             <FileText className="w-4 h-4 text-technic-yellow" />
