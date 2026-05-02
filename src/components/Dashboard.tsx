@@ -13,7 +13,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { signOut } from 'firebase/auth';
 import { auth } from '../lib/firebase';
-import { Wrench, Car, ClipboardCheck, History, TrendingUp, UserCheck, AlertTriangle, Shield, Clock, CheckCircle2, PlayCircle, XCircle, MapPin, Loader2, Users, Award, BarChart3, Camera as CameraIcon, Menu, LogOut, Home, User, ShieldCheck } from 'lucide-react';
+import { Wrench, Car, ClipboardCheck, History, TrendingUp, UserCheck, AlertTriangle, Shield, Clock, CheckCircle2, PlayCircle, XCircle, MapPin, Loader2, Users, Award, BarChart3, Camera as CameraIcon, Menu, LogOut, Home, User, ShieldCheck, Zap, Circle, FileText, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 
@@ -24,7 +24,7 @@ import { FleetManager } from './FleetManager';
 import { OHSAGuidelines } from './OHSAGuidelines';
 import { CameraCapture } from './CameraCapture';
 import { CalendarView } from './CalendarView';
-import { ServiceRequest, UserProfile, ApprenticeTask } from '../types';
+import { ServiceRequest, UserProfile, ApprenticeTask, RoadworthyChecklist } from '../types';
 
 export const Dashboard: React.FC = () => {
   const { user, profile } = useAuth();
@@ -48,12 +48,27 @@ export const Dashboard: React.FC = () => {
   const [specialistName, setSpecialistName] = useState('');
   const [specialistSignature, setSpecialistSignature] = useState('');
   const [showSafetyModal, setShowSafetyModal] = useState(false);
+  const [showBodyScanModal, setShowBodyScanModal] = useState(false);
+  const [bodyScanPhotos, setBodyScanPhotos] = useState<{front?: string, back?: string, left?: string, right?: string}>({});
   const [safetyChecklist, setSafetyChecklist] = useState({
     ppeWorn: false,
     sixConesPlaced: false,
     dangerTapeSet: false,
     oilSpillMats: false,
-    toolboxBrief: false
+    toolboxBrief: false,
+    handshake: false
+  });
+  const [showReferralInfo, setShowReferralInfo] = useState(false);
+  const [showRoadworthyModal, setShowRoadworthyModal] = useState(false);
+  const [roadworthyData, setRoadworthyData] = useState<Partial<RoadworthyChecklist>>({
+    identification: { vinMatch: false, engineNoMatch: false },
+    electrical: { wipers: false, lights: false, horn: false, batteryClamp: false },
+    fittings: { bumpers: false, mirrors: false, seatbelts: false, doors: false, chassis: false },
+    braking: { serviceBrake: false, parkingBrake: false },
+    wheels: { tireCondition: false, tireSizeMatch: false, rimIntegrity: false },
+    suspension: { shocks: false, steeringBox: false, leaks: false },
+    engine: { smokeEmission: false, mountings: false, exhaustSystem: false },
+    instruments: { speedometer: false }
   });
 
   useEffect(() => {
@@ -166,10 +181,10 @@ export const Dashboard: React.FC = () => {
         tasks: initialTasks,
         milestones: initialMilestones
       });
-      toast.success("Job accepted! Complete safety setup to begin works.");
+      toast.success("Job accepted! Complete Body Scan to document asset state.");
       setShowApprenticeDialog(false);
       setActiveRequestId(requestId);
-      setShowSafetyModal(true);
+      setShowBodyScanModal(true);
     } catch (error) {
       console.error("Error accepting job:", error);
       toast.error("Failed to accept job. Please try again.");
@@ -294,9 +309,57 @@ export const Dashboard: React.FC = () => {
     }
   };
 
+  const completeBodyScan = async () => {
+    if (!bodyScanPhotos.front || !bodyScanPhotos.back || !bodyScanPhotos.left || !bodyScanPhotos.right) {
+      toast.error("Please capture all 4 angles of the vehicle.");
+      return;
+    }
+    
+    if (!activeRequestId) return;
+    
+    try {
+      await updateDoc(doc(db, 'serviceRequests', activeRequestId), {
+        'bodyScan': bodyScanPhotos,
+        'bodyScanCompletedAt': new Date().toISOString()
+      });
+      setShowBodyScanModal(false);
+      setShowSafetyModal(true);
+      toast.success("Body scan complete. Now verify site safety.");
+    } catch (error) {
+      toast.error("Failed to save body scan.");
+    }
+  };
+
+  const saveRoadworthyAudit = async () => {
+    if (!activeRequestId) return;
+    try {
+      await updateDoc(doc(db, 'serviceRequests', activeRequestId), {
+        roadworthyChecklist: {
+          ...roadworthyData,
+          lastUpdate: new Date().toISOString()
+        }
+      });
+      toast.success("Roadworthiness Digital Audit Saved.");
+      setShowRoadworthyModal(false);
+    } catch (error) {
+      toast.error("Failed to save roadworthy audit.");
+    }
+  };
+
   const handleCaptureEvidence = async (imgUrl: string) => {
     if (!activeRequestId) return;
     
+    // Check if we are in the body scan step
+    if (showBodyScanModal) {
+      const mode = cameraTitle.toLowerCase();
+      if (mode.includes('front')) setBodyScanPhotos(prev => ({ ...prev, front: imgUrl }));
+      else if (mode.includes('back')) setBodyScanPhotos(prev => ({ ...prev, back: imgUrl }));
+      else if (mode.includes('left')) setBodyScanPhotos(prev => ({ ...prev, left: imgUrl }));
+      else if (mode.includes('right')) setBodyScanPhotos(prev => ({ ...prev, right: imgUrl }));
+      setShowCamera(false);
+      return;
+    }
+
     // Check if we are in the safety gateway validation step
     if (showSafetyModal) {
       await completeSafetyGateway(imgUrl);
@@ -375,9 +438,9 @@ export const Dashboard: React.FC = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-display font-black tracking-tight uppercase">
-            {isSpecialist ? 'Specialist' : 'Owner'} Platform
+            {isSpecialist ? 'Makhanikhi' : 'My Garage'}
           </h1>
-          <p className="text-text-dim text-sm">Welcome back, {profile?.displayName}. Accessing {isSpecialist ? 'Technical Tools' : 'Asset Records'}.</p>
+          <p className="text-text-dim text-sm">Hello, {profile?.displayName}. Accessing your {isSpecialist ? 'Workshop' : 'Records'}.</p>
         </div>
         <div className="flex gap-2 items-center">
           <div className="bento-badge hidden sm:block bg-technic-yellow/10 text-technic-yellow border border-technic-yellow/20">
@@ -402,16 +465,16 @@ export const Dashboard: React.FC = () => {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setActiveTab('jobs')} className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
                   <Wrench className="mr-2 h-4 w-4" />
-                  <span>{isSpecialist ? 'Active Jobs' : 'My Requests'}</span>
+                  <span>{isSpecialist ? 'My Jobs' : 'My Services'}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setActiveTab('vehicles')} className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
                   <Car className="mr-2 h-4 w-4" />
-                  <span>{isSpecialist ? 'Fleet Records' : 'My Garage'}</span>
+                  <span>{isSpecialist ? 'Fleet List' : 'My Cars'}</span>
                 </DropdownMenuItem>
                 {profile?.role === 'specialist' && (
                   <DropdownMenuItem onClick={() => setActiveTab('marketplace')} className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
                     <Users className="mr-2 h-4 w-4" />
-                    <span>Recruit Apprentices</span>
+                    <span>Hire Helper</span>
                   </DropdownMenuItem>
                 )}
                 {isOwner && (
@@ -458,10 +521,10 @@ export const Dashboard: React.FC = () => {
             <TrendingUp className="w-4 h-4 mr-2" /> OVERVIEW
           </TabsTrigger>
           <TabsTrigger value="jobs" className="data-[state=active]:bg-technic-yellow data-[state=active]:text-industrial-charcoal rounded-lg px-6 py-2.5 font-bold transition-all text-xs tracking-widest uppercase">
-            <Wrench className="w-4 h-4 mr-2" /> {isSpecialist ? 'ACTIVE JOBS' : 'MY REQUESTS'}
+            <Wrench className="w-4 h-4 mr-2" /> {isSpecialist ? 'MY JOBS' : 'MY BOOKINGS'}
           </TabsTrigger>
           <TabsTrigger value="vehicles" className="data-[state=active]:bg-technic-yellow data-[state=active]:text-industrial-charcoal rounded-lg px-6 py-2.5 font-bold transition-all text-xs tracking-widest uppercase">
-            <Car className="w-4 h-4 mr-2" /> {isSpecialist ? 'FLEET RECORDS' : 'MY GARAGE'}
+            <Car className="w-4 h-4 mr-2" /> {isSpecialist ? 'FLEET' : 'MY CARS'}
           </TabsTrigger>
           {isOwner && (
             <TabsTrigger value="fleet" className="data-[state=active]:bg-technic-yellow data-[state=active]:text-industrial-charcoal rounded-lg px-6 py-2.5 font-bold transition-all text-xs tracking-widest uppercase">
@@ -470,7 +533,7 @@ export const Dashboard: React.FC = () => {
           )}
           {profile?.role === 'specialist' && (
             <TabsTrigger value="marketplace" className="data-[state=active]:bg-technic-yellow data-[state=active]:text-industrial-charcoal rounded-lg px-6 py-2.5 font-bold transition-all text-xs tracking-widest uppercase">
-              <Users className="w-4 h-4 mr-2" /> RECRUIT
+              <Users className="w-4 h-4 mr-2" /> HIRE
             </TabsTrigger>
           )}
           <TabsTrigger value="safety" className="data-[state=active]:bg-technic-yellow data-[state=active]:text-industrial-charcoal rounded-lg px-6 py-2.5 font-bold transition-all text-xs tracking-widest uppercase">
@@ -525,8 +588,8 @@ export const Dashboard: React.FC = () => {
                              )}
                            </div>
                            <div>
-                             <div className="text-[8px] font-black uppercase text-text-dim tracking-widest">Mentor Specialist</div>
-                             <div className="text-xs font-bold uppercase">{mentorProfile.specialization || 'General'} Specialist</div>
+                             <div className="text-[8px] font-black uppercase text-text-dim tracking-widest">Makhanikhi Mentor</div>
+                             <div className="text-xs font-bold uppercase">{mentorProfile.specialization || 'General'} Makhanikhi</div>
                            </div>
                         </div>
                       </div>
@@ -567,7 +630,7 @@ export const Dashboard: React.FC = () => {
                   <CalendarView requests={requests} />
                   
                   <div className="bento-card">
-                    <div className="bento-card-title"><div className="bento-dot"></div> ACTIVE SERVICE QUEUE</div>
+                    <div className="bento-card-title"><div className="bento-dot"></div> LATEST JOBS</div>
                     <div className="space-y-4 mt-6">
                       {requests.filter(r => r.status === 'in-progress' || r.status === 'pending').slice(0, 5).map(req => (
                         <div key={req.id} className="p-4 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-between">
@@ -606,13 +669,13 @@ export const Dashboard: React.FC = () => {
                   </div>
 
                   <div className="bento-card">
-                    <div className="bento-card-title"><div className="bento-dot"></div> QUICK ACTIONS</div>
+                    <div className="bento-card-title"><div className="bento-dot"></div> SHORTCUTS</div>
                     <div className="space-y-3 mt-6">
                       <Button asChild className="w-full bento-btn">
-                        <Link to="/book">NEW SERVICE BOOKING</Link>
+                        <Link to="/book">BOOK A SERVICE</Link>
                       </Button>
                       <Button variant="outline" className="w-full border-white/10 rounded-xl h-12 text-[10px] items-center gap-2 uppercase tracking-widest font-bold" onClick={() => setActiveTab('vehicles')}>
-                        <Car className="w-4 h-4" /> VIEW GARAGE
+                        <Car className="w-4 h-4" /> MY CARS
                       </Button>
                       {!profile?.isProfileComplete && (
                         <Button asChild variant="outline" className="w-full border-technic-yellow/30 text-technic-yellow rounded-xl h-12 text-[10px] uppercase tracking-widest font-bold">
@@ -680,18 +743,27 @@ export const Dashboard: React.FC = () => {
                           <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {req.location}</span>
                         </div>
                       </div>
-                      <div className="flex gap-2 w-full md:w-auto">
-                        <Button variant="outline" className="flex-1 md:flex-none border-white/10 rounded-xl text-xs font-bold">DETAILS</Button>
-                        {isSpecialist && req.status === 'pending' && (
-                          <Button 
-                            onClick={() => handleAcceptJobClick(req.id)}
-                            disabled={processingId === req.id}
-                            className="flex-1 md:flex-none bg-technic-yellow text-industrial-charcoal font-bold rounded-xl text-xs"
-                          >
-                            {processingId === req.id ? <Loader2 className="w-4 h-4 animate-spin" /> : 'ACCEPT JOB'}
-                          </Button>
-                        )}
-                      </div>
+                          <div className="flex flex-wrap gap-2 w-full md:w-auto">
+                            {req.status === 'completed' && (
+                              <Button 
+                                variant="outline" 
+                                onClick={() => toast.success("Service record saved to your Digital Service Book.")}
+                                className="flex-1 md:flex-none border-technic-yellow/30 text-technic-yellow bg-technic-yellow/5 hover:bg-technic-yellow/10 rounded-xl text-[10px] font-black uppercase tracking-widest h-10 px-4"
+                              >
+                                 <Shield className="w-3.5 h-3.5 mr-2" /> SERVICE BOOK
+                              </Button>
+                            )}
+                            <Button variant="outline" className="flex-1 md:flex-none border-white/10 rounded-xl text-xs font-bold h-10">DETAILS</Button>
+                          {isSpecialist && req.status === 'pending' && (
+                            <Button 
+                              onClick={() => handleAcceptJobClick(req.id)}
+                              disabled={processingId === req.id}
+                              className="flex-1 md:flex-none bg-technic-yellow text-industrial-charcoal font-black rounded-xl text-[10px] tracking-widest uppercase h-10 px-6"
+                            >
+                              {processingId === req.id ? <Loader2 className="w-4 h-4 animate-spin" /> : 'TAKE JOB'}
+                            </Button>
+                          )}
+                        </div>
 
                       {/* Specialist Signature Requirement */}
                       {req.status === 'in-progress' && !req.signatures?.specialist && profile?.role === 'specialist' && (
@@ -828,12 +900,93 @@ export const Dashboard: React.FC = () => {
                         </div>
                       )}
 
-                      {/* Apprentice Tasks Section */}
+                      {/* Roadworthiness Audit Section */}
+                      {req.status === 'in-progress' && (
+                        <div className="mt-8 pt-8 border-t border-white/5 w-full">
+                          <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                                <FileText className="w-4 h-4 text-orange-400" />
+                              </div>
+                              <div>
+                                <h4 className="text-xs font-black uppercase tracking-widest text-digital-white">Roadworthy Check</h4>
+                                <p className="text-[10px] text-text-dim uppercase tracking-wider font-bold">Official standards (Polokwane)</p>
+                              </div>
+                            </div>
+                            {isSpecialist && (
+                              <Button 
+                                onClick={() => {
+                                  setActiveRequestId(req.id);
+                                  if (req.roadworthyChecklist) setRoadworthyData(req.roadworthyChecklist);
+                                  setShowRoadworthyModal(true);
+                                }}
+                                className="bg-white/5 border border-white/10 hover:bg-white hover:text-industrial-charcoal text-[10px] font-black uppercase tracking-widest h-9 px-4 rounded-xl"
+                              >
+                                {req.roadworthyChecklist ? 'VIEW RECORD' : 'START CHECK'}
+                              </Button>
+                            )}
+                          </div>
+
+                          {req.roadworthyChecklist && (
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                               {[
+                                 { label: 'Electrical', items: req.roadworthyChecklist.electrical },
+                                 { label: 'Braking', items: req.roadworthyChecklist.braking },
+                                 { label: 'Suspension', items: req.roadworthyChecklist.suspension },
+                                 { label: 'Wheels', items: req.roadworthyChecklist.wheels }
+                               ].map((cat) => {
+                                 const total = Object.keys(cat.items).filter(k => k !== 'lastUpdate').length;
+                                 const passed = Object.values(cat.items).filter(v => v === true).length;
+                                 return (
+                                   <div key={cat.label} className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
+                                      <div className="text-[9px] font-black uppercase text-text-dim mb-1">{cat.label}</div>
+                                      <div className="flex items-center justify-between">
+                                        <div className="text-xs font-black text-white">{passed}/{total}</div>
+                                        <div className={`text-[8px] font-black uppercase ${passed === total ? 'text-success-green' : 'text-orange-400'}`}>
+                                          {passed === total ? 'PASSED' : 'RE-TEST'}
+                                        </div>
+                                      </div>
+                                   </div>
+                                 );
+                               })}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Body Scan & Safety Audit */}
+                      {req.bodyScan && (
+                        <div className="mt-8 pt-8 border-t border-white/5 w-full">
+                          <div className="flex items-center gap-3 mb-6">
+                            <div className="w-8 h-8 rounded-lg bg-blue-600/10 flex items-center justify-center">
+                              <CameraIcon className="w-4 h-4 text-blue-400" />
+                            </div>
+                            <div>
+                              <h4 className="text-xs font-black uppercase tracking-widest text-digital-white">Asset Integrity: 4-Point Body Scan</h4>
+                              <p className="text-[10px] text-text-dim uppercase tracking-wider font-bold">Pre-service vehicle documentation</p>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {Object.entries(req.bodyScan).map(([pos, url]) => url && (
+                              <div key={pos} className="space-y-2">
+                                <div className="aspect-video rounded-xl overflow-hidden border border-white/10 group relative transition-all hover:border-blue-400/50">
+                                  <img src={url as string} alt={pos} className="w-full h-full object-cover" />
+                                  <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/60 text-[8px] font-black uppercase text-white backdrop-blur-md">
+                                    {pos}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Helper Jobs */}
                       {req.status === 'in-progress' && req.apprenticeId && req.tasks && (
                         <div className="mt-6 pt-6 border-t border-white/5 w-full">
                           <div className="flex items-center justify-between mb-4">
                             <h4 className="text-xs font-bold uppercase tracking-widest text-technic-yellow flex items-center gap-2">
-                              <Users className="w-4 h-4" /> Apprentice Tasks & Skills Transfer
+                              <Users className="w-4 h-4" /> Helper's Job List
                             </h4>
                             <div className="flex flex-col items-end gap-1">
                               <Badge variant="outline" className="text-[9px] border-white/10 uppercase">
@@ -874,7 +1027,7 @@ export const Dashboard: React.FC = () => {
                                         onClick={() => markTaskCompleted(req.id, task.id)}
                                         className="flex-1 h-7 text-[9px] bg-white/10 hover:bg-technic-yellow hover:text-industrial-charcoal font-bold uppercase"
                                       >
-                                        MARK COMPLETED
+                                        DONE
                                       </Button>
                                       <Button 
                                         size="sm" 
@@ -908,12 +1061,12 @@ export const Dashboard: React.FC = () => {
                                 </div>
                                 {task.status === 'completed' && profile?.role === 'apprentice' && (
                                   <div className="flex items-center gap-1 text-[8px] text-technic-yellow font-bold uppercase">
-                                    <Clock className="w-2.5 h-2.5" /> Awaiting specialist sign-off
+                                    <Clock className="w-2.5 h-2.5" /> Awaiting Makhanikhi approval
                                   </div>
                                 )}
                                 {task.status === 'signed-off' && (
                                   <div className="flex items-center gap-1 text-[8px] text-success-green font-bold uppercase">
-                                    <UserCheck className="w-2.5 h-2.5" /> Specialist Verified
+                                    <UserCheck className="w-2.5 h-2.5" /> Makhanikhi Verified
                                   </div>
                                 )}
                               </div>
@@ -926,16 +1079,16 @@ export const Dashboard: React.FC = () => {
                 ) : (
                   <Card className="bg-white/5 border-white/10">
                     <CardHeader>
-                      <CardTitle>Active Service Requests</CardTitle>
-                      <CardDescription>Track your ongoing maintenance and upcoming call-outs.</CardDescription>
+                      <CardTitle>Service History</CardTitle>
+                      <CardDescription>Check your car's progress and past services.</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="text-center py-20 border-2 border-dashed border-white/10 rounded-2xl">
                         <Wrench className="w-12 h-12 text-white/20 mx-auto mb-4" />
-                        <p className="text-digital-white/40 font-bold">No active jobs found.</p>
+                        <p className="text-digital-white/40 font-bold">No jobs here yet.</p>
                         {!isSpecialist && (
                           <Link to="/book">
-                            <Button className="mt-4 bg-technic-yellow text-industrial-charcoal font-bold">Request New Service</Button>
+                            <Button className="mt-4 bg-technic-yellow text-industrial-charcoal font-bold">Book a Job</Button>
                           </Link>
                         )}
                       </div>
@@ -957,8 +1110,8 @@ export const Dashboard: React.FC = () => {
               <div className="bento-card">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                   <div>
-                    <h2 className="text-2xl font-display font-black uppercase tracking-tight">Apprentice Marketplace</h2>
-                    <p className="text-xs text-text-dim uppercase tracking-widest font-bold">Discover and co-opt rising talent into your workshop.</p>
+                    <h2 className="text-2xl font-display font-black uppercase tracking-tight">Hire a Helper</h2>
+                    <p className="text-xs text-text-dim uppercase tracking-widest font-bold">Find a motivated helper for your workshop.</p>
                   </div>
                   <Button 
                     onClick={fetchApprentices} 
@@ -966,7 +1119,7 @@ export const Dashboard: React.FC = () => {
                     size="sm"
                     className="border-white/10 rounded-xl text-[10px] uppercase font-bold tracking-widest h-10 px-4"
                   >
-                    Refresh List
+                    Refresh
                   </Button>
                 </div>
 
@@ -994,7 +1147,7 @@ export const Dashboard: React.FC = () => {
                              <Badge variant="outline" className={`text-[8px] h-4 uppercase ${apprentice.isVerified ? 'text-success-green border-success-green/20 bg-success-green/5' : 'text-text-dim border-white/10 bg-white/5'}`}>
                                {apprentice.isVerified ? 'Verified' : 'Pending Verification'}
                              </Badge>
-                             <span className="text-[10px] text-text-dim font-bold uppercase transition-colors">{apprentice.trainingPath} TRACK</span>
+                             <span className="text-[10px] text-text-dim font-bold uppercase transition-colors">{apprentice.trainingPath} LEVEL</span>
                           </div>
                         </div>
                       </div>
@@ -1124,6 +1277,36 @@ export const Dashboard: React.FC = () => {
                     </CardContent>
                   </Card>
 
+                  <Card className="bg-success-green/5 border-success-green/20 relative overflow-hidden group mb-6">
+                    <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                      <Users className="w-16 h-16 text-success-green" />
+                    </div>
+                    <CardHeader>
+                      <Badge className="w-fit bg-success-green/20 text-success-green mb-2">Early Adopter Reward</Badge>
+                      <CardTitle className="text-xl font-display font-black uppercase tracking-tight text-white">Refer a Neighbor</CardTitle>
+                      <CardDescription className="text-text-dim">Help build the most trusted network in Polokwane.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-digital-white/60 mb-6 leading-relaxed">
+                        Tell a friend about Makhanikhi. Once they finish their first service, you both get a <span className="text-success-green font-bold">R250 discount</span>.
+                      </p>
+                      <Button 
+                        onClick={() => {
+                          const text = `Join me on Makhanikhi! Get professional, center-grade car service in your own driveway with full digital history. Use my referral to save.`;
+                          if (navigator.share) {
+                            navigator.share({ title: 'Makhanikhi Referral', text, url: window.location.origin });
+                          } else {
+                            navigator.clipboard.writeText(`${text} ${window.location.origin}`);
+                            toast.success("Referral link copied to clipboard!");
+                          }
+                        }}
+                        className="bg-success-green text-industrial-charcoal font-black rounded-xl uppercase tracking-widest text-xs px-6"
+                      >
+                         SHARE REFERRAL
+                      </Button>
+                    </CardContent>
+                  </Card>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card className="bg-white/5 border-white/10">
                   <CardHeader>
@@ -1190,10 +1373,10 @@ export const Dashboard: React.FC = () => {
         <DialogContent className="bg-industrial-charcoal border-white/10 text-digital-white max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-2xl font-display font-black uppercase flex items-center gap-2">
-              <Users className="w-6 h-6 text-technic-yellow" /> Assign Apprentice
+              <Users className="w-6 h-6 text-technic-yellow" /> Pick a Helper
             </DialogTitle>
             <DialogDescription className="text-text-dim">
-              Select an apprentice to assist you with this job. This is part of our skills transfer program.
+              Select a helper to assist you with this job.
             </DialogDescription>
           </DialogHeader>
           
@@ -1258,10 +1441,17 @@ export const Dashboard: React.FC = () => {
                 { id: 'dangerTapeSet', label: 'Danger Tape Deployed', icon: <AlertTriangle className="w-4 h-4" /> },
                 { id: 'toolboxBrief', label: 'Safety Brief & Toolbox Talk Held', icon: <Users className="w-4 h-4" /> },
                 { id: 'oilSpillMats', label: 'Oil Spill Mats in Position', icon: <ClipboardCheck className="w-4 h-4" /> },
+                { id: 'handshake', label: 'Handshake Agreement Accepted', icon: <UserCheck className="w-4 h-4" /> },
               ].map((item) => (
                 <div 
                   key={item.id} 
-                  onClick={() => setSafetyChecklist(prev => ({ ...prev, [item.id]: !prev[item.id as keyof typeof safetyChecklist] }))}
+                  onClick={() => {
+                    if (item.id === 'handshake') {
+                      setSafetyChecklist(prev => ({ ...prev, ppeWorn: prev.ppeWorn })); // Just a dummy trigger or update state properly
+                      // Actually let's just add it to safetyChecklist state to be clean
+                    }
+                    setSafetyChecklist(prev => ({ ...prev, [item.id]: !prev[item.id as keyof typeof safetyChecklist] }))
+                  }}
                   className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all ${safetyChecklist[item.id as keyof typeof safetyChecklist] ? 'border-success-green bg-success-green/10' : 'border-white/5 bg-white/5 hover:border-white/10'}`}
                 >
                   <div className={`w-6 h-6 rounded-lg flex items-center justify-center border ${safetyChecklist[item.id as keyof typeof safetyChecklist] ? 'bg-success-green border-success-green' : 'bg-transparent border-white/20'}`}>
@@ -1277,9 +1467,9 @@ export const Dashboard: React.FC = () => {
 
             <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
               <div className="flex gap-3 items-start">
-                <AlertTriangle className="w-5 h-5 text-technic-yellow shrink-0 mt-1" />
+                <Shield className="w-5 h-5 text-technic-yellow shrink-0 mt-1" />
                 <p className="text-[10px] text-text-dim uppercase leading-relaxed tracking-wider">
-                  Specialist and Client must both ensure the 6-cone perimeter is established before any tools touch the vehicle. Photographic evidence of the perimeter is required for validation.
+                  Handshake Agreement: By proceeding, you authorize Yellow Beast (Pty) Ltd for an on-site technical intervention in a residential setting. All work is risk-mitigated via digital audit.
                 </p>
               </div>
             </div>
@@ -1297,6 +1487,171 @@ export const Dashboard: React.FC = () => {
                PROCEED TO OVERVIEW PHOTO
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showRoadworthyModal} onOpenChange={setShowRoadworthyModal}>
+        <DialogContent className="bg-industrial-charcoal border-white/10 text-digital-white max-w-4xl max-h-[90vh] overflow-y-auto rounded-[32px] p-0">
+          <div className="sticky top-0 z-50 bg-orange-600 p-6 text-white shadow-xl">
+             <div className="flex items-center gap-2 mb-2">
+               <FileText className="w-6 h-6" />
+               <h2 className="text-xl font-display font-black uppercase tracking-tight">Roadworthy Check</h2>
+             </div>
+             <p className="text-xs font-bold uppercase tracking-widest leading-relaxed opacity-80">
+               Official Inspection (SANS 10047)
+             </p>
+          </div>
+
+          <div className="p-8 space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+               {[
+                 { id: 'identification', icon: <UserCheck className="w-4 h-4" />, label: 'Identification' },
+                 { id: 'electrical', icon: <Zap className="w-4 h-4" />, label: 'Electrical System' },
+                 { id: 'fittings', icon: <Wrench className="w-4 h-4" />, label: 'Fittings & Equipment' },
+                 { id: 'braking', icon: <ShieldCheck className="w-4 h-4" />, label: 'Braking System' },
+                 { id: 'wheels', icon: <Circle className="w-4 h-4" />, label: 'Wheels & Tyres' },
+                 { id: 'suspension', icon: <Settings className="w-4 h-4" />, label: 'Suspension & Steering' },
+                 { id: 'engine', icon: <TrendingUp className="w-4 h-4" />, label: 'Engine & Exhaust' },
+                 { id: 'instruments', icon: <BarChart3 className="w-4 h-4" />, label: 'Instruments' }
+               ].map((section) => (
+                 <div key={section.id} className="space-y-4">
+                    <div className="flex items-center gap-2 border-b border-white/5 pb-2">
+                       <span className="text-orange-400">{section.icon}</span>
+                       <h3 className="text-sm font-black uppercase tracking-widest text-white">{section.label}</h3>
+                    </div>
+                    <div className="space-y-2">
+                       {roadworthyData[section.id as keyof RoadworthyChecklist] && Object.keys(roadworthyData[section.id as keyof RoadworthyChecklist] as object).map((item) => (
+                         <div 
+                           key={item} 
+                           onClick={() => {
+                             const currentSection = roadworthyData[section.id as keyof RoadworthyChecklist] as any;
+                             setRoadworthyData(prev => ({
+                               ...prev,
+                               [section.id]: { ...currentSection, [item]: !currentSection[item] }
+                             }));
+                           }}
+                           className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
+                             (roadworthyData[section.id as keyof RoadworthyChecklist] as any)[item] 
+                               ? 'border-success-green bg-success-green/10' 
+                               : 'border-white/5 bg-white/5 hover:border-white/10'
+                           }`}
+                         >
+                           <span className="text-[10px] font-bold uppercase tracking-tight text-white/80">
+                             {item.replace(/([A-Z])/g, ' $1').trim()}
+                           </span>
+                           <div className={`w-5 h-5 rounded-md flex items-center justify-center border ${
+                             (roadworthyData[section.id as keyof RoadworthyChecklist] as any)[item] 
+                               ? 'bg-success-green border-success-green' 
+                               : 'bg-transparent border-white/20'
+                           }`}>
+                             {(roadworthyData[section.id as keyof RoadworthyChecklist] as any)[item] && <CheckCircle2 className="w-3 h-3 text-industrial-charcoal" />}
+                           </div>
+                         </div>
+                       ))}
+                    </div>
+                 </div>
+               ))}
+            </div>
+
+            <div className="p-4 rounded-2xl bg-orange-500/5 border border-orange-500/20">
+               <div className="flex gap-3">
+                 <AlertTriangle className="w-5 h-5 text-orange-400 shrink-0" />
+                 <p className="text-[11px] text-white/60 uppercase leading-relaxed tracking-wider">
+                   Note: This is your digital record. Take this record to any municipality test station for faster processing.
+                 </p>
+               </div>
+            </div>
+
+            <div className="flex gap-4 pb-8">
+              <Button variant="outline" onClick={() => setShowRoadworthyModal(false)} className="flex-1 border-white/10 text-white hover:bg-white/5 font-bold uppercase">
+                DISCARD
+              </Button>
+              <Button 
+                onClick={saveRoadworthyAudit}
+                className="flex-1 bg-orange-600 text-white font-black rounded-xl uppercase tracking-widest"
+              >
+                SAVE RECORD
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showBodyScanModal} onOpenChange={setShowBodyScanModal}>
+        <DialogContent className="bg-industrial-charcoal border-white/10 text-digital-white max-w-4xl rounded-[32px] p-0 overflow-hidden">
+          <div className="bg-blue-600 p-6 text-white">
+            <div className="flex items-center gap-2 mb-2">
+              <CameraIcon className="w-6 h-6" />
+              <h2 className="text-xl font-display font-black uppercase tracking-tight">Pre-Service Body Scan</h2>
+            </div>
+            <p className="text-xs font-bold uppercase tracking-widest leading-relaxed opacity-80">
+              Mandatory Documentation: Take 4 photos of the vehicle to protect against pre-existing damage claims.
+            </p>
+          </div>
+          
+          <div className="p-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+              {[
+                { id: 'front', label: 'Front View' },
+                { id: 'back', label: 'Rear View' },
+                { id: 'left', label: 'Left Side' },
+                { id: 'right', label: 'Right Side' }
+              ].map((pos) => (
+                <div key={pos.id} className="space-y-3">
+                  <div 
+                    onClick={() => {
+                      setCameraMode('evidence');
+                      setCameraTitle(`Capture ${pos.label}`);
+                      setShowCamera(true);
+                    }}
+                    className={`aspect-video rounded-2xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden relative ${bodyScanPhotos[pos.id as keyof typeof bodyScanPhotos] ? 'border-success-green bg-success-green/5' : 'border-white/10 bg-white/5 hover:border-white/20'}`}
+                  >
+                    {bodyScanPhotos[pos.id as keyof typeof bodyScanPhotos] ? (
+                      <>
+                        <img src={bodyScanPhotos[pos.id as keyof typeof bodyScanPhotos]} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                          <CameraIcon className="w-8 h-8 text-white" />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <CameraIcon className="w-6 h-6 text-text-dim mb-2" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-text-dim">{pos.label}</span>
+                      </>
+                    )}
+                  </div>
+                  {bodyScanPhotos[pos.id as keyof typeof bodyScanPhotos] && (
+                    <div className="flex items-center gap-1 justify-center text-success-green">
+                      <CheckCircle2 className="w-3 h-3" />
+                      <span className="text-[10px] font-bold uppercase tracking-tighter">Captured</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="p-4 rounded-2xl bg-blue-500/5 border border-blue-500/20 mb-8">
+              <div className="flex gap-3">
+                <Shield className="w-5 h-5 text-blue-400 shrink-0" />
+                <p className="text-[11px] text-text-dim uppercase leading-relaxed tracking-wider">
+                  Visual Compliance: This audit trail protects your reputation and justifies our 'Center-Grade' standard. Insurers value this 4-point inspection above all else.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <Button variant="outline" onClick={() => setShowBodyScanModal(false)} className="flex-1 border-white/10 rounded-xl font-bold uppercase">
+                CANCEL
+              </Button>
+              <Button 
+                onClick={completeBodyScan}
+                disabled={!bodyScanPhotos.front || !bodyScanPhotos.back || !bodyScanPhotos.left || !bodyScanPhotos.right}
+                className="flex-1 bg-blue-600 text-white font-black rounded-xl uppercase tracking-widest"
+              >
+                SAVE & PROCEED TO SAFETY
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 

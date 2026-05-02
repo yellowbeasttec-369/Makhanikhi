@@ -30,26 +30,32 @@ export const Hero: React.FC = () => {
             <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-technic-yellow/10 border border-technic-yellow/20 text-technic-yellow text-[10px] font-bold uppercase tracking-widest mb-6">
               <img src="/yellow beast.jpg" alt="Yellow Beast" className="w-4 h-4 rounded-full object-cover" referrerPolicy="no-referrer" /> Powered by Yellow Beast R&D & Venture Studio
             </span>
-            <h1 className="text-5xl md:text-7xl font-display font-black tracking-tighter mb-6 leading-[0.9] text-white">
-              <span className="text-technic-yellow">THE DIGITAL</span> <br />
-              <span className="bg-gradient-to-r from-technic-yellow to-white bg-clip-text text-transparent">WRENCH</span> FOR THE <br />
-              <span className="text-technic-yellow">MODERN AGE</span>
+            <h1 className="text-5xl md:text-8xl font-display font-black tracking-tighter mb-6 leading-[0.9] text-white uppercase italic">
+              Asset <span className="text-technic-yellow">Preservation</span> <br />
+              For the Self-Insured.
             </h1>
-            <p className="max-w-2xl mx-auto text-lg text-digital-white/80 mb-10">
-              Eliminating the friction of traditional car service. Specialist mobile mechanics, 
-              apprentice skills transfer, and transparent digital record keeping.
+            <p className="max-w-2xl mx-auto text-lg text-digital-white/80 mb-10 leading-relaxed">
+              Your car is your biggest asset. Why trust a backyard 'side-hustle' with no records? Makhanikhi brings engineering standards to your driveway with a <span className="text-white font-bold">full digital audit trail</span> that protects your car's resale value.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/login?role=owner">
-                <Button size="lg" className="bg-technic-yellow text-industrial-charcoal hover:bg-technic-yellow/90 font-black h-14 px-8 text-lg rounded-xl w-full sm:w-auto shadow-[0_0_20px_rgba(255,210,0,0.2)] uppercase">
-                  I am a Car Owner <ArrowRight className="ml-2 w-5 h-5" />
+                <Button size="lg" className="bg-technic-yellow text-industrial-charcoal hover:bg-technic-yellow/90 font-black h-16 px-10 text-xl rounded-2xl w-full sm:w-auto shadow-[0_0_40px_rgba(255,210,0,0.2)] uppercase tracking-tighter">
+                  Book a Service <ArrowRight className="ml-2 w-6 h-6" />
                 </Button>
               </Link>
               <Link to="/login?role=pro">
-                <Button size="lg" variant="outline" className="border-white/20 hover:bg-white/5 font-bold h-14 px-8 text-lg rounded-xl w-full sm:w-auto uppercase">
-                  Technical Professional
+                <Button size="lg" variant="outline" className="bg-white/5 border-white/10 hover:bg-white hover:text-industrial-charcoal font-black h-16 px-10 text-xl rounded-2xl w-full sm:w-auto uppercase text-white transition-all tracking-tighter">
+                  Makhanikhi
                 </Button>
               </Link>
+            </div>
+            
+            <div className="mt-12 flex flex-wrap justify-center gap-6">
+              {['Out-of-Warranty Workhorses', 'Second-Hand Saviors', 'Busy Professionals'].map((tag) => (
+                <div key={tag} className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/80">
+                  <CheckCircle2 className="w-3 h-3 text-technic-yellow" /> {tag}
+                </div>
+              ))}
             </div>
           </motion.div>
 

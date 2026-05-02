@@ -6,14 +6,24 @@ import { motion } from 'motion/react';
 export const OHSAGuidelines: React.FC = () => {
   const guidelines = [
     {
-      title: "Workshop Setup & Demarcation",
+      title: "Site Preparation & Physical Barriers",
       icon: <Construction className="w-5 h-5 text-technic-yellow" />,
       items: [
-        "A minimum of 6 safety cones (or sand-filled bottles) must be placed around the vehicle perimeter.",
-        "Yellow danger tape must be strung between cones to create a visible physical barrier.",
-        "Ensure the work area is level and stable for jacking operations.",
-        "Ensure adequate lighting (minimum 300 lux) for the task area.",
-        "Place 'Work in Progress' signage clearly at all entry points."
+        "A minimum of 6 safety cones (or high-visibility sand-filled bottles) must be placed to demarcate the 360° perimeter.",
+        "Yellow danger tape must be strung between all perimeter markers to create a physical exclusion zone.",
+        "PVC floor mats or oil spill mats must be deployed under the work area to ensure a zero-fluid-leak policy.",
+        "Place 'Digital Audit in Progress' signage clearly to inform onlookers of the technical standards.",
+        "Ensure the vehicle is secured on level ground with verified jack-stands for all under-body work."
+      ]
+    },
+    {
+      title: "Asset Preservation Protocols",
+      icon: <Shield className="w-5 h-5 text-technic-yellow" />,
+      items: [
+        "Perform a 4-point external body scan before tools touch the vehicle.",
+        "Use fender covers or clean cloths to protect bodywork from tool contact.",
+        "Document all removed component serial numbers via the digital audit trail.",
+        "Ensure all oily rags are placed in sealed containers for off-site disposal."
       ]
     },
     {

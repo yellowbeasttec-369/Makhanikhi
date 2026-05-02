@@ -68,6 +68,52 @@ export interface ServiceRecord {
 
 export type ServiceStatus = 'pending' | 'quoted' | 'accepted' | 'in-progress' | 'completed' | 'cancelled';
 
+export interface RoadworthyChecklist {
+  identification: {
+    vinMatch: boolean;
+    engineNoMatch: boolean;
+    sapsClearance?: boolean;
+  };
+  electrical: {
+    wipers: boolean;
+    lights: boolean;
+    horn: boolean;
+    batteryClamp: boolean;
+  };
+  fittings: {
+    bumpers: boolean;
+    mirrors: boolean;
+    seatbelts: boolean;
+    doors: boolean;
+    chassis: boolean;
+  };
+  braking: {
+    serviceBrake: boolean;
+    parkingBrake: boolean;
+    abs?: boolean;
+  };
+  wheels: {
+    tireCondition: boolean;
+    tireSizeMatch: boolean;
+    rimIntegrity: boolean;
+  };
+  suspension: {
+    shocks: boolean;
+    kingpins?: boolean;
+    steeringBox: boolean;
+    leaks: boolean;
+  };
+  engine: {
+    smokeEmission: boolean;
+    mountings: boolean;
+    exhaustSystem: boolean;
+  };
+  instruments: {
+    speedometer: boolean;
+  };
+  lastUpdate: string;
+}
+
 export interface ProjectMilestone {
   id: string;
   title: string;
@@ -100,6 +146,17 @@ export interface ServiceRequest {
   checklist?: SafetyChecklist;
   tasks?: ApprenticeTask[];
   milestones?: ProjectMilestone[];
+  roadworthyChecklist?: RoadworthyChecklist;
+  roadworthyRequested?: boolean;
+  bodyScan?: {
+    front?: string;
+    back?: string;
+    left?: string;
+    right?: string;
+  };
+  bodyScanCompletedAt?: string;
+  referralId?: string;
+  handshakeAccepted?: boolean;
   signatures?: {
     owner?: { uid: string; timestamp: string; name?: string; signature?: string };
     specialist?: { uid: string; timestamp: string; name?: string; signature?: string };
