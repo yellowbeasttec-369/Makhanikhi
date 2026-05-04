@@ -15,12 +15,18 @@ export const Navbar: React.FC = () => {
   const [walletAddress, setWalletAddress] = React.useState<string | null>(null);
 
   const connectWallet = async () => {
-    if (window.ethereum) {
+    if (typeof window.ethereum !== 'undefined') {
       try {
-        // Use BrowserProvider from ethers (v6)
-        const provider = new BrowserProvider(window.ethereum);
+        // Check if we're in an iframe
+        const isIframe = window.self !== window.top;
+        if (isIframe) {
+          toast.info("MetaMask may not work correctly inside an iframe. If connection fails, please open the app in a new tab.", {
+            duration: 6000,
+          });
+        }
+
         // Request accounts
-        const accounts = await provider.send("eth_requestAccounts", []);
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         
         if (accounts && accounts.length > 0) {
           setWalletAddress(accounts[0]);
@@ -34,12 +40,14 @@ export const Navbar: React.FC = () => {
           toast.error("Connection request rejected. Please approve it in MetaMask.");
         } else if (error.code === -32002) {
           toast.error("MetaMask request already pending. Check your extension.");
+        } else if (error.code === 4100) {
+          toast.error("MetaMask: The requested account and/or method has not been authorized.");
         } else {
-          toast.error("Failed to connect to MetaMask. Ensure it is installed and unlocked.");
+          toast.error(`MetaMask Connection failed: ${error.message || "Unknown error"}`);
         }
       }
     } else {
-      toast.error("MetaMask not detected. Please install the extension.");
+      toast.error("MetaMask not detected. Please install the extension or use a mobile DApp browser.");
     }
   };
 
@@ -93,12 +101,15 @@ export const Navbar: React.FC = () => {
                   </div>
                   
                   <DropdownMenu>
-                    <DropdownMenuTrigger render={<Button variant="ghost" className="relative flex items-center gap-2 h-10 px-2 rounded-full hover:bg-white/5" />}>
-                      <Avatar className="h-8 w-8 border-2 border-technic-yellow/20">
-                        <AvatarImage src={user.photoURL || ''} />
-                        <AvatarFallback><UserIcon className="w-4 h-4" /></AvatarFallback>
-                      </Avatar>
-                      <Menu className="w-4 h-4 text-text-dim" />
+                    <DropdownMenuTrigger render={
+                      <Button variant="ghost" className="relative flex items-center gap-2 h-10 px-2 rounded-full hover:bg-white/5">
+                        <Avatar className="h-8 w-8 border-2 border-technic-yellow/20">
+                          <AvatarImage src={user.photoURL || ''} />
+                          <AvatarFallback><UserIcon className="w-4 h-4" /></AvatarFallback>
+                        </Avatar>
+                        <Menu className="w-4 h-4 text-text-dim" />
+                      </Button>
+                    }>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-56 bg-industrial-charcoal border-white/10 text-digital-white" align="end">
                       <DropdownMenuGroup>

@@ -130,7 +130,7 @@ export const VerificationCenter: React.FC = () => {
     <div className="max-w-2xl mx-auto py-10 px-4">
       {showCamera && (
         <CameraCapture 
-          title={`Scan ${captureTarget?.replace('Url', '').toUpperCase()}`}
+          title={`Scan ${(captureTarget?.replace('Url', '') || '').toUpperCase()}`}
           onCapture={onCapture}
           onClose={() => setShowCamera(false)}
         />

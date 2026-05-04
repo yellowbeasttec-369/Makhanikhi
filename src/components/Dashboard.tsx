@@ -4,7 +4,8 @@ import { db } from '../lib/firebase';
 import { collection, query, where, onSnapshot, orderBy, doc, updateDoc, getDocs } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Button } from './ui/button';
+import { Button, buttonVariants } from './ui/button';
+import { cn } from '../lib/utils';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
@@ -444,13 +445,16 @@ export const Dashboard: React.FC = () => {
         </div>
         <div className="flex gap-2 items-center">
           <div className="bento-badge hidden sm:block bg-technic-yellow/10 text-technic-yellow border border-technic-yellow/20">
-            {activeRole?.toUpperCase()} MODE
+            {activeRole?.toUpperCase() || 'UNKNOWN'} MODE
           </div>
           
           <div className="md:hidden">
             <DropdownMenu>
-              <DropdownMenuTrigger render={<Button variant="outline" size="icon" className="border-white/10 rounded-xl bg-white/5" />}>
-                <Menu className="w-5 h-5 text-technic-yellow" />
+              <DropdownMenuTrigger render={
+                <Button variant="outline" size="icon" className="border-white/10 rounded-xl bg-white/5">
+                  <Menu className="w-5 h-5 text-technic-yellow" />
+                </Button>
+              }>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56 bg-industrial-charcoal border-white/10 text-digital-white" align="end">
                 <DropdownMenuGroup>
@@ -671,16 +675,16 @@ export const Dashboard: React.FC = () => {
                   <div className="bento-card">
                     <div className="bento-card-title"><div className="bento-dot"></div> SHORTCUTS</div>
                     <div className="space-y-3 mt-6">
-                      <Button asChild className="w-full bento-btn">
-                        <Link to="/book">BOOK A SERVICE</Link>
-                      </Button>
+                      <Link to="/book" className={cn(buttonVariants({ variant: "default" }), "w-full bento-btn")}>
+                        BOOK A SERVICE
+                      </Link>
                       <Button variant="outline" className="w-full border-white/10 rounded-xl h-12 text-[10px] items-center gap-2 uppercase tracking-widest font-bold" onClick={() => setActiveTab('vehicles')}>
                         <Car className="w-4 h-4" /> MY CARS
                       </Button>
                       {!profile?.isProfileComplete && (
-                        <Button asChild variant="outline" className="w-full border-technic-yellow/30 text-technic-yellow rounded-xl h-12 text-[10px] uppercase tracking-widest font-bold">
-                          <Link to="/register">COMPLETE BIO PROFILE</Link>
-                        </Button>
+                        <Link to="/register" className={cn(buttonVariants({ variant: "outline" }), "w-full border-technic-yellow/30 text-technic-yellow rounded-xl h-12 text-[10px] uppercase tracking-widest font-bold")}>
+                          COMPLETE BIO PROFILE
+                        </Link>
                       )}
                     </div>
                   </div>
@@ -700,7 +704,7 @@ export const Dashboard: React.FC = () => {
                       </p>
                       {!profile?.isVerified && profile?.verificationStatus !== 'pending' && (isSpecialist) && (
                         <Link to="/verify" className="mt-auto">
-                          <Button className="bento-btn">Start Verification</Button>
+                          <div className={cn(buttonVariants({ variant: "default" }), "bento-btn w-full")}>Start Verification</div>
                         </Link>
                       )}
                     </div>
@@ -737,7 +741,7 @@ export const Dashboard: React.FC = () => {
                           </h3>
                           {getStatusBadge(req.status)}
                         </div>
-                        <p className="text-sm text-text-dim">{req.type.toUpperCase()} SERVICE • {req.description.slice(0, 60)}{req.description.length > 60 ? '...' : ''}</p>
+                        <p className="text-sm text-text-dim">{(req.type || 'GENERAL').toUpperCase()} SERVICE • {req.description.slice(0, 60)}{req.description.length > 60 ? '...' : ''}</p>
                         <div className="flex items-center gap-4 mt-3 text-[11px] text-text-dim font-bold uppercase tracking-widest">
                           <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date((req.createdAt as any)?.seconds * 1000).toLocaleDateString()}</span>
                           <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {req.location}</span>
@@ -1088,7 +1092,7 @@ export const Dashboard: React.FC = () => {
                         <p className="text-digital-white/40 font-bold">No jobs here yet.</p>
                         {!isSpecialist && (
                           <Link to="/book">
-                            <Button className="mt-4 bg-technic-yellow text-industrial-charcoal font-bold">Book a Job</Button>
+                            <div className={cn(buttonVariants({ variant: "default" }), "mt-4 bg-technic-yellow text-industrial-charcoal font-bold")}>Book a Job</div>
                           </Link>
                         )}
                       </div>
@@ -1391,7 +1395,7 @@ export const Dashboard: React.FC = () => {
                     className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all mb-2 text-left ${selectedApprenticeId === app.uid ? 'border-technic-yellow bg-technic-yellow/10' : 'border-white/5 bg-white/5 hover:border-white/10'}`}
                   >
                     <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center font-bold">
-                      {app.displayName.slice(0, 2).toUpperCase()}
+                      {(app.displayName || '??').slice(0, 2).toUpperCase()}
                     </div>
                     <div>
                       <p className="text-sm font-bold">{app.displayName}</p>

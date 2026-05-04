@@ -114,7 +114,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({ requests }) => {
             >
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-white/5 border border-white/10 rounded-xl flex flex-col items-center justify-center">
-                  <span className="text-[10px] font-black text-technic-yellow">{new Date(req.appointmentDate!).toLocaleString('default', { month: 'short' }).toUpperCase()}</span>
+                  <span className="text-[10px] font-black text-technic-yellow">{(new Date(req.appointmentDate!).toLocaleString('default', { month: 'short' }) || '').toUpperCase()}</span>
                   <span className="text-sm font-black">{new Date(req.appointmentDate!).getDate()}</span>
                 </div>
                 <div>

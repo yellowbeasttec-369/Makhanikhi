@@ -224,9 +224,9 @@ export const VehicleLogBook: React.FC = () => {
           <div className="flex justify-between items-center mb-4">
             <div className="bento-card-title"><div className="bento-dot"></div> VEHICLE OWNERSHIP VERIFICATION</div>
             <Dialog open={showAddVehicle} onOpenChange={setShowAddVehicle}>
-              <DialogTrigger render={<Button size="sm" className="bg-white/10 text-digital-white font-bold rounded-xl text-[10px] h-7" />}>
+              <DialogTrigger render={<Button size="sm" className="bg-white/10 text-digital-white font-bold rounded-xl text-[10px] h-7">
                 <Plus className="w-3 h-3 mr-1" /> ADD VEHICLE
-              </DialogTrigger>
+              </Button>} />
               <DialogContent className="bg-industrial-charcoal border-white/10 text-digital-white">
                 <DialogHeader>
                   <DialogTitle className="uppercase font-display font-black">Add New Vehicle</DialogTitle>
@@ -344,9 +344,9 @@ export const VehicleLogBook: React.FC = () => {
           <div className="bento-card-title"><div className="bento-dot"></div> SERVICE HISTORY LOG</div>
           <div className="flex gap-2">
             <Dialog open={showAddLog} onOpenChange={setShowAddLog}>
-              <DialogTrigger render={<Button size="sm" className="bg-technic-yellow text-industrial-charcoal font-bold rounded-xl text-xs" />}>
+              <DialogTrigger render={<Button size="sm" className="bg-technic-yellow text-industrial-charcoal font-bold rounded-xl text-xs">
                 <Plus className="w-3 h-3 mr-2" /> ADD ENTRY
-              </DialogTrigger>
+              </Button>} />
               <DialogContent className="bg-industrial-charcoal border-white/10 text-digital-white">
                 <DialogHeader>
                   <DialogTitle className="uppercase font-display font-black">Add Log Entry</DialogTitle>

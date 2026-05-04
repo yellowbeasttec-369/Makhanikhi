@@ -4,7 +4,8 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { UserProfile } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, MapPin, Award, Users, ShieldCheck, Star, ArrowRight, User, Map as MapIcon, Grid, Paintbrush, Hammer, Settings, Shield, CheckCircle2 } from 'lucide-react';
-import { Button } from './ui/button';
+import { Button, buttonVariants } from './ui/button';
+import { cn } from '../lib/utils';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { useNavigate, Link } from 'react-router-dom';
@@ -225,14 +226,14 @@ export const WorkshopRegistry: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="mt-auto pt-6 border-t border-white/5 flex gap-3">
-                    <Button asChild className="flex-1 bento-btn text-[10px] h-10 px-0">
-                      <Link to="/register">APPLY TO JOIN</Link>
-                    </Button>
-                    <Button variant="outline" className="w-10 h-10 p-0 border-white/10 rounded-xl">
-                      <ArrowRight className="w-4 h-4" />
-                    </Button>
-                  </div>
+                    <div className="mt-auto pt-6 border-t border-white/5 flex gap-3">
+                      <Link to="/register" className={cn(buttonVariants({ variant: "default" }), "flex-1 bento-btn text-[10px] h-10 px-0 flex items-center justify-center")}>
+                        APPLY TO JOIN
+                      </Link>
+                      <Button variant="outline" className="w-10 h-10 p-0 border-white/10 rounded-xl">
+                        <ArrowRight className="w-4 h-4" />
+                      </Button>
+                    </div>
                 </motion.div>
               ))
             )}
