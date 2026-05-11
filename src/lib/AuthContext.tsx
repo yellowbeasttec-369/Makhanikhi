@@ -32,17 +32,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (userDoc.exists()) {
           setProfile(userDoc.data() as UserProfile);
         } else {
-          // Create default profile if not exists
-          const newProfile: UserProfile = {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email || '',
-            displayName: firebaseUser.displayName || 'User',
-            role: 'owner',
-            isVerified: false,
-            isProfileComplete: false,
-          };
-          await setDoc(doc(db, 'users', firebaseUser.uid), newProfile);
-          setProfile(newProfile);
+          setProfile(null);
         }
       } else {
         setProfile(null);

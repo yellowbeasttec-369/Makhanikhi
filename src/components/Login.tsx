@@ -19,14 +19,23 @@ export const Login: React.FC = () => {
   React.useEffect(() => {
     if (user) {
       const checkProfile = async () => {
-        const docRef = doc(db, 'users', user.uid);
-        const docSnap = await getDoc(docRef);
-        
-        if (docSnap.exists()) {
+        try {
+          const docRef = doc(db, 'users', user.uid);
+          const docSnap = await getDoc(docRef);
+          
+          if (docSnap.exists() && docSnap.data()?.isProfileComplete) {
+            navigate('/dashboard');
+          } else {
+            // New user or incomplete profile, send to registration with the intended role
+            // Use stored role if available
+            const storedRole = localStorage.getItem('makhanikhi_session_role');
+            const roleToUse = intendedRole || storedRole || 'owner';
+            navigate(`/register?role=${roleToUse}`);
+          }
+        } catch (error) {
+          console.error("Error checking profile:", error);
+          // Fallback to dashboard if check fails for any reason but auth is good
           navigate('/dashboard');
-        } else {
-          // New user, send to registration with the intended role
-          navigate(`/register${intendedRole ? `?role=${intendedRole}` : ''}`);
         }
       };
       checkProfile();
@@ -35,18 +44,41 @@ export const Login: React.FC = () => {
 
   const handleLogin = async () => {
     const provider = new GoogleAuthProvider();
+    const isIframe = window.self !== window.top;
+
     try {
       if (intendedRole) {
         localStorage.setItem('makhanikhi_session_role', intendedRole);
       }
+      
+      // Use signInWithPopup - it's generally more reliable in the AI Studio environment
+      // IF the user allows popups.
       await signInWithPopup(auth, provider);
-      // Logic inside useEffect handles redirection
+      
     } catch (error: any) {
       if (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user') {
         return;
       }
-      console.error('Login failed', error);
-      toast.error("Login failed. Please try again.");
+      
+      console.error('Login failed:', error);
+      
+      if (isIframe) {
+        if (error.code === 'auth/unauthorized-domain') {
+          toast.error("This domain is NOT authorized in Firebase. Please add the preview URL to your Firebase Console (Authentication > Settings > Authorized domains).", {
+            duration: 15000,
+          });
+        } else {
+          toast.error("Login popup failed in the preview window. For security, Google Auth requires a new tab in some browsers.", {
+            duration: 10000,
+            action: {
+              label: "Open in New Tab",
+              onClick: () => window.open(window.location.href, '_blank')
+            }
+          });
+        }
+      } else {
+        toast.error(`Login failed: ${error.message || "Please try again."}`);
+      }
     }
   };
 
