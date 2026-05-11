@@ -72,6 +72,9 @@ export const ServiceBooking: React.FC = () => {
         const contract = await generateSmartContract(formData);
         setSmartContract(contract);
         setStep(3);
+        toast.info("STAY SECURE: Keep all scheduling and agreement development within the app for legal protection.", {
+          duration: 6000,
+        });
       } catch (error) {
         toast.error("Failed to generate service agreement.");
       } finally {
@@ -93,7 +96,7 @@ export const ServiceBooking: React.FC = () => {
         ...formData,
         appointmentDate: `${formData.appointmentDate}T${formData.appointmentTime}`,
         ownerId: profile?.uid,
-        status: 'pending',
+        status: 'dispatching',
         paymentStatus: 'unpaid',
         createdAt: serverTimestamp(),
         smartContract,
@@ -106,7 +109,7 @@ export const ServiceBooking: React.FC = () => {
         },
         contractSignedByOwner: true,
       });
-      toast.success("Service request submitted successfully!");
+      toast.success("Dispatching specialists! We'll notify the nearest Ford / brand experts.");
       setStep(4);
     } catch (error) {
       toast.error("Failed to submit request.");

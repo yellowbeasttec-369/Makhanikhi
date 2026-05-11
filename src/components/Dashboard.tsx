@@ -26,12 +26,14 @@ import { OHSAGuidelines } from './OHSAGuidelines';
 import { CameraCapture } from './CameraCapture';
 import { CalendarView } from './CalendarView';
 import { ServiceRequest, UserProfile, ApprenticeTask, RoadworthyChecklist } from '../types';
+import { notifyParties, addToCalendar } from '../services/gemini';
 
 export const Dashboard: React.FC = () => {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [requests, setRequests] = useState<ServiceRequest[]>([]);
+  const [leads, setLeads] = useState<ServiceRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [showApprenticeDialog, setShowApprenticeDialog] = useState(false);
@@ -100,6 +102,78 @@ export const Dashboard: React.FC = () => {
   const isSpecialist = activeRole === 'specialist' || activeRole === 'apprentice';
   const isOwner = activeRole === 'owner';
 
+  const handleAcceptLead = async (requestId: string) => {
+    if (!user || !profile) return;
+    setProcessingId(requestId);
+    try {
+      const request = leads.find(r => r.id === requestId);
+      if (!request) return;
+
+      const offer = {
+        specialistId: user.uid,
+        specialistName: profile.displayName || 'Technician',
+        specialistRating: 4.8, // Mock rating
+        callOutFee: request.callOutFee || 500,
+        timestamp: new Date().toISOString(),
+        status: 'pending'
+      };
+
+      await updateDoc(doc(db, 'serviceRequests', requestId), {
+        status: 'quoted',
+        offers: [offer] // For now, simple one-offer referral
+      });
+      toast.success("Offer sent to car owner! Waiting for their approval.");
+    } catch (error) {
+      toast.error("Failed to accept lead.");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleApproveReferral = async (requestId: string, offer: any) => {
+    setProcessingId(requestId);
+    try {
+      const reqDoc = requests.find(r => r.id === requestId);
+      const appointmentDate = reqDoc?.appointmentDate?.split('T')[0];
+
+      // Update request status
+      await updateDoc(doc(db, 'serviceRequests', requestId), {
+        specialistId: offer.specialistId,
+        status: 'accepted'
+      });
+
+      // Mark specialist as unavailable for this date
+      if (appointmentDate) {
+        const specialistRef = doc(db, 'users', offer.specialistId);
+        // In a real app we'd use arrayUnion, but I'll update isAvailable for simplicity now
+        await updateDoc(specialistRef, {
+          isAvailable: false // Simple toggle, ideally date-based
+        });
+      }
+
+      toast.success("Specialist approved! They can now begin work.");
+    } catch (error) {
+      toast.error("Failed to approve specialist.");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const declineReferral = async (requestId: string) => {
+    setProcessingId(requestId);
+    try {
+      await updateDoc(doc(db, 'serviceRequests', requestId), {
+        status: 'dispatching',
+        offers: [] // Clear offers so it goes back to dispatching
+      });
+      toast.info("Referral declined. Finding a new specialist...");
+    } catch (error) {
+      toast.error("Failed to decline.");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   const signContractAsSpecialist = async (requestId: string) => {
     if (!specialistName.trim() || !specialistSignature.trim()) {
       toast.error("Please provide both your name and signature.");
@@ -107,16 +181,45 @@ export const Dashboard: React.FC = () => {
     }
     setIsSigning(true);
     try {
-      await updateDoc(doc(db, 'serviceRequests', requestId), {
+      const reqRef = doc(db, 'serviceRequests', requestId);
+      const reqDoc = requests.find(r => r.id === requestId);
+      
+      await updateDoc(reqRef, {
         'signatures.specialist': {
           uid: user?.uid,
           timestamp: new Date().toISOString(),
           name: specialistName,
           signature: specialistSignature
         },
-        contractSigned: true
+        contractSigned: true,
+        emailsSent: true // Mark as sent for this simulation
       });
-      toast.success("Contract signed and work authorized.");
+
+      // If signed, notify all parties
+      if (reqDoc) {
+        toast.promise(
+          Promise.all([
+            notifyParties(requestId, [
+              { email: profile?.email, name: profile?.displayName },
+              { email: 'owner@example.com', name: 'Car Owner' } // Placeholder for owner email
+            ], reqDoc.smartContract),
+            // Mocking calendar add
+            addToCalendar({
+              summary: `${reqDoc.vehicleMake} Service`,
+              location: reqDoc.location,
+              description: reqDoc.description,
+              startTime: reqDoc.appointmentDate,
+              endTime: new Date(new Date(reqDoc.appointmentDate!).getTime() + 2 * 60 * 60 * 1000).toISOString()
+            }, 'mock-token')
+          ]),
+          {
+            loading: 'Synchronizing with all parties...',
+            success: 'Agreement emailed & Calendar invitation sent!',
+            error: 'Contract signed, but notification services are currently offline.'
+          }
+        );
+      }
+
       setSpecialistName('');
       setSpecialistSignature('');
     } catch (error) {
@@ -254,19 +357,36 @@ export const Dashboard: React.FC = () => {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const reqs = snapshot.docs.map(doc => ({
+      const symbols = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as ServiceRequest[];
-      setRequests(reqs);
+      setRequests(symbols);
       setLoading(false);
     }, (error) => {
       console.error("Error fetching requests:", error);
       setLoading(false);
     });
 
-    return () => unsubscribe();
-  }, [user, isSpecialist]);
+    // Also fetch available leads for specialists
+    let unsubscribeLeads = () => {};
+    if (isSpecialist && profile?.role === 'specialist') {
+      const qLeads = query(
+        collection(db, 'serviceRequests'),
+        where('status', '==', 'dispatching'),
+        where('vehicleMake', '==', profile.specializationBrand || 'None')
+      );
+      unsubscribeLeads = onSnapshot(qLeads, (snapshot) => {
+        const leadList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ServiceRequest));
+        setLeads(leadList);
+      });
+    }
+
+    return () => {
+      unsubscribe();
+      unsubscribeLeads();
+    };
+  }, [user, isSpecialist, profile?.role, profile?.specializationBrand]);
 
   const signOffTask = async (requestId: string, taskId: string) => {
     if (!user || profile?.role !== 'specialist') return;
@@ -418,6 +538,10 @@ export const Dashboard: React.FC = () => {
     switch (status) {
       case 'pending':
         return <Badge className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20 px-2 py-0.5 rounded-full flex items-center gap-1"><Clock className="w-3 h-3" /> Pending</Badge>;
+      case 'dispatching':
+        return <Badge className="bg-orange-500/10 text-orange-500 border-orange-500/20 px-2 py-0.5 rounded-full flex items-center gap-1"><MapPin className="w-3 h-3" /> Dispatching</Badge>;
+      case 'quoted':
+        return <Badge className="bg-blue-500/10 text-blue-500 border-blue-500/20 px-2 py-0.5 rounded-full flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Referral Sent</Badge>;
       case 'in-progress':
         return <Badge className="bg-blue-500/10 text-blue-500 border-blue-500/20 px-2 py-0.5 rounded-full flex items-center gap-1"><PlayCircle className="w-3 h-3" /> In Progress</Badge>;
       case 'completed':
@@ -431,6 +555,23 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <AnimatePresence>
+        {(requests.some(r => r.status === 'in-progress' || r.status === 'accepted')) && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="mb-6 overflow-hidden"
+          >
+            <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-2xl flex items-center gap-4">
+              <AlertTriangle className="w-6 h-6 text-red-500 shrink-0" />
+              <p className="text-xs font-bold uppercase tracking-tight text-white/90">
+                <span className="text-red-500">SAFETY WARNING:</span> NEVER communicate or pay outside this app. Your insurance, warranty, and technician ratings depend on in-platform documentation.
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <header className="flex justify-between items-end mb-8 border-b border-border-dim pb-4">
         <div className="makhanikhi-logo text-2xl text-technic-yellow uppercase tracking-tighter">Makhanikhi</div>
         <div className="powered-by text-[10px] tracking-[2px] text-text-dim uppercase">Powered by Yellow Beast R&D Studio</div>
@@ -727,6 +868,38 @@ export const Dashboard: React.FC = () => {
                   </div>
                 </div>
               )}
+
+              {isSpecialist && leads.length > 0 && (
+                <div className="mb-8 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <Zap className="w-5 h-5 text-technic-yellow animate-pulse" />
+                    <h3 className="text-lg font-display font-black uppercase tracking-tight text-white">Matching Leads ({leads.length})</h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {leads.map(lead => (
+                      <div key={lead.id} className="bento-card bg-technic-yellow/5 border-technic-yellow/30 p-6">
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <h4 className="text-lg font-black uppercase tracking-tighter">{lead.vehicleMake} {lead.vehicleModel}</h4>
+                            <p className="text-[10px] text-text-dim uppercase tracking-widest font-bold">{lead.location} • {lead.serviceType} service</p>
+                          </div>
+                          <Badge className="bg-technic-yellow text-industrial-charcoal font-black border-none">R{lead.callOutFee || 500} C.O.</Badge>
+                        </div>
+                        <p className="text-xs text-text-dim mb-6 line-clamp-2">{lead.description}</p>
+                        <Button 
+                          onClick={() => handleAcceptLead(lead.id)}
+                          disabled={processingId === lead.id}
+                          className="w-full bg-technic-yellow text-industrial-charcoal font-black rounded-xl uppercase tracking-widest h-10 text-[10px]"
+                        >
+                          {processingId === lead.id ? <Loader2 className="w-4 h-4 animate-spin" /> : 'ACCEPT THIS LEAD'}
+                        </Button>
+                        <p className="text-[8px] text-center mt-3 text-text-dim uppercase tracking-widest">Client is waiting for a specialist matching this brand.</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-4">
                 {requests.length > 0 ? (
                   requests.map((req) => (
@@ -746,6 +919,44 @@ export const Dashboard: React.FC = () => {
                           <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date((req.createdAt as any)?.seconds * 1000).toLocaleDateString()}</span>
                           <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {req.location}</span>
                         </div>
+
+                        {/* Referral Management (Owner View) */}
+                        {isOwner && req.status === 'quoted' && req.offers && req.offers[0] && (
+                          <div className="mt-4 p-4 rounded-xl bg-blue-500/5 border border-blue-500/20 animate-in fade-in slide-in-from-top-1">
+                            <div className="flex justify-between items-center mb-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center font-bold text-blue-400">
+                                  {req.offers[0].specialistName.slice(0, 1).toUpperCase()}
+                                </div>
+                                <div>
+                                  <p className="text-[10px] font-black uppercase text-blue-400 mb-0.5 tracking-tight">Referred Specialist Match</p>
+                                  <p className="text-xs font-bold">{req.offers[0].specialistName} ({req.offers[0].specialistRating} ★)</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-[10px] text-text-dim font-bold uppercase tracking-widest mb-1">Call-out Fee</p>
+                                <p className="text-sm font-black text-digital-white tracking-widest">R{req.offers[0].callOutFee}</p>
+                              </div>
+                            </div>
+                            <div className="flex gap-3 mt-4">
+                              <Button 
+                                variant="outline" 
+                                onClick={() => declineReferral(req.id)}
+                                disabled={processingId === req.id}
+                                className="flex-1 border-red-500/30 text-red-400 hover:bg-red-500/10 rounded-xl text-[10px] font-black uppercase h-9"
+                              >
+                                DECLINE REFERRAL
+                              </Button>
+                              <Button 
+                                onClick={() => handleApproveReferral(req.id, req.offers![0])}
+                                disabled={processingId === req.id}
+                                className="flex-2 bg-blue-500 text-white font-black rounded-xl text-[10px] uppercase h-9"
+                              >
+                                {processingId === req.id ? <Loader2 className="w-4 h-4 animate-spin" /> : 'APPROVE & BOOK'}
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                           <div className="flex flex-wrap gap-2 w-full md:w-auto">
                             {req.status === 'completed' && (

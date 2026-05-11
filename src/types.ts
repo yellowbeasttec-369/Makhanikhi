@@ -11,6 +11,9 @@ export interface UserProfile {
   emergencyContact?: string;
   address?: string;
   specialization?: string;
+  specializationBrand?: string;
+  isAvailable?: boolean;
+  unavailableDates?: string[];
   yearsOfExperience?: number;
   certifications?: string[];
   affiliations?: string[];
@@ -66,7 +69,17 @@ export interface ServiceRecord {
   specialistId: string;
 }
 
-export type ServiceStatus = 'pending' | 'quoted' | 'accepted' | 'in-progress' | 'completed' | 'cancelled';
+export type ServiceStatus = 'pending' | 'dispatching' | 'quoted' | 'accepted' | 'in-progress' | 'completed' | 'cancelled';
+
+export interface ServiceOffer {
+  specialistId: string;
+  specialistName: string;
+  specialistRating: number;
+  callOutFee: number;
+  message?: string;
+  timestamp: string;
+  status: 'pending' | 'accepted' | 'declined';
+}
 
 export interface RoadworthyChecklist {
   identification: {
@@ -132,6 +145,7 @@ export interface ServiceRequest {
   apprenticeId?: string;
   type: 'minor' | 'major' | 'overhaul' | 'diagnostic';
   status: ServiceStatus;
+  offers?: ServiceOffer[];
   description: string;
   callOutFee?: number;
   diagnosticQuote?: number;
@@ -160,8 +174,12 @@ export interface ServiceRequest {
   signatures?: {
     owner?: { uid: string; timestamp: string; name?: string; signature?: string };
     specialist?: { uid: string; timestamp: string; name?: string; signature?: string };
+    apprentice?: { uid: string; timestamp: string; name?: string; signature?: string };
   };
   contractSigned?: boolean;
+  contractSignedByApprentice?: boolean;
+  calendarEventId?: string;
+  emailsSent?: boolean;
 }
 
 export interface ApprenticeTask {

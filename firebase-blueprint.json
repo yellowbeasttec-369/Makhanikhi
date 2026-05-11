@@ -10,6 +10,11 @@
         "displayName": { "type": "string" },
         "role": { "type": "string", "enum": ["owner", "specialist", "apprentice", "admin"] },
         "specialization": { "type": "string" },
+        "specializationBrand": { "type": "string", "description": "Specific brands the specialist handles (e.g., Ford, Toyota)" },
+        "isAvailable": { "type": "boolean", "default": true },
+        "unavailableDates": { "type": "array", "items": { "type": "string" } },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
         "experience": { "type": "number" },
         "bio": { "type": "string" },
         "photoURL": { "type": "string" },
@@ -54,7 +59,12 @@
         "specialistId": { "type": "string" },
         "apprenticeId": { "type": "string" },
         "type": { "type": "string", "enum": ["minor", "major", "overhaul", "diagnostic"] },
-        "status": { "type": "string", "enum": ["pending", "quoted", "accepted", "in-progress", "completed", "cancelled"] },
+        "status": { "type": "string", "enum": ["pending", "dispatching", "quoted", "accepted", "in-progress", "completed", "cancelled"] },
+        "offers": {
+          "type": "array",
+          "description": "Bids from specialists",
+          "items": { "type": "object" }
+        },
         "description": { "type": "string" },
         "callOutFee": { "type": "number" },
         "diagnosticQuote": { "type": "number" },
@@ -62,6 +72,8 @@
         "totalAmount": { "type": "number" },
         "paymentStatus": { "type": "string", "enum": ["unpaid", "partial", "paid"] },
         "createdAt": { "type": "string", "format": "date-time" },
+        "calendarEventId": { "type": "string" },
+        "emailsSent": { "type": "boolean" },
         "checklist": { "$ref": "Checklist" }
       },
       "required": ["ownerId", "vehicleId", "type", "status"]
