@@ -1,9 +1,21 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+let ai: GoogleGenAI | null = null;
+
+function getAi() {
+  if (!ai) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is not defined. Please set it in your environment variables.");
+    }
+    ai = new GoogleGenAI({ apiKey });
+  }
+  return ai;
+}
 
 export const generateSmartContract = async (serviceDetails: any) => {
-  const response = await ai.models.generateContent({
+  const client = getAi();
+  const response = await client.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: `Generate a structured digital service agreement and quote for a mobile mechanic job.
     Details: ${JSON.stringify(serviceDetails)}.
@@ -43,11 +55,12 @@ export const generateSmartContract = async (serviceDetails: any) => {
       systemInstruction: "You are a legal and technical assistant for Makhanikhi, a mobile mechanic platform. You generate clear, binding service agreements in structured JSON format.",
     }
   });
-  return JSON.parse(response.text);
+  return JSON.parse(response.text || '{}');
 };
 
 export const analyzeFaults = async (faults: string[], vehicleInfo: any) => {
-  const response = await ai.models.generateContent({
+  const client = getAi();
+  const response = await client.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: `Analyze these vehicle faults: ${faults.join(', ')} for a ${vehicleInfo.year} ${vehicleInfo.make} ${vehicleInfo.model}. 
     Provide a diagnostic summary and estimated parts/labor requirements.`,
@@ -65,5 +78,5 @@ export const analyzeFaults = async (faults: string[], vehicleInfo: any) => {
       }
     }
   });
-  return JSON.parse(response.text);
+  return JSON.parse(response.text || '{}');
 };

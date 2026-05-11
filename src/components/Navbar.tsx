@@ -7,47 +7,61 @@ import { Button } from './ui/button';
 import { Wrench, LogOut, User as UserIcon, Shield, Wallet, Home, Calendar, LayoutDashboard, Menu, Users } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
-import { BrowserProvider } from 'ethers';
 import { toast } from 'sonner';
+import { cn } from '../lib/utils';
+import { buttonVariants } from './ui/button';
 
 export const Navbar: React.FC = () => {
   const { user, profile } = useAuth();
   const [walletAddress, setWalletAddress] = React.useState<string | null>(null);
 
   const connectWallet = async () => {
-    if (typeof window.ethereum !== 'undefined') {
-      try {
-        // Check if we're in an iframe
-        const isIframe = window.self !== window.top;
-        if (isIframe) {
-          toast.info("MetaMask may not work correctly inside an iframe. If connection fails, please open the app in a new tab.", {
-            duration: 6000,
-          });
-        }
+    // Check if ethereum is available
+    const ethereum = (window as any).ethereum;
 
+    if (ethereum) {
+      try {
+        const isIframe = window.self !== window.top;
+        
+        // Some providers (like MetaMask) might throw "MetaMask extension not found" even if window.ethereum is set
+        // if they are incomplete stubs or if the extension was just disabled.
+        
         // Request accounts
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
         
         if (accounts && accounts.length > 0) {
           setWalletAddress(accounts[0]);
-          toast.success(`Connected: ${accounts[0].slice(0, 6)}...${accounts[0].slice(-4)}`);
+          toast.success(`Wallet Connected: ${accounts[0].slice(0, 6)}...${accounts[0].slice(-4)}`);
         }
       } catch (error: any) {
-        console.error('MetaMask connection error:', error);
+        console.error('Wallet connection error:', error);
         
-        // Handle specific MetaMask error codes
+        const isIframe = window.self !== window.top;
+        const errorMessage = error.message || String(error);
+        
         if (error.code === 4001) {
-          toast.error("Connection request rejected. Please approve it in MetaMask.");
+          toast.error("Connection request rejected. Please authorize in your wallet.");
         } else if (error.code === -32002) {
-          toast.error("MetaMask request already pending. Check your extension.");
-        } else if (error.code === 4100) {
-          toast.error("MetaMask: The requested account and/or method has not been authorized.");
+          toast.error("Connection request already pending. Please check your wallet extension.");
+        } else if (errorMessage.includes("MetaMask extension not found")) {
+          toast.error("MetaMask extension found window.ethereum but failed to connect. Try restarting your browser or checking the extension state.");
+        } else if (isIframe) {
+          toast.error("Wallet connection failed. Most wallets don't work reliably inside iframes. Please open this app in a new tab to connect.", {
+            duration: 8000,
+          });
         } else {
-          toast.error(`MetaMask Connection failed: ${error.message || "Unknown error"}`);
+          toast.error(`Wallet Error: ${errorMessage}`);
         }
       }
     } else {
-      toast.error("MetaMask not detected. Please install the extension or use a mobile DApp browser.");
+      const isIframe = window.self !== window.top;
+      if (isIframe) {
+        toast.error("Wallet not detected. If you have MetaMask installed, please open the app in a new tab to use it.", {
+          duration: 8000,
+        });
+      } else {
+        toast.error("MetaMask or compatible wallet not detected. Please install an extension like MetaMask.");
+      }
     }
   };
 
