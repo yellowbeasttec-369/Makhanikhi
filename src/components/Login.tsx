@@ -79,9 +79,9 @@ export const Login: React.FC = () => {
           <div className="space-y-4">
             <Button 
               onClick={handleLogin} 
-              className="w-full bg-technic-yellow text-industrial-charcoal hover:bg-technic-yellow/90 font-black h-14 text-sm rounded-xl uppercase tracking-widest shadow-[0_0_20px_rgba(255,210,0,0.15)] group"
+              className="w-full bg-technic-yellow text-industrial-charcoal hover:bg-technic-yellow/90 font-black h-14 text-xs sm:text-sm rounded-xl uppercase tracking-wider sm:tracking-widest shadow-[0_0_20px_rgba(255,210,0,0.15)] group px-2 sm:px-4"
             >
-              Secure Login with Google <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              Secure Login with Google <ArrowRight className="ml-1 sm:ml-2 w-3 h-3 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform" />
             </Button>
             <div className="flex justify-center gap-4 py-2">
                <Link to="/" className="text-[10px] text-text-dim uppercase tracking-widest font-bold hover:text-technic-yellow transition-colors">

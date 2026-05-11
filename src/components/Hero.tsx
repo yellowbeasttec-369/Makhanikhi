@@ -30,21 +30,21 @@ export const Hero: React.FC = () => {
             <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-technic-yellow/10 border border-technic-yellow/20 text-technic-yellow text-[10px] font-bold uppercase tracking-widest mb-6">
               <img src="/yellow beast.jpg" alt="Yellow Beast" className="w-4 h-4 rounded-full object-cover" referrerPolicy="no-referrer" /> Powered by Yellow Beast R&D & Venture Studio
             </span>
-            <h1 className="text-5xl md:text-8xl font-display font-black tracking-tighter mb-6 leading-[0.9] text-white uppercase italic">
+            <h1 className="text-4xl sm:text-6xl md:text-8xl font-display font-black tracking-tighter mb-6 leading-[0.9] text-white uppercase italic">
               Asset <span className="text-technic-yellow">Preservation</span> <br />
               For the Self-Insured.
             </h1>
-            <p className="max-w-2xl mx-auto text-lg text-digital-white/80 mb-10 leading-relaxed">
+            <p className="max-w-2xl mx-auto text-base sm:text-lg text-digital-white/80 mb-10 leading-relaxed px-2">
               Your car is your biggest asset. Why trust a backyard 'side-hustle' with no records? Makhanikhi brings engineering standards to your driveway with a <span className="text-white font-bold">full digital audit trail</span> that protects your car's resale value.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center px-4 sm:px-0">
               <Link to="/login?role=owner">
-                <Button size="lg" className="bg-technic-yellow text-industrial-charcoal hover:bg-technic-yellow/90 font-black h-16 px-10 text-xl rounded-2xl w-full sm:w-auto shadow-[0_0_40px_rgba(255,210,0,0.2)] uppercase tracking-tighter">
-                  Book a Service <ArrowRight className="ml-2 w-6 h-6" />
+                <Button size="lg" className="bg-technic-yellow text-industrial-charcoal hover:bg-technic-yellow/90 font-black h-14 sm:h-16 px-6 sm:px-10 text-lg sm:text-xl rounded-2xl w-full sm:w-auto shadow-[0_0_40px_rgba(255,210,0,0.2)] uppercase tracking-tighter">
+                  Book a Service <ArrowRight className="ml-2 w-5 h-5 sm:w-6 sm:h-6" />
                 </Button>
               </Link>
               <Link to="/login?role=pro">
-                <Button size="lg" variant="outline" className="bg-white/5 border-white/10 hover:bg-white hover:text-industrial-charcoal font-black h-16 px-10 text-xl rounded-2xl w-full sm:w-auto uppercase text-white transition-all tracking-tighter">
+                <Button size="lg" variant="outline" className="bg-white/5 border-white/10 hover:bg-white hover:text-industrial-charcoal font-black h-14 sm:h-16 px-6 sm:px-10 text-lg sm:text-xl rounded-2xl w-full sm:w-auto uppercase text-white transition-all tracking-tighter">
                   Makhanikhi
                 </Button>
               </Link>

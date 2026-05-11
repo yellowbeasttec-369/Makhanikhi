@@ -95,107 +95,107 @@ export const Navbar: React.FC = () => {
             </div>
           </Link>
 
-          <div className="flex items-center gap-4">
-            {user ? (
-              <>
-                {walletAddress && (
-                  <div className="hidden md:flex items-center gap-2 bg-technic-yellow/10 border border-technic-yellow/20 px-3 py-1.5 rounded-lg">
-                    <Wallet className="w-3.5 h-3.5 text-technic-yellow" />
-                    <span className="text-[10px] font-mono text-technic-yellow font-bold">
-                      {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
-                    </span>
+            <div className="flex items-center gap-2 md:gap-4">
+              {user ? (
+                <>
+                  {walletAddress && (
+                    <div className="hidden md:flex items-center gap-2 bg-technic-yellow/10 border border-technic-yellow/20 px-3 py-1.5 rounded-lg">
+                      <Wallet className="w-3.5 h-3.5 text-technic-yellow" />
+                      <span className="text-[10px] font-mono text-technic-yellow font-bold">
+                        {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 md:gap-3 pl-2 md:pl-4 border-l border-white/10">
+                    <div className="text-right hidden sm:block">
+                      <p className="text-sm font-bold leading-none">{profile?.displayName}</p>
+                      <p className="text-[10px] text-technic-yellow uppercase font-bold tracking-tighter mt-1">
+                        {profile?.role} {profile?.isVerified && <Shield className="inline w-2.5 h-2.5 ml-0.5" />}
+                      </p>
+                    </div>
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger render={
+                        <Button variant="ghost" className="relative flex items-center gap-1 md:gap-2 h-9 md:h-10 px-1 md:px-2 rounded-full hover:bg-white/5">
+                          <Avatar className="h-7 w-7 md:h-8 md:w-8 border-2 border-technic-yellow/20">
+                            <AvatarImage src={user.photoURL || ''} />
+                            <AvatarFallback><UserIcon className="w-3 h-3 md:w-4 md:h-4" /></AvatarFallback>
+                          </Avatar>
+                          <Menu className="w-3 h-3 md:w-4 md:h-4 text-text-dim" />
+                        </Button>
+                      }>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-56 bg-industrial-charcoal border-white/10 text-digital-white" align="end">
+                        <DropdownMenuGroup>
+                          <DropdownMenuLabel className="font-display font-bold uppercase text-[10px] tracking-widest text-text-dim">
+                            Navigation
+                          </DropdownMenuLabel>
+                        </DropdownMenuGroup>
+                        <DropdownMenuSeparator className="bg-white/5" />
+                        <Link to="/">
+                          <DropdownMenuItem className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
+                            <Home className="mr-2 h-4 w-4" />
+                            <span>Home</span>
+                          </DropdownMenuItem>
+                        </Link>
+                        <Link to="/dashboard">
+                          <DropdownMenuItem className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
+                            <LayoutDashboard className="mr-2 h-4 w-4" />
+                            <span>Dashboard</span>
+                          </DropdownMenuItem>
+                        </Link>
+                        <Link to="/registry">
+                          <DropdownMenuItem className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
+                            <Users className="mr-2 h-4 w-4" />
+                            <span>Database Registry</span>
+                          </DropdownMenuItem>
+                        </Link>
+                        <Link to="/dashboard">
+                          <DropdownMenuItem className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
+                            <Wrench className="mr-2 h-4 w-4" />
+                            <span>Jobs</span>
+                          </DropdownMenuItem>
+                        </Link>
+                        <Link to="/book">
+                          <DropdownMenuItem className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
+                            <Calendar className="mr-2 h-4 w-4" />
+                            <span>Booking</span>
+                          </DropdownMenuItem>
+                        </Link>
+                        <DropdownMenuSeparator className="bg-white/5" />
+                        <DropdownMenuItem 
+                          onClick={handleLogout}
+                          className="focus:bg-red-500/10 focus:text-red-500 cursor-pointer text-red-400"
+                        >
+                          <LogOut className="mr-2 h-4 w-4" />
+                          <span>Log out</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
-                )}
-                <div className="flex items-center gap-3 pl-4 border-l border-white/10">
-                  <div className="text-right hidden sm:block">
-                    <p className="text-sm font-bold leading-none">{profile?.displayName}</p>
-                    <p className="text-[10px] text-technic-yellow uppercase font-bold tracking-tighter mt-1">
-                      {profile?.role} {profile?.isVerified && <Shield className="inline w-2.5 h-2.5 ml-0.5" />}
-                    </p>
-                  </div>
-                  
-                  <DropdownMenu>
-                    <DropdownMenuTrigger render={
-                      <Button variant="ghost" className="relative flex items-center gap-2 h-10 px-2 rounded-full hover:bg-white/5">
-                        <Avatar className="h-8 w-8 border-2 border-technic-yellow/20">
-                          <AvatarImage src={user.photoURL || ''} />
-                          <AvatarFallback><UserIcon className="w-4 h-4" /></AvatarFallback>
-                        </Avatar>
-                        <Menu className="w-4 h-4 text-text-dim" />
-                      </Button>
-                    }>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56 bg-industrial-charcoal border-white/10 text-digital-white" align="end">
-                      <DropdownMenuGroup>
-                        <DropdownMenuLabel className="font-display font-bold uppercase text-[10px] tracking-widest text-text-dim">
-                          Navigation
-                        </DropdownMenuLabel>
-                      </DropdownMenuGroup>
-                      <DropdownMenuSeparator className="bg-white/5" />
-                      <Link to="/">
-                        <DropdownMenuItem className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
-                          <Home className="mr-2 h-4 w-4" />
-                          <span>Home</span>
-                        </DropdownMenuItem>
-                      </Link>
-                      <Link to="/dashboard">
-                        <DropdownMenuItem className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
-                          <LayoutDashboard className="mr-2 h-4 w-4" />
-                          <span>Dashboard</span>
-                        </DropdownMenuItem>
-                      </Link>
-                      <Link to="/registry">
-                        <DropdownMenuItem className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
-                          <Users className="mr-2 h-4 w-4" />
-                          <span>Database Registry</span>
-                        </DropdownMenuItem>
-                      </Link>
-                      <Link to="/dashboard">
-                        <DropdownMenuItem className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
-                          <Wrench className="mr-2 h-4 w-4" />
-                          <span>Jobs</span>
-                        </DropdownMenuItem>
-                      </Link>
-                      <Link to="/book">
-                        <DropdownMenuItem className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
-                          <Calendar className="mr-2 h-4 w-4" />
-                          <span>Booking</span>
-                        </DropdownMenuItem>
-                      </Link>
-                      <DropdownMenuSeparator className="bg-white/5" />
-                      <DropdownMenuItem 
-                        onClick={handleLogout}
-                        className="focus:bg-red-500/10 focus:text-red-500 cursor-pointer text-red-400"
-                      >
-                        <LogOut className="mr-2 h-4 w-4" />
-                        <span>Log out</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                </>
+              ) : (
+                <div className="flex gap-1.5 md:gap-2">
+                  <Button 
+                    onClick={connectWallet} 
+                    variant="outline"
+                    className="bg-white/5 border-white/10 hover:bg-white hover:text-industrial-charcoal font-bold hidden md:flex items-center gap-2 rounded-xl transition-all"
+                  >
+                    <Wallet className="w-4 h-4" /> Connect Wallet
+                  </Button>
+                  <Link to="/login">
+                    <Button className="bg-technic-yellow text-industrial-charcoal hover:bg-technic-yellow/90 font-black uppercase tracking-tight rounded-xl px-3 sm:px-6 h-9 sm:h-10 text-[10px] sm:text-xs">
+                      Login
+                    </Button>
+                  </Link>
+                  <Link to="/register">
+                    <Button className="bg-white/5 border-white/10 text-white hover:bg-white hover:text-industrial-charcoal font-black uppercase tracking-tight rounded-xl px-3 sm:px-6 h-9 sm:h-10 text-[10px] sm:text-xs" variant="outline">
+                      Register
+                    </Button>
+                  </Link>
                 </div>
-              </>
-            ) : (
-              <div className="flex gap-2">
-                <Button 
-                  onClick={connectWallet} 
-                  variant="outline"
-                  className="bg-white/5 border-white/10 hover:bg-white hover:text-industrial-charcoal font-bold hidden md:flex items-center gap-2 rounded-xl transition-all"
-                >
-                  <Wallet className="w-4 h-4" /> Connect Wallet
-                </Button>
-                <Link to="/login">
-                  <Button className="bg-technic-yellow text-industrial-charcoal hover:bg-technic-yellow/90 font-black uppercase tracking-tight rounded-xl px-6">
-                    Login
-                  </Button>
-                </Link>
-                <Link to="/register">
-                  <Button className="bg-white/5 border-white/10 text-white hover:bg-white hover:text-industrial-charcoal font-black uppercase tracking-tight rounded-xl px-6" variant="outline">
-                    Register
-                  </Button>
-                </Link>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
         </div>
       </div>
     </nav>

@@ -438,12 +438,12 @@ export const Dashboard: React.FC = () => {
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-display font-black tracking-tight uppercase">
+          <h1 className="text-2xl sm:text-3xl font-display font-black tracking-tight uppercase">
             {isSpecialist ? 'Makhanikhi' : 'My Garage'}
           </h1>
-          <p className="text-text-dim text-sm">Hello, {profile?.displayName}. Accessing your {isSpecialist ? 'Workshop' : 'Records'}.</p>
+          <p className="text-text-dim text-xs sm:text-sm">Hello, {profile?.displayName}. Accessing your {isSpecialist ? 'Workshop' : 'Records'}.</p>
         </div>
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center w-full sm:w-auto justify-between sm:justify-end">
           <div className="bento-badge hidden sm:block bg-technic-yellow/10 text-technic-yellow border border-technic-yellow/20">
             {activeRole?.toUpperCase() || 'UNKNOWN'} MODE
           </div>
@@ -574,7 +574,7 @@ export const Dashboard: React.FC = () => {
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-success-green/20 text-success-green text-[10px] font-bold uppercase tracking-widest mb-6">
                           <CheckCircle2 className="w-3 h-3" /> Status: Co-opted
                         </div>
-                        <h2 className="text-3xl font-display font-black uppercase tracking-tighter mb-4 text-digital-white">
+                        <h2 className="text-2xl sm:text-3xl font-display font-black uppercase tracking-tighter mb-4 text-digital-white">
                           Learning with <br />
                           <span className="text-success-green">{mentorProfile.displayName}</span>
                         </h2>
