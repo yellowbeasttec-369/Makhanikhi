@@ -107,6 +107,28 @@ export const QuoteInvoice: React.FC<QuoteInvoiceProps> = ({ data, isInvoice = fa
               <span>Total Estimate</span>
               <span>R {total.toFixed(2)}</span>
             </div>
+
+            {/* THE 40/40/20 CO-OWNERSHIP SPLIT DISCLOSURE */}
+            <div className="mt-4 p-3.5 bg-white/5 border border-white/5 rounded-xl space-y-2">
+              <div className="text-[9px] uppercase tracking-widest font-black text-technic-yellow mb-2 block">
+                🌿 CO-OWNERSHIP ECONOMICS (Rule 1 Split)
+              </div>
+              <div className="flex justify-between text-[11px] font-mono text-white/90">
+                <span className="text-text-dim">THE HANDS (Specialist Labor - 40%)</span>
+                <span>R {(total * 0.4).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-[11px] font-mono text-white/90">
+                <span className="text-text-dim">THE WHEELS (Logistics & Apprentice - 40%)</span>
+                <span>R {(total * 0.4).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-[11px] font-mono text-white/90">
+                <span className="text-text-dim">THE SYSTEM (Platform Gear & Pool - 20%)</span>
+                <span>R {(total * 0.2).toFixed(2)}</span>
+              </div>
+              <p className="text-[9px] text-text-dim leading-relaxed mt-2 uppercase">
+                * Note: Under Rule 4, if client co-pilot override is active on-site, a 10% rebate is deducted from "The Wheels" directly back to you! Clean hospitality food is logged for Sustenance Stakes and never discounted cash pay.
+              </p>
+            </div>
           </div>
         </section>
 

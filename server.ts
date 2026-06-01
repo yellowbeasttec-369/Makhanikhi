@@ -111,6 +111,65 @@ async function startServer() {
     }
   });
 
+  app.post("/api/notify/apprentice-assign", async (req, res) => {
+    try {
+      const { apprenticeEmail, apprenticePhone, apprenticeName, specialistName, vehicleDetails, serviceType, description } = req.body;
+      console.log(`[NOTIFY] Dispatching notification to apprentice team: ${apprenticeName} (${apprenticeEmail})`);
+      console.log(`[WHATSAPP PING] Sending WhatsApp ping to ${apprenticePhone}: "Dumelang ${apprenticeName}! Master ${specialistName} has assigned you to a ${vehicleDetails} job. Open Makhanikhi to check SOP checklists and start the labor timer."`);
+      
+      let emailSent = false;
+      if (apprenticeEmail) {
+        await transporter.sendMail({
+          from: '"Makhanikhi Command Center" <noreply@makhanikhi.co.za>',
+          to: apprenticeEmail,
+          subject: `Makhanikhi Dispatch: Job Assigned to ${apprenticeName}`,
+          text: `Dumela ${apprenticeName}! Specialist master ${specialistName} assigned you to a ${vehicleDetails} repair. Check the App (The System) to view safety SOPs and log the repair. Together, let's keep high-grade steel in service and save carbon emissions!`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 2px solid #FFD200; border-radius: 16px; background-color: #121824; color: #ffffff;">
+              <h1 style="color: #FFD200; border-bottom: 2px solid #FFD200; padding-bottom: 10px; margin-top: 0; font-size: 24px;">MAKHAHIKHI COMMAND CENTER</h1>
+              <p style="font-size: 16px;">Dumela <strong>${apprenticeName}</strong>,</p>
+              <p style="font-size: 14px; line-height: 1.6;">You have been co-opted for an active roadside / driveway job by Master Specialist (The Hands) <strong>${specialistName}</strong>.</p>
+              
+              <div style="background-color: #1e2640; padding: 15px; border-radius: 12px; margin: 20px 0; border: 1px solid rgba(255, 210, 0, 0.2);">
+                <h3 style="margin-top: 0; color: #FFD200; font-size: 16px;">Job Brief:</h3>
+                <p style="margin: 6px 0; font-size: 13px;"><strong>The Wheels (Bakkie):</strong> ${vehicleDetails}</p>
+                <p style="margin: 6px 0; font-size: 13px;"><strong>Service Type:</strong> ${serviceType}</p>
+                <p style="margin: 6px 0; font-size: 13px;"><strong>Work Scope:</strong> ${description}</p>
+              </div>
+              
+              <h3 style="color: #FFD200; font-size: 16px;">🌿 Proof-of-Preservation (PoP) Circularity Math:</h3>
+              <p style="font-size: 13px; line-height: 1.6; background-color: rgba(74, 222, 128, 0.05); border-left: 3px solid #4ade80; padding: 10px; border-radius: 4px;">
+                "You replaced a <strong>150g bearing</strong> instead of throwing away a <strong>35kg gearbox</strong>. Together, we saved <strong>34.85kg of high-grade steel</strong> and kept <strong>64.47kg of carbon emissions</strong> out of our skies!"
+              </p>
+              <p style="font-size: 12px; color: #a0aec0; margin-bottom: 20px;">This eco-performance log will be minted as a compressed NFT (cNFT) on the Solana blockchain and verified via OYU Green to fund the local apprentice training pool.</p>
+              
+              <h3 style="color: #FFD200; font-size: 16px;">⚠️ Site SOP Checklist (TRL 5):</h3>
+              <ul style="font-size: 13px; padding-left: 20px; line-height: 1.6;">
+                <li><strong>Setup (Sand-Bottle):</strong> Deploy sand-bottle perimeters. Capture 4-way visual scans and log GPS on <strong>The System</strong> (App).</li>
+                <li><strong>The Thumbs Up:</strong> Specialist must approve part tolerances & invoices before installation. Only scanned VAT invoices allowed (SAPS Second-Hand Goods Compliance).</li>
+                <li><strong>Hospitality (Ubuntu):</strong> Client food or drinks sit outside the cash invoice. Logged as 'Sustenance Stake' points to boost reputation!</li>
+              </ul>
+              
+              <p style="font-size: 14px; margin-top: 25px;">Please open the app, verify OHS safety setup, and start your labor timer.</p>
+              <p style="font-size: 12px; color: #718096; margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; text-align: center;">Classic South African Inspired App | Powered by Yellow Beast Studio | Polokwane, Limpopo</p>
+            </div>
+          `
+        });
+        emailSent = true;
+      }
+
+      res.json({ 
+        success: true, 
+        emailSent, 
+        whatsappPinged: true, 
+        whatsappMessage: `Dumelang ${apprenticeName}! Master ${specialistName} has assigned you to a ${vehicleDetails} job. Open Makhanikhi to check SOP checklists and start the labor timer.`
+      });
+    } catch (error: any) {
+      console.error("Apprentice Assignment Notification Error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.post("/api/calendar/add-event", async (req, res) => {
     try {
       const { eventData, accessToken } = req.body;

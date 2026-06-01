@@ -28,30 +28,30 @@ export const Hero: React.FC = () => {
               <img src="/Makhanikhi_logo_launch.png" alt="Makhanikhi Logo" className="h-32 w-auto object-contain drop-shadow-[0_0_30px_rgba(255,210,0,0.3)]" referrerPolicy="no-referrer" />
             </div>
             <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-technic-yellow/10 border border-technic-yellow/20 text-technic-yellow text-[10px] font-bold uppercase tracking-widest mb-6">
-              <img src="/yellow beast.jpg" alt="Yellow Beast" className="w-4 h-4 rounded-full object-cover" referrerPolicy="no-referrer" /> Powered by Yellow Beast R&D & Venture Studio
+              <img src="/yellow beast.jpg" alt="Yellow Beast" className="w-4 h-4 rounded-full object-cover" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = 'none'; }} /> Powered by Yellow Beast R&D & Venture Studio
             </span>
             <h1 className="text-4xl sm:text-6xl md:text-8xl font-display font-black tracking-tighter mb-6 leading-[0.9] text-white uppercase italic">
-              Asset <span className="text-technic-yellow">Preservation</span> <br />
-              For the Self-Insured.
+              Simple <span className="text-technic-yellow">Driveway</span> <br />
+              Repairs & Trust.
             </h1>
             <p className="max-w-2xl mx-auto text-base sm:text-lg text-digital-white/80 mb-10 leading-relaxed px-2">
-              Your car is your biggest asset. Why trust a backyard 'side-hustle' with no records? Makhanikhi brings engineering standards to your driveway with a <span className="text-white font-bold">full digital audit trail</span> that protects your car's resale value.
+              Keep your bakkie or compact workhorse in perfect order. Makhanikhi brings direct engineering standards and transparent audit trails directly to your driveway in Polokwane, Seshego, and Mmotong.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center px-4 sm:px-0">
               <Link to="/login?role=owner">
-                <Button size="lg" className="bg-technic-yellow text-industrial-charcoal hover:bg-technic-yellow/90 font-black h-14 sm:h-16 px-6 sm:px-10 text-lg sm:text-xl rounded-2xl w-full sm:w-auto shadow-[0_0_40px_rgba(255,210,0,0.2)] uppercase tracking-tighter">
-                  Book a Service <ArrowRight className="ml-2 w-5 h-5 sm:w-6 sm:h-6" />
+                <Button size="lg" className="bg-technic-yellow text-industrial-charcoal hover:bg-technic-yellow/90 font-black h-16 px-10 text-lg rounded-2xl w-full sm:w-auto shadow-[0_0_40px_rgba(255,210,0,0.2)] uppercase tracking-tight">
+                  Book a Repair <ArrowRight className="ml-2 w-5 h-5 sm:w-6 sm:h-6" />
                 </Button>
               </Link>
               <Link to="/login?role=pro">
-                <Button size="lg" variant="outline" className="bg-white/5 border-white/10 hover:bg-white hover:text-industrial-charcoal font-black h-14 sm:h-16 px-6 sm:px-10 text-lg sm:text-xl rounded-2xl w-full sm:w-auto uppercase text-white transition-all tracking-tighter">
-                  Makhanikhi
+                <Button size="lg" variant="outline" className="bg-white/5 border-white/10 hover:bg-white hover:text-industrial-charcoal font-black h-16 px-10 text-lg rounded-2xl w-full sm:w-auto uppercase text-white transition-all tracking-tight">
+                  Enter Technical Gate
                 </Button>
               </Link>
             </div>
             
             <div className="mt-12 flex flex-wrap justify-center gap-6">
-              {['Out-of-Warranty Workhorses', 'Second-Hand Saviors', 'Busy Professionals'].map((tag) => (
+              {['Out-of-Warranty Rangers & NP200s', 'Township Built', 'Verified Local Hands'].map((tag) => (
                 <div key={tag} className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/80">
                   <CheckCircle2 className="w-3 h-3 text-technic-yellow" /> {tag}
                 </div>
@@ -59,73 +59,111 @@ export const Hero: React.FC = () => {
             </div>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="mt-32 p-12 rounded-[40px] bg-white/[0.02] border border-white/5 relative group"
-          >
-            <div className="absolute top-0 right-0 p-8">
-              <Shield className="w-24 h-24 text-technic-yellow/5 group-hover:text-technic-yellow/10 transition-colors" />
+          {/* The Six Core Operational Rules Showcase */}
+          <div className="mt-32 text-left">
+            <div className="border-b border-white/10 pb-4 mb-10">
+              <p className="text-technic-yellow font-mono text-[10px] uppercase tracking-[4px] font-black">THE MAKHANIKHI PROTOCOL</p>
+              <h2 className="text-3xl md:text-5xl font-display font-black text-white uppercase tracking-tighter mt-1">Our Six Rules of the Driveway</h2>
             </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center text-left">
-              <div>
-                <span className="text-technic-yellow font-black uppercase text-xs tracking-[4px] mb-4 block">Safety & Expert Protection</span>
-                <h2 className="text-4xl md:text-5xl font-display font-black tracking-tighter mb-6 leading-none uppercase">
-                  Center-Grade <span className="text-technic-yellow">Service</span> <br /> At Your Doorstep.
-                </h2>
-                <div className="space-y-4 text-digital-white/60 text-lg">
-                  <p>
-                    Stop believing quality only exists in expensive service centers. We've digitized Polokwane's most talented local specialists, providing them with the professional tools to deliver master-level repairs right where you are.
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* 1. THE 40/40/20 SPLIT */}
+              <div className="bento-card bg-white/[0.01] border-white/5 p-8 flex flex-col justify-between h-auto hover:border-technic-yellow/25 transition-colors">
+                <div>
+                  <div className="text-[10px] font-mono font-black text-technic-yellow tracking-wider uppercase mb-4">RULE 01 // CO-OWNERSHIP</div>
+                  <h3 className="text-xl font-display font-black text-white uppercase tracking-tight mb-3">The 40 / 40 / 20 Split</h3>
+                  <p className="text-xs text-text-dim leading-relaxed mb-6">
+                    Every job fee is divided directly to keep local mechanics and support teams thriving. 40% goes to <strong>The Hands</strong> (Specialist Labor), 40% goes to <strong>The Wheels</strong> (Bakkie upkeep & Apprentice support), and 20% goes to <strong>The System</strong> (tool pool & app upkeep).
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-4 mt-8">
-                  <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-widest">
-                    <CheckCircle2 className="w-4 h-4 text-technic-yellow" /> Immediate Proof
-                  </div>
-                  <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-widest">
-                    <Shield className="w-4 h-4 text-technic-yellow" /> Zero Suspicion
-                  </div>
+                <div className="text-[10px] font-mono text-technic-yellow bg-technic-yellow/5 border border-technic-yellow/20 p-2.5 rounded-xl uppercase font-black">
+                  Solo master takes 80% with 100% logs
                 </div>
               </div>
-              <div className="space-y-4">
-                <Link to="/login?role=pro" className="block">
-                  <div className="bento-card hover:border-technic-yellow/40 transition-all cursor-pointer group">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h4 className="font-black uppercase tracking-tight text-xl">Join the Network</h4>
-                        <p className="text-xs text-text-dim mt-1">For Specialists & Apprentices seeking secure growth.</p>
-                      </div>
-                      <ArrowRight className="w-6 h-6 text-technic-yellow group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                </Link>
-                <Link to="/login?role=owner" className="block">
-                  <div className="bento-card hover:border-technic-yellow/40 transition-all cursor-pointer group">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h4 className="font-black uppercase tracking-tight text-xl">Manage Your Fleet</h4>
-                        <p className="text-xs text-text-dim mt-1">Access verified talent and digital service history.</p>
-                      </div>
-                      <ArrowRight className="w-6 h-6 text-technic-yellow group-hover:translate-x-1 transition-transform" />
-                    </div>
-                  </div>
-                </Link>
+
+              {/* 2. THE HOSPITALITY FIREWALL */}
+              <div className="bento-card bg-white/[0.01] border-white/5 p-8 flex flex-col justify-between h-auto hover:border-technic-yellow/25 transition-colors">
+                <div>
+                  <div className="text-[10px] font-mono font-black text-technic-yellow tracking-wider uppercase mb-4">RULE 02 // UBUNTU ACCORD</div>
+                  <h3 className="text-xl font-display font-black text-white uppercase tracking-tight mb-3">Hospitality Firewall</h3>
+                  <p className="text-xs text-text-dim leading-relaxed mb-6">
+                    A meal, coffee, or cold drink offered by a kind client is treated as a cultural gift of respect. It <strong>never</strong> discounts or replaces the cash labor payment. Offering food is recorded as a <strong>Sustenance Stake</strong> to boost client dispatch priority.
+                  </p>
+                </div>
+                <div className="text-[10px] font-mono text-success-green bg-success-green/5 border border-success-green/20 p-2.5 rounded-xl uppercase font-black">
+                  Protected cash pay + Sustenance Stake
+                </div>
+              </div>
+
+              {/* 3. SAPS COMPLIANCE */}
+              <div className="bento-card bg-white/[0.01] border-white/5 p-8 flex flex-col justify-between h-auto hover:border-technic-yellow/25 transition-colors">
+                <div>
+                  <div className="text-[10px] font-mono font-black text-technic-yellow tracking-wider uppercase mb-4">RULE 03 // GRC MANDATE</div>
+                  <h3 className="text-xl font-display font-black text-white uppercase tracking-tight mb-3">SAPS Second-Hand Goods</h3>
+                  <p className="text-xs text-text-dim leading-relaxed mb-6">
+                    To keep backyard black markets out of our driveways, parts must be legal. The Apprentice scans official VAT supplier invoices. Reconditioned or secondhand units must have physical serial microdots pictured before the job progresses.
+                  </p>
+                </div>
+                <div className="text-[10px] font-mono text-white/50 bg-white/5 border border-white/10 p-2.5 rounded-xl uppercase font-black">
+                  SAPS SHG Amendment Act 6 of 2009
+                </div>
+              </div>
+
+              {/* 4. CLIENT CO-PILOT OVERRIDE */}
+              <div className="bento-card bg-white/[0.01] border-white/5 p-8 flex flex-col justify-between h-auto hover:border-technic-yellow/25 transition-colors">
+                <div>
+                  <div className="text-[10px] font-mono font-black text-technic-yellow tracking-wider uppercase mb-4">RULE 04 // FLEXIBILITY</div>
+                  <h3 className="text-xl font-display font-black text-white uppercase tracking-tight mb-3">Client Co-Pilot Mode</h3>
+                  <p className="text-xs text-text-dim leading-relaxed mb-6">
+                    If an Apprentice is studying or delayed, the master technical job does not stall. The client can step in as visual and safety co-pilot. For logging perimeter photos and sand-bottles, you receive an immediate 10% Co-Pilot rebate.
+                  </p>
+                </div>
+                <div className="text-[10px] font-mono text-blue-400 bg-blue-500/5 border border-blue-500/20 p-2.5 rounded-xl uppercase font-black">
+                  Instant QR Apprentice Handoff
+                </div>
+              </div>
+
+              {/* 5. THE VOCATIONAL ELEVATION LADDER */}
+              <div className="bento-card bg-white/[0.01] border-white/5 p-8 flex flex-col justify-between h-auto hover:border-technic-yellow/25 transition-colors">
+                <div>
+                  <div className="text-[10px] font-mono font-black text-technic-yellow tracking-wider uppercase mb-4">RULE 05 // ELEVATION</div>
+                  <h3 className="text-xl font-display font-black text-white uppercase tracking-tight mb-3">Vocational Ladder</h3>
+                  <p className="text-xs text-text-dim leading-relaxed mb-6">
+                    We are building a decentralized workspace, not a gig-work trap. Driveway repairs log logged tasks to a sovereign digital resume for the Apprentice. Specialists earn Legacy Wrench Points to unlock specialized tools from our central pool.
+                  </p>
+                </div>
+                <div className="text-[10px] font-mono text-technic-yellow bg-technic-yellow/5 border border-technic-yellow/20 p-2.5 rounded-xl uppercase font-black">
+                  Mentoring & Professional Growth
+                </div>
+              </div>
+
+              {/* 6. PROOF-OF-PRESERVATION */}
+              <div className="bento-card bg-white/[0.01] border-white/5 p-8 flex flex-col justify-between h-auto hover:border-technic-yellow/25 transition-colors">
+                <div>
+                  <div className="text-[10px] font-mono font-black text-technic-yellow tracking-wider uppercase mb-4">RULE 06 // EARTH INTEGRITY</div>
+                  <h3 className="text-xl font-display font-black text-white uppercase tracking-tight mb-3">Preservation Math</h3>
+                  <p className="text-xs text-text-dim leading-relaxed mb-6">
+                    By repairing a 150g steel bearing instead of scrapping a 35kg gearbox sub-assembly, we save 34.85kg of premium steel and keep 64.47kg of raw CO₂ from entering the air. Logs mint as cNFTs on Solana and bridge to OYU Green.
+                  </p>
+                </div>
+                <div className="text-[10px] font-mono text-success-green bg-success-green/5 border border-success-green/20 p-2.5 rounded-xl uppercase font-black">
+                  Verified avoided Scope 3 carbon
+                </div>
               </div>
             </div>
-          </motion.div>
+          </div>
 
+          {/* Quick Stats Banner */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2, duration: 0.8 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
             className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-6"
           >
             {[
-              { icon: Shield, title: "VERIFIED TALENT", desc: "Every specialist and apprentice is vetted for trust and expertise." },
-              { icon: Users, title: "SKILLS TRANSFER", desc: "Master mechanics working with tech-savvy apprentices for the future." },
-              { icon: CheckCircle2, title: "SAFETY FIRST", desc: "Rigorous pre-work checklists and site safety protocols." }
+              { icon: Shield, title: "VERIFIED HANDS", desc: "Every specialist master mechanic and apprentice is fully vetted on-site." },
+              { icon: Users, title: "LADDER PROGRESSION", desc: "Practical hands-on learning logs verified on safe public ledgers." },
+              { icon: CheckCircle2, title: "ZERO-SPILL CLEAN", desc: "No job is marked closed unless driveway site cleanliness is verified completely." }
             ].map((feature, i) => (
               <div key={i} className="bento-card text-left group">
                 <div className="bento-card-title">
@@ -133,7 +171,7 @@ export const Hero: React.FC = () => {
                 </div>
                 <feature.icon className="w-10 h-10 text-technic-yellow mb-4 group-hover:scale-110 transition-transform" />
                 <h3 className="text-xl font-display font-bold mb-2 tracking-tight">{feature.title}</h3>
-                <p className="text-text-dim text-sm leading-relaxed">{feature.desc}</p>
+                <p className="text-text-dim text-xs leading-relaxed">{feature.desc}</p>
               </div>
             ))}
           </motion.div>

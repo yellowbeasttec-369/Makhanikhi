@@ -57,3 +57,27 @@ export const analyzeFaults = async (faults: string[], vehicleInfo: any) => {
     throw error;
   }
 };
+
+export const notifyApprentice = async (notificationData: {
+  apprenticeEmail: string;
+  apprenticePhone: string;
+  apprenticeName: string;
+  specialistName: string;
+  vehicleDetails: string;
+  serviceType: string;
+  description: string;
+}) => {
+  try {
+    const response = await fetch('/api/notify/apprentice-assign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(notificationData)
+    });
+    if (!response.ok) throw new Error('Apprentice notification request failed');
+    return await response.json();
+  } catch (error) {
+    console.error('Error notifying apprentice:', error);
+    throw error;
+  }
+};
+
