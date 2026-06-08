@@ -4,7 +4,8 @@ import { useAuth } from '../lib/AuthContext';
 import { auth, db } from '../lib/firebase';
 import { 
   GoogleAuthProvider, 
-  signInWithPopup, 
+  signInWithRedirect,
+  getRedirectResult,
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword 
 } from 'firebase/auth';
