@@ -4,7 +4,7 @@ import { useAuth } from '../lib/AuthContext';
 import { auth } from '../lib/firebase';
 import { signOut, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { Button } from './ui/button';
-import { Wrench, LogOut, User as UserIcon, Shield, Wallet, Home, Calendar, LayoutDashboard, Menu, Users } from 'lucide-react';
+import { Wrench, LogOut, User as UserIcon, Shield, Wallet, Home, Calendar, LayoutDashboard, Menu, Users, Facebook } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { toast } from 'sonner';
@@ -96,6 +96,15 @@ export const Navbar: React.FC = () => {
           </Link>
 
             <div className="flex items-center gap-2 md:gap-4">
+              <a 
+                href="https://www.facebook.com/share/1AxbpU1hxa/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white hover:bg-technic-yellow hover:text-industrial-charcoal hover:scale-105 transition-all"
+                title="Follow Makhanikhi on Facebook"
+              >
+                <Facebook className="h-4 w-4" />
+              </a>
               {user ? (
                 <>
                   {walletAddress && (

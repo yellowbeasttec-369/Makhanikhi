@@ -121,7 +121,7 @@ export const Login: React.FC = () => {
         {
           phone: '+27 82 123 4567',
           address: 'Mmotong, Limpopo',
-          bio: 'Bakkie owner. Prefers micro-reconstructive maintenance protecting vehicle resale values.'
+          bio: 'Out-of-motor-plan car owner. Prefers micro-reconstructive maintenance protecting vehicle resale values.'
         }
       );
     } else if (presetType === 'specialist') {
@@ -137,7 +137,7 @@ export const Login: React.FC = () => {
           specializationBrand: 'Ford',
           isAvailable: true,
           yearsOfExperience: 12,
-          bio: 'Registered master general mechanic (The Hands). Mentor in local vocational bakkie repairs.'
+          bio: 'Registered master general mechanic (The Hands). Mentor in local vocational repairs for out-of-motor-plan vehicles.'
         }
       );
     } else if (presetType === 'apprentice') {
@@ -233,7 +233,7 @@ export const Login: React.FC = () => {
                   <UserCheck className="w-4 h-4 text-technic-yellow" />
                   <div>
                     <p className="text-[10px] font-black uppercase text-white truncate">Pontsho (Owner)</p>
-                    <p className="text-[8px] text-text-dim mt-0.5">Bakkie Preservations</p>
+                    <p className="text-[8px] text-text-dim mt-0.5">Out-Of-Plan Cars</p>
                   </div>
                 </button>
 
@@ -326,7 +326,13 @@ export const Login: React.FC = () => {
             </div>
           </div>
 
-          <div className="space-y-3 mt-8 pt-6 border-t border-white/5">
+          <div className="space-y-4 mt-8 pt-6 border-t border-white/5">
+            <div className="p-3.5 bg-red-500/5 border border-red-500/20 rounded-xl text-[10px] text-red-200 tracking-wider font-mono flex items-start gap-2.5 leading-relaxed">
+              <AlertTriangle className="w-4 h-4 text-technic-yellow shrink-0 mt-0.5" />
+              <div>
+                <strong className="text-white font-black uppercase">Browser Security Block:</strong> Standard Google login popups do not show up inside iframes. For a seamless experience, please click any of our <strong>1-Click Sandbox Presets</strong> above, or sign in using a custom email and password. If you want to use Google login, please open the app in a new tab!
+              </div>
+            </div>
             <Button 
               type="button"
               onClick={handleGoogleLogin} 
@@ -366,19 +372,22 @@ export const Login: React.FC = () => {
             </div>
             <div className="relative z-10">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-technic-yellow/20 text-technic-yellow text-[9px] font-black uppercase tracking-widest mb-6">
-                The Split Standard
+                Eligible Vehicles
               </div>
               <h3 className="text-2xl font-display font-black uppercase tracking-tight mb-4 text-digital-white">
-                The 40/40/20 <span className="text-technic-yellow">Economy</span>
+                Out Of <span className="text-technic-yellow">Motor Plan</span>
               </h3>
               <p className="text-text-dim text-xs leading-relaxed">
-                We believe in fair, high-density local monetization. Invoices split into:
+                As long as your vehicle is out of its original manufacturer motor plan or service warranty, it qualifies for Makhanikhi's premium mobile specialist care.
               </p>
               <ul className="mt-4 space-y-2 text-[10.5px] font-bold uppercase tracking-wider text-white">
-                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-technic-yellow shrink-0" /> 40% to The Hands (Master Specialist)</li>
-                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-technic-yellow shrink-0" /> 40% to The Wheels (Apprentice Cadet)</li>
-                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-technic-yellow shrink-0" /> 20% to The System (Software Integrity)</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-technic-yellow shrink-0" /> Compacts & Sedans</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-technic-yellow shrink-0" /> Utilities, Rangers & NP200s</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-technic-yellow shrink-0" /> Any Make, Model, or SUV</li>
               </ul>
+              <p className="text-[10px] text-text-dim mt-4 leading-relaxed italic">
+                Provided there is a willingness to invest in high-grade proactive asset preservation.
+              </p>
             </div>
           </div>
 

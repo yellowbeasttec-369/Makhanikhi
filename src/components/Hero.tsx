@@ -35,7 +35,7 @@ export const Hero: React.FC = () => {
               Repairs & Trust.
             </h1>
             <p className="max-w-2xl mx-auto text-base sm:text-lg text-digital-white/80 mb-10 leading-relaxed px-2">
-              Keep your bakkie or compact workhorse in perfect order. Makhanikhi brings direct engineering standards and transparent audit trails directly to your driveway in Polokwane, Seshego, and Mmotong.
+              Keep your out-of-motor-plan car, bakkie, or compact workhorse in perfect order. Makhanikhi brings direct engineering standards and transparent audit trails directly to your driveway in Polokwane, Seshego, and Mmotong.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center px-4 sm:px-0">
               <Link to="/login?role=owner">
@@ -67,17 +67,17 @@ export const Hero: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* 1. THE 40/40/20 SPLIT */}
+              {/* 1. OUT-OF-MOTOR-PLAN ACCORD */}
               <div className="bento-card bg-white/[0.01] border-white/5 p-8 flex flex-col justify-between h-auto hover:border-technic-yellow/25 transition-colors">
                 <div>
-                  <div className="text-[10px] font-mono font-black text-technic-yellow tracking-wider uppercase mb-4">RULE 01 // CO-OWNERSHIP</div>
-                  <h3 className="text-xl font-display font-black text-white uppercase tracking-tight mb-3">The 40 / 40 / 20 Split</h3>
+                  <div className="text-[10px] font-mono font-black text-technic-yellow tracking-wider uppercase mb-4">RULE 01 // ELIGIBILITY</div>
+                  <h3 className="text-xl font-display font-black text-white uppercase tracking-tight mb-3">Out-of-Plan Motor Plan</h3>
                   <p className="text-xs text-text-dim leading-relaxed mb-6">
-                    Every job fee is divided directly to keep local mechanics and support teams thriving. 40% goes to <strong>The Hands</strong> (Specialist Labor), 40% goes to <strong>The Wheels</strong> (Bakkie upkeep & Apprentice support), and 20% goes to <strong>The System</strong> (tool pool & app upkeep).
+                    Any vehicle that has run out of its active dealer service or motor plan is eligible! Sedans, compacts, SUVs, or bakkies—all are handled with expert level care as long as you are willing to invest in protecting your asset.
                   </p>
                 </div>
                 <div className="text-[10px] font-mono text-technic-yellow bg-technic-yellow/5 border border-technic-yellow/20 p-2.5 rounded-xl uppercase font-black">
-                  Solo master takes 80% with 100% logs
+                  Compact Cars, Sedans, SUVs & Utility Trucks
                 </div>
               </div>
 

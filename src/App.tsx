@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from './lib/AuthContext';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
+import { Facebook, Mail } from 'lucide-react';
 import { Dashboard } from './components/Dashboard';
 import { ServiceBooking } from './components/ServiceBooking';
 import { VerificationCenter } from './components/VerificationCenter';
@@ -72,14 +73,32 @@ const AppContent: React.FC = () => {
       
       <BottomNav />
       
-      <footer className="border-t border-white/5 py-12 bg-black/20">
+      <footer className="border-t border-white/5 py-12 bg-black/20 font-sans">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <div className="flex items-center justify-center gap-2 mb-6">
             <img src="/Makhanikhi_logo_launch.png" alt="Makhanikhi Logo" className="h-8 w-auto object-contain" referrerPolicy="no-referrer" />
             <span className="makhanikhi-logo text-xl">Makhanikhi</span>
           </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-4 mb-8">
+            <a 
+              href="https://www.facebook.com/share/1AxbpU1hxa/" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:border-technic-yellow/40 hover:bg-white/10 transition-all text-xs text-digital-white font-mono uppercase font-black tracking-wider"
+            >
+              <Facebook className="w-4 h-4 text-[#1877F2] shrink-0" /> Facebook Page
+            </a>
+            <a 
+              href="mailto:yellowbeasttech@gmail.com" 
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:border-technic-yellow/40 hover:bg-white/10 transition-all text-xs text-digital-white font-mono uppercase font-black tracking-wider"
+            >
+              <Mail className="w-4 h-4 text-technic-yellow shrink-0" /> yellowbeasttech@gmail.com
+            </a>
+          </div>
+
           <div className="flex flex-col items-center gap-3">
-            <img src="/yellow beast.jpg" alt="Yellow Beast Logo" className="h-12 w-auto rounded-xl grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-500" referrerPolicy="no-referrer" />
+            <img src="/yellow beast.jpg" alt="Yellow Beast Logo" className="h-12 w-auto rounded-xl grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-500" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
             <p className="text-digital-white/30 text-xs uppercase tracking-widest font-bold">
               Powered by <span className="text-technic-yellow">Yellow Beast (Pty) Ltd</span> R&D and Venture studio
             </p>

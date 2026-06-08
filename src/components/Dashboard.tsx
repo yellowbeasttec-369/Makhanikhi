@@ -304,7 +304,7 @@ export const Dashboard: React.FC = () => {
             const reqSnap = await getDoc(requestRef);
             const reqData = reqSnap.data();
             const make = reqData?.vehicleMake || 'Ford';
-            const model = reqData?.vehicleModel || 'Bakkie';
+            const model = reqData?.vehicleModel || 'Vehicle';
             const type = reqData?.type || 'General Maintenance';
             const description = reqData?.description || 'Roadside troubleshooting';
 
