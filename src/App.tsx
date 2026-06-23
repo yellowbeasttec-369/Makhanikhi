@@ -90,19 +90,14 @@ const AppContent: React.FC = () => {
               <Facebook className="w-4 h-4 text-[#1877F2] shrink-0" /> Facebook Page
             </a>
             <a 
-              href="mailto:yellowbeasttech@gmail.com" 
+              href="mailto:makhanikhiwadikoloi@gmail.com" 
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:border-technic-yellow/40 hover:bg-white/10 transition-all text-xs text-digital-white font-mono uppercase font-black tracking-wider"
             >
-              <Mail className="w-4 h-4 text-technic-yellow shrink-0" /> yellowbeasttech@gmail.com
+              <Mail className="w-4 h-4 text-technic-yellow shrink-0" /> makhanikhiwadikoloi@gmail.com
             </a>
           </div>
 
-          <div className="flex flex-col items-center gap-3">
-            <img src="/yellow beast.jpg" alt="Yellow Beast Logo" className="h-12 w-auto rounded-xl grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-500" referrerPolicy="no-referrer" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-            <p className="text-digital-white/30 text-xs uppercase tracking-widest font-bold">
-              Powered by <span className="text-technic-yellow">Yellow Beast (Pty) Ltd</span> R&D and Venture studio
-            </p>
-          </div>
+
           <p className="text-digital-white/20 text-[10px] mt-8">
             © 2026 Makhanikhi Specialist Mobile Mechanics. All Rights Reserved.
           </p>

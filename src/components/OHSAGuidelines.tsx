@@ -6,54 +6,54 @@ import { motion } from 'motion/react';
 export const OHSAGuidelines: React.FC = () => {
   const guidelines = [
     {
-      title: "Site Preparation & Physical Barriers",
+      title: "1. Setting up a safe work area",
       icon: <Construction className="w-5 h-5 text-technic-yellow" />,
       items: [
-        "A minimum of 6 safety cones (or high-visibility sand-filled bottles) must be placed to demarcate the 360° perimeter.",
-        "Yellow danger tape must be strung between all perimeter markers to create a physical exclusion zone.",
-        "PVC floor mats or oil spill mats must be deployed under the work area to ensure a zero-fluid-leak policy.",
-        "Place 'Digital Audit in Progress' signage clearly to inform onlookers of the technical standards.",
-        "Ensure the vehicle is secured on level ground with verified jack-stands for all under-body work."
+        "Use safety cones (or bright sand-filled bottles) to clearly mark the work zone around the car.",
+        "String high-visibility tape between the markers to keep bystanders and children at a safe distance.",
+        "Put down clean floor mats under the vehicle to make sure no oil or fluids drip onto your driveway.",
+        "Place a simple check-in sign clearly so neighbor folks know we are busy with professional work.",
+        "Always park the car on level ground and lock it safely on jack-stands before starting any work underneath."
       ]
     },
     {
-      title: "Asset Preservation Protocols",
+      title: "2. Protecting your car's body & engine",
       icon: <Shield className="w-5 h-5 text-technic-yellow" />,
       items: [
-        "Perform a 4-point external body scan before tools touch the vehicle.",
-        "Use fender covers or clean cloths to protect bodywork from tool contact.",
-        "Document all removed component serial numbers via the digital audit trail.",
-        "Ensure all oily rags are placed in sealed containers for off-site disposal."
+        "Do a quick camera scan around the car body before any tools touch it to prevent arguments.",
+        "Use fender covers or soft clean cloths so that wrenches and keys do not scratch the paintwork.",
+        "Document and photograph the parts removed as well as new ones going in for your vehicle logbook.",
+        "Place oily cloths and dirty cardboard straight into waste bags so we leave the workspace cleaner than we found it."
       ]
     },
     {
-      title: "Personal Protective Equipment (PPE)",
+      title: "3. Staying Safe with the Right Gear",
       icon: <HardHat className="w-5 h-5 text-technic-yellow" />,
       items: [
-        "Steel-toed safety boots must be worn at all times.",
-        "Safety goggles or face shields required for grinding, drilling, or fluid handling.",
-        "Nitrile gloves for chemical/oil handling; heavy-duty gloves for mechanical work.",
-        "High-visibility vest must be worn during roadside or open-area servicing."
+        "Heavy-duty boots should be worn to protect toes from dropped tools.",
+        "Safety goggles must be used when drilling, grinding, or handling strong fluids.",
+        "Wear nitrile gloves when handling oil or chemicals, and heavy work gloves for heavy lifting.",
+        "Wear a bright, high-visibility vest if doing any work near a street or open roadside."
       ]
     },
     {
-      title: "Fire & Chemical Safety",
+      title: "4. Fire & Fuel Safety",
       icon: <Flame className="w-5 h-5 text-technic-yellow" />,
       items: [
-        "A certified 4.5kg DCP fire extinguisher must be within 3 meters of the work area.",
-        "Use oil spill mats or drip trays under all fluid drainage points.",
-        "Store flammable chemicals in sealed, labeled containers away from heat sources.",
-        "Ensure a basic First Aid kit is accessible and fully stocked."
+        "Keep a reliable, fully working fire extinguisher close by at all times during a job.",
+        "Always place a deep drip tray under fluid drain plugs to catch every drop of waste oil.",
+        "Keep flammable chemicals closed tightly in their original cans, far away from warm engines.",
+        "Have a basic first aid kit completely ready and on-site for scratches or cuts."
       ]
     },
     {
-      title: "Tool & Equipment Integrity",
+      title: "5. Caring for Tools & Jacks",
       icon: <Shield className="w-5 h-5 text-technic-yellow" />,
       items: [
-        "Inspect all hydraulic jacks and jack stands for leaks or structural damage before use.",
-        "Always use secondary support (jack stands); never rely solely on a hydraulic jack.",
-        "Check power tool cords for fraying or exposed wiring.",
-        "Ensure all tools are cleaned and accounted for after each task."
+        "Check all jacks and jack-stands for any signs of leaks or wear before lifting the car.",
+        "Never crawl under a vehicle that is only held up by a jack - heavy metal stands are mandatory.",
+        "Inspect electrical cords on power tools for fraying or exposed wires before plugging in.",
+        "Clean all tools, dry them, and place them back in their boxes after finishing the task."
       ]
     }
   ];
@@ -66,8 +66,8 @@ export const OHSAGuidelines: React.FC = () => {
             <Shield className="w-6 h-6 text-industrial-charcoal" />
           </div>
           <div>
-            <h2 className="text-xl font-display font-black uppercase tracking-tight">OHSA Standard Operating Procedure</h2>
-            <p className="text-xs text-text-dim uppercase tracking-widest font-bold mt-1">Mobile Workshop Compliance v2.4</p>
+            <h2 className="text-xl font-display font-black uppercase tracking-tight">Driveway Safety & General Care Rules</h2>
+            <p className="text-xs text-text-dim uppercase tracking-widest font-bold mt-1">How we keep you, your car, and our mechanics completely safe</p>
           </div>
         </div>
       </div>
@@ -105,9 +105,9 @@ export const OHSAGuidelines: React.FC = () => {
       <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex gap-3 items-start">
         <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
         <div>
-          <p className="text-[10px] font-black uppercase text-red-500 tracking-widest">Mandatory Compliance Notice</p>
+          <p className="text-[10px] font-black uppercase text-red-500 tracking-widest">Important Safety Notice</p>
           <p className="text-xs text-digital-white/60 mt-1">
-            Failure to adhere to these OHSA guidelines may result in immediate suspension of the specialist's license and voiding of the smart contract insurance coverage.
+            Setting up safety barriers and taking good care of the driveway is not optional. Mechanics who ignore these basic safety guidelines will be blocked from receiving new jobs.
           </p>
         </div>
       </div>

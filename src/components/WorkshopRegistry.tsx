@@ -241,7 +241,7 @@ export const WorkshopRegistry: React.FC = () => {
         )}
       </AnimatePresence>
 
-      <section className="mt-32 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+      <section className="mt-12 sm:mt-24 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
         <div className="order-2 md:order-1">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-success-green/10 border border-success-green/20 text-success-green text-[10px] font-black uppercase tracking-widest mb-6">
             <ShieldCheck className="w-3 h-3" /> Professional Standards
@@ -279,7 +279,7 @@ export const WorkshopRegistry: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="order-1 md:order-2 p-8 rounded-[40px] bg-white/[0.02] border border-white/5 relative overflow-hidden">
+        <div className="order-1 md:order-2 p-5 sm:p-8 rounded-2xl bg-white/[0.02] border border-white/5 relative overflow-hidden">
            <div className="absolute inset-0 bg-technic-yellow/5 blur-3xl rounded-full -m-20" />
            <div className="relative z-10 text-center space-y-4">
              <div className="aspect-square w-full rounded-2xl bg-industrial-charcoal/50 border border-white/10 flex items-center justify-center mb-6">
@@ -293,7 +293,7 @@ export const WorkshopRegistry: React.FC = () => {
         </div>
       </section>
 
-      <section className="mt-32">
+      <section className="mt-12 sm:mt-24">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-bold uppercase tracking-widest mb-6">
           <Star className="w-3 h-3" /> Pipeline
         </div>
@@ -316,7 +316,7 @@ export const WorkshopRegistry: React.FC = () => {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
               viewport={{ once: true }}
-              className="p-8 rounded-[32px] bg-white/[0.02] border border-white/5 relative overflow-hidden group"
+              className="p-5 sm:p-8 rounded-2xl bg-white/[0.02] border border-white/5 relative overflow-hidden group"
             >
               <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
                 {React.cloneElement(feature.icon as React.ReactElement, { className: 'w-24 h-24' })}
@@ -334,7 +334,7 @@ export const WorkshopRegistry: React.FC = () => {
         </div>
       </section>
 
-      <section className="mt-32 p-12 rounded-[40px] bg-technic-yellow/5 border border-technic-yellow/20 relative overflow-hidden text-center">
+      <section className="mt-12 sm:mt-24 p-6 sm:p-12 rounded-2xl bg-technic-yellow/5 border border-technic-yellow/20 relative overflow-hidden text-center">
         <div className="absolute -top-24 -right-24 w-64 h-64 bg-technic-yellow/10 blur-[100px] rounded-full" />
         <h2 className="text-3xl md:text-4xl font-display font-black uppercase tracking-tighter mb-4 relative z-10 text-digital-white">
           Want to <span className="text-technic-yellow">List</span> Your Workshop?

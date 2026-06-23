@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
 import { auth, db } from '../lib/firebase';
 import { 
   GoogleAuthProvider, 
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup, 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword 
 } from 'firebase/auth';
@@ -27,48 +26,7 @@ export const Login: React.FC = () => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
 
-  // ✅ FIX 1: Handle Google redirect result when user returns from Google sign-in
-  useEffect(() => {
-    const handleRedirectResult = async () => {
-      try {
-        setAuthLoading(true);
-        const result = await getRedirectResult(auth);
-        if (result?.user) {
-          const u = result.user;
-          const storedRole = localStorage.getItem('makhanikhi_session_role') || intendedRole || 'owner';
-          const userDocRef = doc(db, 'users', u.uid);
-          const userDocSnap = await getDoc(userDocRef);
-
-          if (!userDocSnap.exists()) {
-            await setDoc(userDocRef, {
-              uid: u.uid,
-              email: u.email,
-              displayName: u.displayName || u.email?.split('@')[0],
-              role: storedRole,
-              isProfileComplete: true,
-              isVerified: false,
-              verificationStatus: 'unverified',
-              photoURL: u.photoURL || '',
-              createdAt: new Date().toISOString(),
-            });
-          }
-          toast.success(`Dumela! Welcome, ${u.displayName || u.email}`);
-          navigate('/dashboard');
-        }
-      } catch (error: any) {
-        if (error.code !== 'auth/no-auth-event') {
-          console.error('Redirect result error:', error);
-          toast.error(`Google login failed: ${error.message}`);
-        }
-      } finally {
-        setAuthLoading(false);
-      }
-    };
-
-    handleRedirectResult();
-  }, []); // runs once on mount
-
-  useEffect(() => {
+  React.useEffect(() => {
     if (user) {
       const checkProfile = async () => {
         try {
@@ -78,12 +36,15 @@ export const Login: React.FC = () => {
           if (docSnap.exists() && docSnap.data()?.isProfileComplete) {
             navigate('/dashboard');
           } else {
+            // New user or incomplete profile, send to registration with the intended role
+            // Use stored role if available
             const storedRole = localStorage.getItem('makhanikhi_session_role');
             const roleToUse = intendedRole || storedRole || 'owner';
             navigate(`/register?role=${roleToUse}`);
           }
         } catch (error) {
           console.error("Error checking profile:", error);
+          // Fallback to dashboard if check fails for any reason but auth is good
           navigate('/dashboard');
         }
       };
@@ -91,6 +52,7 @@ export const Login: React.FC = () => {
     }
   }, [user, navigate, intendedRole]);
 
+  // Unified authenticate and write initial Firestore profile helper
   const handleAuthFlow = async (emailInput: string, passInput: string, selectedRole: string, fullName: string, customFields: any = {}) => {
     setAuthLoading(true);
     const resolvedRole = selectedRole || intendedRole || 'owner';
@@ -99,9 +61,11 @@ export const Login: React.FC = () => {
     try {
       let userCredential;
       try {
+        // 1. Try signing in
         userCredential = await signInWithEmailAndPassword(auth, emailInput, passInput);
         toast.success(`Dumela! Welcome back, ${fullName || userCredential.user.email}`);
       } catch (signInErr: any) {
+        // 2. If user doesn't exist, register them on-the-fly!
         if (signInErr.code === 'auth/user-not-found' || signInErr.code === 'auth/invalid-credential' || signInErr.code === 'auth/wrong-password') {
           try {
             userCredential = await createUserWithEmailAndPassword(auth, emailInput, passInput);
@@ -119,6 +83,7 @@ export const Login: React.FC = () => {
         const userDocRef = doc(db, 'users', u.uid);
         const userDocSnap = await getDoc(userDocRef);
 
+        // 3. Auto-populate core user profile if not exists
         if (!userDocSnap.exists()) {
           const initialProfile = {
             uid: u.uid,
@@ -145,6 +110,7 @@ export const Login: React.FC = () => {
     }
   };
 
+  // Preset quick trial logins for clean testing inside sandbox
   const handlePresetLogin = async (presetType: 'owner' | 'specialist' | 'apprentice') => {
     if (presetType === 'owner') {
       await handleAuthFlow(
@@ -202,23 +168,33 @@ export const Login: React.FC = () => {
     await handleAuthFlow(email, password, derivedRole, email.split('@')[0]);
   };
 
-  // ✅ FIX 2: Use signInWithRedirect instead of signInWithPopup — works everywhere
   const handleGoogleLogin = async () => {
     const provider = new GoogleAuthProvider();
+    const isIframe = window.self !== window.top;
+
     try {
       if (intendedRole) {
         localStorage.setItem('makhanikhi_session_role', intendedRole);
       }
-      await signInWithRedirect(auth, provider);
-      // Page will redirect to Google then come back — getRedirectResult() above handles the return
+      await signInWithPopup(auth, provider);
     } catch (error: any) {
-      console.error('Google redirect failed:', error);
-      toast.error(`Google login failed: ${error.message || 'Please try again.'}`);
+      if (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user') {
+        return;
+      }
+      console.error('Google login popup failed:', error);
+      if (error.code === 'auth/unauthorized-domain' || isIframe) {
+        toast.error("Google Auth is locked inside iframe or domain is unauthorized. Please use the quick One-Click presets or direct email login below to enter instantly!", {
+          duration: 10000,
+        });
+      } else {
+        toast.error(`Login failed: ${error.message || 'Please try again.'}`);
+      }
     }
   };
 
+
   return (
-    <div className="min-h-[90vh] flex flex-col items-center justify-center py-12 px-4 relative overflow-hidden">
+    <div className="min-h-[90vh] flex flex-col items-center justify-center py-6 sm:py-12 px-4 relative overflow-hidden">
       {/* Background Decor */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-technic-yellow/5 rounded-full blur-[128px] pointer-events-none" />
       <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-technic-yellow/5 rounded-full blur-[128px] pointer-events-none" />
@@ -226,10 +202,10 @@ export const Login: React.FC = () => {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10"
+        className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-8 relative z-10"
       >
         {/* Login Section - Left (7 Cols) */}
-        <div className="lg:col-span-7 bento-card p-10 flex flex-col justify-between h-auto">
+        <div className="lg:col-span-7 bento-card p-5 sm:p-8 md:p-10 flex flex-col justify-between h-auto">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-technic-yellow/10 border border-technic-yellow/20 text-technic-yellow text-[10px] font-bold uppercase tracking-widest mb-6">
               <Lock className="w-3 h-3" /> Digital Registry Access Gate
@@ -242,7 +218,7 @@ export const Login: React.FC = () => {
               Log in to the digital registry. Standard Email option acts as a secure bypass if Google Popup domain authorization is locked in your browser.
             </p>
 
-            {/* Presets Grid */}
+            {/* Presets Grid - ONE-CLICK DEMO LOGIN (EXCELLENT TESTING TOOL) */}
             <div className="mb-8 bg-white/5 border border-white/10 rounded-2xl p-5">
               <h3 className="text-xs font-black uppercase tracking-wider text-technic-yellow mb-4 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5" /> 1-Click Sandbox Presets (No Popup Needed)
@@ -351,24 +327,26 @@ export const Login: React.FC = () => {
           </div>
 
           <div className="space-y-4 mt-8 pt-6 border-t border-white/5">
+            <div className="p-3.5 bg-red-500/5 border border-red-500/20 rounded-xl text-[10px] text-red-200 tracking-wider font-mono flex items-start gap-2.5 leading-relaxed">
+              <AlertTriangle className="w-4 h-4 text-technic-yellow shrink-0 mt-0.5" />
+              <div>
+                <strong className="text-white font-black uppercase">Browser Security Block:</strong> Standard Google login popups do not show up inside iframes. For a seamless experience, please click any of our <strong>1-Click Sandbox Presets</strong> above, or sign in using a custom email and password. If you want to use Google login, please open the app in a new tab!
+              </div>
+            </div>
             <Button 
               type="button"
               onClick={handleGoogleLogin} 
               disabled={authLoading}
               className="w-full bg-technic-yellow text-industrial-charcoal hover:bg-technic-yellow/90 font-black h-12 text-xs rounded-xl uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,210,0,0.1)]"
             >
-              {authLoading ? (
-                <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Redirecting to Google...</>
-              ) : (
-                <>Secure Sign In with Google <ArrowRight className="w-3.5 h-3.5" /></>
-              )}
+              Secure Sign In with Google <ArrowRight className="w-3.5 h-3.5" />
             </Button>
           </div>
         </div>
 
         {/* Circularity & Simplified Copy - Right (5 Cols) */}
-        <div className="lg:col-span-5 space-y-6">
-          <div className="p-8 rounded-[32px] bg-success-green/5 border border-success-green/20 relative overflow-hidden group">
+        <div className="lg:col-span-5 space-y-4 sm:space-y-6">
+          <div className="p-5 sm:p-8 rounded-2xl bg-success-green/5 border border-success-green/20 relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
               <ShieldCheck className="w-24 h-24 text-success-green" />
             </div>
@@ -388,7 +366,7 @@ export const Login: React.FC = () => {
             </div>
           </div>
 
-          <div className="p-8 rounded-[32px] bg-technic-yellow/5 border border-technic-yellow/10 relative overflow-hidden group">
+          <div className="p-5 sm:p-8 rounded-2xl bg-technic-yellow/5 border border-technic-yellow/10 relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
               <Wrench className="w-24 h-24 text-technic-yellow" />
             </div>
@@ -413,7 +391,7 @@ export const Login: React.FC = () => {
             </div>
           </div>
 
-          <div className="p-8 rounded-[32px] bg-blue-500/5 border border-blue-500/20 relative overflow-hidden group">
+          <div className="p-5 sm:p-8 rounded-2xl bg-blue-500/5 border border-blue-500/20 relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
               <Users className="w-24 h-24 text-blue-500" />
             </div>
@@ -422,10 +400,10 @@ export const Login: React.FC = () => {
                 Ubuntu Protocol
               </div>
               <h3 className="text-2xl font-display font-black uppercase tracking-tight mb-4 text-digital-white">
-                Sustenance <span className="text-blue-400">Reputation</span>
+                Driveway <span className="text-blue-400">Hospitality</span>
               </h3>
               <p className="text-text-dim text-xs leading-relaxed">
-                Under our Hospitality Firewall clause, any lunch, drinks or biltong offered by car owners are logged as 'Sustenance Stakes' to build specialist credibility points, never taken as a cash discount! This builds a reciprocal cycle of local trust.
+                A cup of tea, cold drink, or lunch shared on the driveway shows great community spirit. It doesn't replace or discount the specialist's cash payment, but we record it to boost your rating as an awesome car owner to work with!
               </p>
             </div>
           </div>
@@ -455,3 +433,4 @@ export const Login: React.FC = () => {
     </div>
   );
 };
+

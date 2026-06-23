@@ -332,7 +332,7 @@ export const ServiceBooking: React.FC = () => {
           {step === 3 && (
             <div className="bento-card">
               <div className="bento-card-title"><div className="bento-dot"></div> DIGITAL SERVICE AGREEMENT</div>
-              <h2 className="text-2xl font-display font-black mb-4 uppercase">Smart Contract & Quote</h2>
+              <h2 className="text-2xl font-display font-black mb-4 uppercase">Service Agreement & Quote</h2>
               <div className="space-y-4">
                 <div className="p-4 rounded-xl bg-black/40 border border-white/10">
                   {smartContract && <QuoteInvoice data={smartContract} />}

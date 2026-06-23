@@ -593,7 +593,7 @@ export const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
       <AnimatePresence>
         {(requests.some(r => r.status === 'in-progress' || r.status === 'accepted')) && (
           <motion.div 
@@ -611,12 +611,12 @@ export const Dashboard: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
-      <header className="flex justify-between items-end mb-8 border-b border-border-dim pb-4">
+      <header className="flex justify-between items-end mb-4 sm:mb-8 border-b border-border-dim pb-4">
         <div className="makhanikhi-logo text-2xl text-technic-yellow uppercase tracking-tighter">Makhanikhi</div>
-        <div className="powered-by text-[10px] tracking-[2px] text-text-dim uppercase">Powered by Yellow Beast R&D Studio</div>
+        <div className="powered-by text-[10px] tracking-[2px] text-text-dim uppercase">Driveway Specialist Registry</div>
       </header>
 
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 sm:mb-8">
         <div>
           <h1 className="text-2xl sm:text-3xl font-display font-black tracking-tight uppercase">
             {isSpecialist ? 'Makhanikhi' : 'My Garage'}
@@ -699,7 +699,7 @@ export const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      <Tabs value={activeTab} className="space-y-8" onValueChange={setActiveTab}>
+      <Tabs value={activeTab} className="space-y-4 sm:space-y-8" onValueChange={setActiveTab}>
         <TabsList className="hidden md:flex bg-card-bg border border-border-dim p-1 rounded-xl h-auto flex-wrap justify-start">
           <TabsTrigger value="overview" className="data-[state=active]:bg-technic-yellow data-[state=active]:text-industrial-charcoal rounded-lg px-6 py-2.5 font-bold transition-all text-xs tracking-widest uppercase">
             <TrendingUp className="w-4 h-4 mr-2" /> OVERVIEW
@@ -745,9 +745,9 @@ export const Dashboard: React.FC = () => {
                     <motion.div 
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="p-8 rounded-[32px] bg-success-green/10 border border-success-green/30 relative overflow-hidden group"
+                      className="p-5 sm:p-8 rounded-2xl bg-success-green/10 border border-success-green/30 relative overflow-hidden group"
                     >
-                      <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                      <div className="absolute top-0 right-0 p-5 sm:p-8 opacity-10 group-hover:opacity-20 transition-opacity">
                         <Award className="w-24 h-24 text-success-green" />
                       </div>
                       <div className="relative z-10">
@@ -784,9 +784,9 @@ export const Dashboard: React.FC = () => {
                     <motion.div 
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="p-8 rounded-[32px] bg-blue-500/10 border border-blue-500/30 relative overflow-hidden group"
+                      className="p-5 sm:p-8 rounded-2xl bg-blue-500/10 border border-blue-500/30 relative overflow-hidden group"
                     >
-                      <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                      <div className="absolute top-0 right-0 p-5 sm:p-8 opacity-10 group-hover:opacity-20 transition-opacity">
                         <Users className="w-24 h-24 text-blue-400" />
                       </div>
                       <div className="relative z-10">
@@ -856,13 +856,13 @@ export const Dashboard: React.FC = () => {
                   <div className="bento-card bg-success-green/5 border border-success-green/20">
                     <div className="bento-card-title text-success-green flex items-center gap-1.5 font-black uppercase text-[10px]">
                       <div className="w-2 h-2 rounded-full bg-success-green animate-pulse"></div> 
-                      🌿 PROOF-OF-PRESERVATION (PoP)
+                      🌿 DRIVEWAY RECYCLING & AIR SAVINGS
                     </div>
                     <div className="mt-6 space-y-4">
                       <div>
-                        <h4 className="text-xs font-bold uppercase text-white">Avoided Manufacturing Scrap</h4>
+                        <h4 className="text-xs font-bold uppercase text-white">Keeping Premium Auto Metal Out of Dumps</h4>
                         <p className="text-[11px] text-text-dim mt-1 normal-case leading-relaxed">
-                          By rebuilding specific high-wear components (e.g., individual bearings, rings) instead of throwing away full sub-assemblies, we protect valuable metal assets.
+                          We fix specific high-wear parts like bearings or rings instead of throwing away an entire expensive gearbox or sub-assembly. This saves you huge money and stops metal from going to waste.
                         </p>
                       </div>
                       
@@ -878,12 +878,12 @@ export const Dashboard: React.FC = () => {
                           <div className="text-xl font-display font-black text-success-green">
                             {(requests.filter(r => r.status === 'completed').length || 1) * 64.47} kg
                           </div>
-                          <div className="text-[8px] text-text-dim uppercase tracking-widest font-bold mt-1">Carbon (CO₂) Avoided</div>
+                          <div className="text-[8px] text-text-dim uppercase tracking-widest font-bold mt-1">Carbon (CO₂) Saved</div>
                         </div>
                       </div>
 
                       <div className="text-[10px] text-success-green/80 font-mono flex items-center gap-1.5 pt-2 border-t border-white/5 uppercase">
-                        <Sparkles className="w-3.5 h-3.5" /> Minted {requests.filter(r => r.status === 'completed').length} cNFT Solana & OYU Green ESG Logs
+                        <Sparkles className="w-3.5 h-3.5" /> Logged {requests.filter(r => r.status === 'completed').length} green repair records securely for your car history
                       </div>
                     </div>
                   </div>
@@ -1759,7 +1759,7 @@ export const Dashboard: React.FC = () => {
               <div className="flex gap-3 items-start">
                 <Shield className="w-5 h-5 text-technic-yellow shrink-0 mt-1" />
                 <p className="text-[10px] text-text-dim uppercase leading-relaxed tracking-wider">
-                  Handshake Agreement: By proceeding, you authorize Yellow Beast (Pty) Ltd for an on-site technical intervention in a residential setting. All work is risk-mitigated via digital audit.
+                  Handshake Agreement: By proceeding, you authorize on-site technical assistance in your residential setting. All work is checked and recorded step-by-step for complete safety.
                 </p>
               </div>
             </div>
