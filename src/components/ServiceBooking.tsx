@@ -98,6 +98,10 @@ export const ServiceBooking: React.FC = () => {
         ownerId: profile?.uid,
         status: 'dispatching',
         paymentStatus: 'unpaid',
+        callOutFee: 0,
+        isFirstTripOnHouse: true,
+        callOutFeeWaived: true,
+        callOutFeeNotes: 'First trip is on the house (R0.00) to show face and build client trust.',
         createdAt: serverTimestamp(),
         smartContract,
         signatures: {
@@ -290,6 +294,18 @@ export const ServiceBooking: React.FC = () => {
                       value={formData.location}
                       onChange={(e) => setFormData({...formData, location: e.target.value})}
                     />
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-2.5">
+                  <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                  <div className="text-xs">
+                    <strong className="text-emerald-400 font-bold uppercase block mb-0.5">
+                      First Trip On The House (R0.00 Call-out Fee)
+                    </strong>
+                    <p className="text-text-dim text-[11px] leading-relaxed">
+                      Specialist & apprentice show face in person at your driveway for free before any payment changes hands. Eliminates scam risk and ensures 100% mutual trust.
+                    </p>
                   </div>
                 </div>
 

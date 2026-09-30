@@ -88,28 +88,45 @@ export const QuoteInvoice: React.FC<QuoteInvoiceProps> = ({ data, isInvoice = fa
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-text-dim">Call-out Fee</span>
-              <span>R {data.paymentTerms.callOutFee.toFixed(2)}</span>
+              {data.paymentTerms.callOutFee === 0 ? (
+                <span className="text-emerald-400 font-bold">R 0.00 (First Trip On The House - Show Face)</span>
+              ) : (
+                <span>R {data.paymentTerms.callOutFee.toFixed(2)}</span>
+              )}
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-text-dim">Diagnostics</span>
               <span>R {data.paymentTerms.diagnosticFee.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-text-dim">Labor Estimate</span>
+              <span className="text-text-dim">Negotiated Labor</span>
               <span>R {data.paymentTerms.laborEstimate.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-text-dim">Parts Estimate</span>
+              <span className="text-text-dim">Parts (Dealer API / Store Ferry Log)</span>
               <span>R {data.paymentTerms.partsEstimate.toFixed(2)}</span>
             </div>
             <Separator className="bg-white/10 my-2" />
-            <div className="flex justify-between text-lg font-black text-technic-yellow uppercase">
+            <div className="flex justify-between items-baseline text-lg font-black text-technic-yellow uppercase">
               <span>Total Estimate</span>
-              <span>R {total.toFixed(2)}</span>
+              <div className="text-right">
+                <span>R {total.toFixed(2)}</span>
+                <span className="block text-xs font-mono text-emerald-400 font-bold tracking-normal">
+                  ({total.toFixed(2)} ZARU • 1:1 Digital Rand)
+                </span>
+              </div>
             </div>
-
-
           </div>
+        </section>
+
+        <section className="bg-blue-500/5 p-4 rounded-xl border border-blue-500/20 mb-2">
+          <div className="flex items-center gap-2 mb-1.5">
+            <Shield className="w-4 h-4 text-blue-400" />
+            <h4 className="text-xs font-bold uppercase tracking-wider text-blue-400">Motor Fair-Trade & Roadworthy Safety Guarantee</h4>
+          </div>
+          <p className="text-[11px] text-text-dim leading-relaxed">
+            This quote adheres to national motor industry fair-trade rules. All parts are verified via published dealer catalogs or signed store slips. Payment is held in bank-custodied ZARU digital rand escrow and is only released after you road-test the vehicle and confirm it is safe to drive.
+          </p>
         </section>
 
         <section className="p-3 rounded-lg bg-technic-yellow/5 border border-technic-yellow/20">

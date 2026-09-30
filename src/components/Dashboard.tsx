@@ -14,7 +14,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { signOut } from 'firebase/auth';
 import { auth } from '../lib/firebase';
-import { Wrench, Car, ClipboardCheck, History, TrendingUp, UserCheck, AlertTriangle, Shield, Clock, CheckCircle2, PlayCircle, XCircle, MapPin, Loader2, Users, Award, BarChart3, Camera as CameraIcon, Menu, LogOut, Home, User, ShieldCheck, Zap, Circle, FileText, Settings, Sparkles } from 'lucide-react';
+import { Wrench, Car, ClipboardCheck, History, TrendingUp, UserCheck, AlertTriangle, Shield, Clock, CheckCircle2, PlayCircle, XCircle, MapPin, Loader2, Users, Award, BarChart3, Camera as CameraIcon, Menu, LogOut, Home, User, ShieldCheck, Zap, Circle, FileText, Settings, Sparkles, Coins, Gamepad2, ShoppingBag, Scale } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 
@@ -25,6 +25,14 @@ import { FleetManager } from './FleetManager';
 import { OHSAGuidelines } from './OHSAGuidelines';
 import { CameraCapture } from './CameraCapture';
 import { CalendarView } from './CalendarView';
+import { DrivewayProtocols } from './DrivewayProtocols';
+import { FleetPerformance } from './FleetPerformance';
+import { SmartEscrow } from './SmartEscrow';
+import { RulesOfEngagementGame } from './RulesOfEngagementGame';
+import { ApprenticeHub } from './ApprenticeHub';
+import { PartsPricingAndFerrying } from './PartsPricingAndFerrying';
+import { ServiceWorkflowGating } from './ServiceWorkflowGating';
+import { ServiceVehicleAgreement } from './ServiceVehicleAgreement';
 import { ServiceRequest, UserProfile, ApprenticeTask, RoadworthyChecklist } from '../types';
 import { notifyParties, addToCalendar, notifyApprentice } from '../services/gemini';
 
@@ -661,15 +669,41 @@ export const Dashboard: React.FC = () => {
                     <span>Hire Helper</span>
                   </DropdownMenuItem>
                 )}
-                {isOwner && (
-                  <DropdownMenuItem onClick={() => setActiveTab('fleet')} className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
-                    <BarChart3 className="mr-2 h-4 w-4" />
-                    <span>Fleet Manager</span>
+                {isSpecialist && (
+                  <DropdownMenuItem onClick={() => setActiveTab('service-vehicle')} className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
+                    <Car className="mr-2 h-4 w-4" />
+                    <span>Service Vehicle & Lease</span>
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem onClick={() => setActiveTab('safety')} className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
                   <ClipboardCheck className="mr-2 h-4 w-4" />
                   <span>Safety</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveTab('protocols')} className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
+                  <ShieldCheck className="mr-2 h-4 w-4" />
+                  <span>Driveway Protocols</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveTab('escrow')} className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
+                  <Coins className="mr-2 h-4 w-4" />
+                  <span>Smart Escrow & Audit</span>
+                </DropdownMenuItem>
+                {isSpecialist && (
+                  <DropdownMenuItem onClick={() => setActiveTab('rules-game')} className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    <span>Rules of Engagement Game</span>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={() => setActiveTab('apprentices-hub')} className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
+                  <Award className="mr-2 h-4 w-4" />
+                  <span>Apprentices & PoE Track</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveTab('parts-pricing')} className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
+                  <ShoppingBag className="mr-2 h-4 w-4" />
+                  <span>Parts Pricing & Ferrying</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveTab('gated-workflow')} className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
+                  <Scale className="mr-2 h-4 w-4" />
+                  <span>Gated Service Workflow</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-white/5" />
                 <DropdownMenuItem 
@@ -705,29 +739,44 @@ export const Dashboard: React.FC = () => {
             <TrendingUp className="w-4 h-4 mr-2" /> OVERVIEW
           </TabsTrigger>
           <TabsTrigger value="jobs" className="data-[state=active]:bg-technic-yellow data-[state=active]:text-industrial-charcoal rounded-lg px-6 py-2.5 font-bold transition-all text-xs tracking-widest uppercase">
-            <Wrench className="w-4 h-4 mr-2" /> {isSpecialist ? 'MY JOBS' : 'MY BOOKINGS'}
+            <Wrench className="w-4 h-4 mr-2" /> {isOwner ? 'MY BOOKINGS' : 'MY JOBS'}
           </TabsTrigger>
-          <TabsTrigger value="vehicles" className="data-[state=active]:bg-technic-yellow data-[state=active]:text-industrial-charcoal rounded-lg px-6 py-2.5 font-bold transition-all text-xs tracking-widest uppercase">
-            <Car className="w-4 h-4 mr-2" /> {isSpecialist ? 'FLEET' : 'MY CARS'}
-          </TabsTrigger>
-          {isOwner && (
-            <TabsTrigger value="fleet" className="data-[state=active]:bg-technic-yellow data-[state=active]:text-industrial-charcoal rounded-lg px-6 py-2.5 font-bold transition-all text-xs tracking-widest uppercase">
-              <BarChart3 className="w-4 h-4 mr-2" /> FLEET MANAGER
+          {isOwner ? (
+            <TabsTrigger value="vehicles" className="data-[state=active]:bg-technic-yellow data-[state=active]:text-industrial-charcoal rounded-lg px-6 py-2.5 font-bold transition-all text-xs tracking-widest uppercase">
+              <Car className="w-4 h-4 mr-2" /> MY CARS
+            </TabsTrigger>
+          ) : (
+            <TabsTrigger value="service-vehicle" className="data-[state=active]:bg-technic-yellow data-[state=active]:text-industrial-charcoal rounded-lg px-6 py-2.5 font-bold transition-all text-xs tracking-widest uppercase">
+              <Car className="w-4 h-4 mr-2" /> SERVICE VEHICLE & LEASE
             </TabsTrigger>
           )}
-          {profile?.role === 'specialist' && (
-            <TabsTrigger value="marketplace" className="data-[state=active]:bg-technic-yellow data-[state=active]:text-industrial-charcoal rounded-lg px-6 py-2.5 font-bold transition-all text-xs tracking-widest uppercase">
-              <Users className="w-4 h-4 mr-2" /> HIRE
+          {isSpecialist && (
+            <TabsTrigger value="protocols" className="data-[state=active]:bg-technic-yellow data-[state=active]:text-industrial-charcoal rounded-lg px-6 py-2.5 font-bold transition-all text-xs tracking-widest uppercase">
+              <ShieldCheck className="w-4 h-4 mr-2" /> PROTOCOLS
             </TabsTrigger>
           )}
           <TabsTrigger value="safety" className="data-[state=active]:bg-technic-yellow data-[state=active]:text-industrial-charcoal rounded-lg px-6 py-2.5 font-bold transition-all text-xs tracking-widest uppercase">
-            <ClipboardCheck className="w-4 h-4 mr-2" /> SAFETY
+            <ClipboardCheck className="w-4 h-4 mr-2" /> {isOwner ? 'ROADWORTHY SAFETY' : 'SAFETY & OHSA'}
           </TabsTrigger>
-          {(profile?.role === 'specialist' || profile?.role === 'apprentice') && (
-            <TabsTrigger value="skills" className="data-[state=active]:bg-technic-yellow data-[state=active]:text-industrial-charcoal rounded-lg px-6 py-2.5 font-bold transition-all text-xs tracking-widest uppercase">
-              <Award className="w-4 h-4 mr-2" /> SKILLS
-            </TabsTrigger>
+          <TabsTrigger value="escrow" className="data-[state=active]:bg-technic-yellow data-[state=active]:text-industrial-charcoal rounded-lg px-6 py-2.5 font-bold transition-all text-xs tracking-widest uppercase">
+            <Coins className="w-4 h-4 mr-2" /> {isOwner ? 'INVOICE & ESCROW' : 'ESCROW & AUDIT'}
+          </TabsTrigger>
+          {isSpecialist && (
+            <>
+              <TabsTrigger value="rules-game" className="data-[state=active]:bg-technic-yellow data-[state=active]:text-industrial-charcoal rounded-lg px-6 py-2.5 font-bold transition-all text-xs tracking-widest uppercase">
+                <Sparkles className="w-4 h-4 mr-2" /> RULES GAME
+              </TabsTrigger>
+              <TabsTrigger value="apprentices-hub" className="data-[state=active]:bg-technic-yellow data-[state=active]:text-industrial-charcoal rounded-lg px-6 py-2.5 font-bold transition-all text-xs tracking-widest uppercase">
+                <Award className="w-4 h-4 mr-2" /> APPRENTICES & POE
+              </TabsTrigger>
+              <TabsTrigger value="parts-pricing" className="data-[state=active]:bg-technic-yellow data-[state=active]:text-industrial-charcoal rounded-lg px-6 py-2.5 font-bold transition-all text-xs tracking-widest uppercase">
+                <ShoppingBag className="w-4 h-4 mr-2" /> PARTS & FERRYING
+              </TabsTrigger>
+            </>
           )}
+          <TabsTrigger value="gated-workflow" className="data-[state=active]:bg-technic-yellow data-[state=active]:text-industrial-charcoal rounded-lg px-6 py-2.5 font-bold transition-all text-xs tracking-widest uppercase">
+            <Scale className="w-4 h-4 mr-2" /> {isOwner ? 'SERVICE PROGRESS & ROAD TEST' : 'WORKFLOW GATING'}
+          </TabsTrigger>
         </TabsList>
 
         <AnimatePresence mode="wait">
@@ -958,7 +1007,11 @@ export const Dashboard: React.FC = () => {
                             <h4 className="text-lg font-black uppercase tracking-tighter">{lead.vehicleMake} {lead.vehicleModel}</h4>
                             <p className="text-[10px] text-text-dim uppercase tracking-widest font-bold">{lead.location} • {lead.serviceType} service</p>
                           </div>
-                          <Badge className="bg-technic-yellow text-industrial-charcoal font-black border-none">R{lead.callOutFee || 500} C.O.</Badge>
+                          {lead.isFirstTripOnHouse || lead.callOutFee === 0 ? (
+                            <Badge className="bg-emerald-500 text-black font-black border-none text-[10px]">1ST TRIP FREE</Badge>
+                          ) : (
+                            <Badge className="bg-technic-yellow text-industrial-charcoal font-black border-none">R{lead.callOutFee || 500} C.O.</Badge>
+                          )}
                         </div>
                         <p className="text-xs text-text-dim mb-6 line-clamp-2">{lead.description}</p>
                         <Button 
@@ -993,6 +1046,30 @@ export const Dashboard: React.FC = () => {
                         <div className="flex items-center gap-4 mt-3 text-[11px] text-text-dim font-bold uppercase tracking-widest">
                           <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date((req.createdAt as any)?.seconds * 1000).toLocaleDateString()}</span>
                           <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {req.location}</span>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2 mt-2.5">
+                          {(!req.callOutFee || req.callOutFee === 0 || req.isFirstTripOnHouse) ? (
+                            <Badge className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-bold">
+                              🎁 First Trip On The House (R0.00 Call-out)
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-text-dim border-white/10 text-[9px]">
+                              Call-out: R{req.callOutFee}
+                            </Badge>
+                          )}
+                          <button 
+                            onClick={() => setActiveTab('parts-pricing')}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-technic-yellow/10 border border-technic-yellow/30 text-[9px] font-bold text-technic-yellow hover:bg-technic-yellow/20 transition-all uppercase tracking-wider"
+                          >
+                            <ShoppingBag className="w-3 h-3" /> Parts Pricing & Ferry Log
+                          </button>
+                          <button 
+                            onClick={() => setActiveTab('gated-workflow')}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-500/10 border border-blue-500/30 text-[9px] font-bold text-blue-400 hover:bg-blue-500/20 transition-all uppercase tracking-wider"
+                          >
+                            <Scale className="w-3 h-3" /> Gated Workflow Stages
+                          </button>
                         </div>
 
                         {/* Referral Management (Owner View) */}
@@ -1200,7 +1277,7 @@ export const Dashboard: React.FC = () => {
                               </div>
                               <div>
                                 <h4 className="text-xs font-black uppercase tracking-widest text-digital-white">Roadworthy Check</h4>
-                                <p className="text-[10px] text-text-dim uppercase tracking-wider font-bold">Official standards (Polokwane)</p>
+                                <p className="text-[10px] text-text-dim uppercase tracking-wider font-bold">Certified Technical Safety Standards</p>
                               </div>
                             </div>
                             {isSpecialist && (
@@ -1392,8 +1469,16 @@ export const Dashboard: React.FC = () => {
                <VehicleLogBook />
             </TabsContent>
 
+            <TabsContent value="service-vehicle" className="mt-0">
+               <ServiceVehicleAgreement />
+            </TabsContent>
+
             <TabsContent value="fleet" className="mt-0">
               <FleetManager />
+            </TabsContent>
+
+            <TabsContent value="fleet-performance" className="mt-0">
+              <FleetPerformance />
             </TabsContent>
 
             <TabsContent value="marketplace" className="mt-0">
@@ -1574,7 +1659,7 @@ export const Dashboard: React.FC = () => {
                     <CardHeader>
                       <Badge className="w-fit bg-success-green/20 text-success-green mb-2">Early Adopter Reward</Badge>
                       <CardTitle className="text-xl font-display font-black uppercase tracking-tight text-white">Refer a Neighbor</CardTitle>
-                      <CardDescription className="text-text-dim">Help build the most trusted network in Polokwane.</CardDescription>
+                      <CardDescription className="text-text-dim">Help build the most trusted network in your region.</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <p className="text-sm text-digital-white/60 mb-6 leading-relaxed">
@@ -1601,7 +1686,7 @@ export const Dashboard: React.FC = () => {
                 <Card className="bg-white/5 border-white/10">
                   <CardHeader>
                     <CardTitle className="text-sm font-bold text-technic-yellow uppercase tracking-widest">Regional Reliability Stats</CardTitle>
-                    <CardDescription>Data-driven insights for Polokwane & Surrounds</CardDescription>
+                    <CardDescription>Data-driven insights across service territories</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {[
@@ -1654,6 +1739,24 @@ export const Dashboard: React.FC = () => {
         </TabsContent>
             <TabsContent value="skills" className="mt-0">
               <SkillsValidation />
+            </TabsContent>
+            <TabsContent value="protocols" className="mt-0">
+              <DrivewayProtocols />
+            </TabsContent>
+            <TabsContent value="escrow" className="mt-0">
+              <SmartEscrow />
+            </TabsContent>
+            <TabsContent value="rules-game" className="mt-0">
+              <RulesOfEngagementGame />
+            </TabsContent>
+            <TabsContent value="apprentices-hub" className="mt-0">
+              <ApprenticeHub />
+            </TabsContent>
+            <TabsContent value="parts-pricing" className="mt-0">
+              <PartsPricingAndFerrying />
+            </TabsContent>
+            <TabsContent value="gated-workflow" className="mt-0">
+              <ServiceWorkflowGating />
             </TabsContent>
           </motion.div>
         </AnimatePresence>

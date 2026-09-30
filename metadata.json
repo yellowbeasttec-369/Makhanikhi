@@ -2,5 +2,5 @@
   "name": "Makhanikhi",
   "description": "Specialist Mobile Mechanics platform powered by Yellow Beast (Pty) Ltd. Digital record keeping, safety-first mobile car servicing, and skills transfer.",
   "requestFramePermissions": ["camera", "ethereum"],
-  "majorCapabilities": []
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

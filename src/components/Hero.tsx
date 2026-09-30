@@ -35,7 +35,7 @@ export const Hero: React.FC = () => {
               Repairs & Trust.
             </h1>
             <p className="max-w-2xl mx-auto text-base sm:text-lg text-digital-white/80 mb-10 leading-relaxed px-2">
-              Keep your out-of-motor-plan car, bakkie, or compact workhorse in perfect order. Makhanikhi brings direct engineering standards and transparent audit trails directly to your driveway in Polokwane, Seshego, and Mmotong.
+              Keep your out-of-warranty car, pickup truck, or fleet vehicle in peak condition. Makhanikhi brings certified engineering standards, decentralized escrow protection, and transparent audit trails directly to your driveway anywhere in the world.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center px-4 sm:px-0">
               <Link to="/login?role=owner">
@@ -51,7 +51,7 @@ export const Hero: React.FC = () => {
             </div>
             
             <div className="mt-12 flex flex-wrap justify-center gap-6">
-              {['Out-of-Warranty Rangers & NP200s', 'Township Built', 'Verified Local Hands'].map((tag) => (
+              {['Out-of-Warranty Vehicles & Fleets', 'Decentralized Escrow Protocol', 'Verified Master Techs & Apprentices'].map((tag) => (
                 <div key={tag} className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/80">
                   <CheckCircle2 className="w-3 h-3 text-technic-yellow" /> {tag}
                 </div>

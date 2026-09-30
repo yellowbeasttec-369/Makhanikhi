@@ -148,8 +148,74 @@ export interface ServiceRequest {
   offers?: ServiceOffer[];
   description: string;
   callOutFee?: number;
+  isFirstTripOnHouse?: boolean;
+  callOutFeeWaived?: boolean;
+  callOutFeeNotes?: string;
+  negotiatedLaborQuote?: number;
   diagnosticQuote?: number;
   partsQuote?: number;
+  partsPricingMethod?: 'api_catalog' | 'store_ferry' | 'client_supplied';
+  partsDealerReference?: {
+    dealerName: string;
+    catalogUrl?: string;
+    partName?: string;
+    partNumber?: string;
+    estimatedPrice?: number;
+    dealerVerifiedAt?: string;
+  };
+  partsFerryLog?: {
+    logged: boolean;
+    storeName: string;
+    storeAddress?: string;
+    timestamp: string;
+    clientAccompanied: boolean;
+    receiptPhotoUrl?: string;
+    partsAgreedAmount: number;
+    notes?: string;
+    verifiedByClient: boolean;
+    verifiedByMechanic: boolean;
+  };
+  partsOrderWaitLog?: {
+    isWaiting: boolean;
+    dealerName: string;
+    partDescription: string;
+    orderReference: string;
+    orderDate: string;
+    estimatedDeliveryDate: string;
+    status: 'ordered_waiting' | 'in_transit' | 'delivered_ready';
+    notes?: string;
+  };
+  satisfactionReview?: {
+    rating: number; // 1 to 5
+    correctDiagnosis: boolean;
+    correctPartsSourced: boolean;
+    correctMethodApplied: boolean;
+    deliverableVisible: boolean;
+    feedback: string;
+    timestamp: string;
+    isSatisfied: boolean; // rating >= 4
+  };
+  dissatisfactionEducation?: {
+    issueTopic: string;
+    workingMechanismExplanation: string;
+    youtubeVideoUrl?: string;
+    youtubeVideoTitle?: string;
+    clientPaymentWaived: boolean;
+    mechanicReflection: string;
+    reviewedByClient: boolean;
+  };
+  retentionDiscountOffer?: {
+    discountPercent: number;
+    code: string;
+    validMonths: number;
+    offeredByMechanic: boolean;
+  };
+  mutualRatings?: {
+    clientRatedMechanic?: number;
+    clientRatedApprentice?: number;
+    mechanicRatedClient?: number;
+  };
+  offPlatformWarningAcknowledged?: boolean;
   totalAmount?: number;
   paymentStatus: 'unpaid' | 'partial' | 'paid';
   createdAt: string;

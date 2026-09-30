@@ -44,7 +44,7 @@ export const WorkshopRegistry: React.FC = () => {
         const querySnapshot = await getDocs(q);
         const results = querySnapshot.docs.map(doc => {
           const data = doc.data() as UserProfile;
-          // Add random coordinates for demo if not present (centered around Limpopo)
+          // Add random coordinates for demo if not present (regional center)
           if (!data.latitude) {
             data.latitude = -23.8962 + (Math.random() - 0.5) * 0.5;
             data.longitude = 29.4486 + (Math.random() - 0.5) * 0.5;
@@ -100,7 +100,7 @@ export const WorkshopRegistry: React.FC = () => {
             The <span className="text-technic-yellow">Database</span> Registry
           </h1>
           <p className="text-text-dim max-w-2xl text-lg">
-            Find center-grade expertise in your local neighborhood. We digitize Polokwane's best mobile specialists, giving them the professional documentation tools to deliver master repairs right at your home or office.
+            Find center-grade expertise in your local neighborhood. We digitize the best mobile specialists, giving them the professional documentation tools to deliver master repairs right at your home or office worldwide.
           </p>
         </div>
         
@@ -218,7 +218,7 @@ export const WorkshopRegistry: React.FC = () => {
                     
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 text-xs text-text-dim">
-                        <MapPin className="w-3 h-3" /> {workshop.address || 'Polokwane, ZA'}
+                        <MapPin className="w-3 h-3" /> {workshop.address || 'Metro District Service Zone'}
                       </div>
                       <div className="flex items-center gap-2 text-xs text-text-dim">
                         <Award className="w-3 h-3" /> Offers Workshop Learning
@@ -340,7 +340,7 @@ export const WorkshopRegistry: React.FC = () => {
           Want to <span className="text-technic-yellow">List</span> Your Workshop?
         </h2>
         <p className="text-text-dim max-w-xl mx-auto mb-8 relative z-10 text-sm leading-relaxed">
-          Join the registry as a Specialist mentor. Digitize your records, co-opt talent, and build the future of mobile mechanics in Limpopo.
+          Join the registry as a Specialist mentor. Digitize your records, co-opt talent, and build the future of decentralized mobile mechanics worldwide.
         </p>
         <Link to="/register">
           <Button className="bg-technic-yellow text-industrial-charcoal font-black h-14 px-8 rounded-xl shadow-[0_0_30px_rgba(255,210,0,0.1)] hover:scale-105 transition-transform uppercase text-xs tracking-widest">
