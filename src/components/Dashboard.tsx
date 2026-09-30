@@ -33,6 +33,7 @@ import { ApprenticeHub } from './ApprenticeHub';
 import { PartsPricingAndFerrying } from './PartsPricingAndFerrying';
 import { ServiceWorkflowGating } from './ServiceWorkflowGating';
 import { ServiceVehicleAgreement } from './ServiceVehicleAgreement';
+import { WeatherSafetyAndSpecialistRadar } from './WeatherSafetyAndSpecialistRadar';
 import { ServiceRequest, UserProfile, ApprenticeTask, RoadworthyChecklist } from '../types';
 import { notifyParties, addToCalendar, notifyApprentice } from '../services/gemini';
 

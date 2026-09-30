@@ -19,6 +19,8 @@ export const ServiceWorkflowGating: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [oilSpillMatDeployed, setOilSpillMatDeployed] = useState<boolean>(true);
   const [oilSpillMatProofType, setOilSpillMatProofType] = useState<'15s_video' | 'photo'>('15s_video');
+  const [gazeboWallsDeployed, setGazeboWallsDeployed] = useState<boolean>(true);
+  const [gazeboWallsProofType, setGazeboWallsProofType] = useState<'15s_video' | 'photo'>('photo');
 
   // Stage 1: Duo Call-in
   const [vehicleMake] = useState('Toyota');
@@ -413,13 +415,69 @@ export const ServiceWorkflowGating: React.FC = () => {
               )}
             </div>
 
+            {/* Mandatory Gazebo with Wall Coverings (Water Ingress Prevention) Gate */}
+            <div className={`p-4 rounded-xl border transition-all ${
+              gazeboWallsDeployed 
+                ? 'bg-black/40 border-white/10' 
+                : 'bg-rose-500/10 border-rose-500/30'
+            }`}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    id="gazeboWalls"
+                    checked={gazeboWallsDeployed}
+                    onChange={(e) => setGazeboWallsDeployed(e.target.checked)}
+                    className="accent-technic-yellow w-5 h-5 rounded mt-0.5"
+                  />
+                  <div>
+                    <label htmlFor="gazeboWalls" className="text-xs font-bold text-white uppercase block cursor-pointer">
+                      Gazebo with Sealed Wall Coverings Deployed (Water Ingress Prevention)
+                    </label>
+                    <p className="text-[11px] text-text-dim mt-0.5">
+                      Ensures rain does not stop viable work (e.g. air filter, alternator, spark plugs) by insulating the mobile workshop from side winds and rainfall.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-[10px] text-text-dim uppercase font-bold">Proof Type:</span>
+                  <button
+                    type="button"
+                    onClick={() => setGazeboWallsProofType('photo')}
+                    className={`px-2.5 py-1 rounded text-[10px] font-bold ${
+                      gazeboWallsProofType === 'photo' ? 'bg-technic-yellow text-black' : 'bg-white/10 text-white'
+                    }`}
+                  >
+                    Photo Proof
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setGazeboWallsProofType('15s_video')}
+                    className={`px-2.5 py-1 rounded text-[10px] font-bold ${
+                      gazeboWallsProofType === '15s_video' ? 'bg-technic-yellow text-black' : 'bg-white/10 text-white'
+                    }`}
+                  >
+                    15s Video Proof
+                  </button>
+                </div>
+              </div>
+
+              {!gazeboWallsDeployed && (
+                <div className="mt-3 p-2.5 rounded-lg bg-rose-500/20 border border-rose-500/40 text-[11px] text-rose-300 font-bold flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                  GATE BLOCKED: Rain and water ingress protection required. Mount gazebo side wall curtains to establish the covered mobile workshop.
+                </div>
+              )}
+            </div>
+
             {/* Duo Show Face Confirmation */}
             <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <ShieldCheck className="w-6 h-6 text-emerald-400 shrink-0" />
                 <div className="text-xs">
                   <span className="font-bold text-emerald-400 block">Duo Checked In on Site</span>
-                  <span className="text-text-dim">Specialist & Apprentice arrived with toolset, gazebo, & oil spill mats.</span>
+                  <span className="text-text-dim">Specialist & Apprentice arrived with toolset, all-weather gazebo + wall coverings, & oil spill mats.</span>
                 </div>
               </div>
               <Button
@@ -428,12 +486,16 @@ export const ServiceWorkflowGating: React.FC = () => {
                     toast.error('Deploy oil spill mats and verify proof to proceed!');
                     return;
                   }
-                  toast.success('Agreement digitally counter-signed! Moving to diagnostic & parts check.');
+                  if (!gazeboWallsDeployed) {
+                    toast.error('Deploy gazebo with wall coverings to protect site from water ingress!');
+                    return;
+                  }
+                  toast.success('Site established & agreement counter-signed! Moving to diagnostic & parts check.');
                   setCurrentStep(3);
                 }}
-                disabled={!oilSpillMatDeployed}
+                disabled={!oilSpillMatDeployed || !gazeboWallsDeployed}
                 className={`text-xs uppercase font-black ${
-                  oilSpillMatDeployed 
+                  (oilSpillMatDeployed && gazeboWallsDeployed)
                     ? 'bg-technic-yellow hover:bg-technic-yellow/90 text-industrial-charcoal' 
                     : 'bg-white/10 text-white/30 cursor-not-allowed'
                 }`}

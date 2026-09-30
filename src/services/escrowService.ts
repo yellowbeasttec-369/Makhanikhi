@@ -27,6 +27,8 @@ export interface EscrowComplianceData {
 
   // Pillar 3: Site Readiness & Specialized Toolset (30 points max)
   brandedGazeboDeployed: boolean;
+  gazeboWallCoveringsDeployed: boolean; // MANDATORY: Wall coverings to stop water ingress & rain
+  gazeboWallCoveringsVerified: boolean; // Photo / video proof of side wall curtains
   demarcationMethod: 'cones' | 'sand_bottles_6';
   dangerTapePerimeterSet: boolean;
   oilSpillMatDeployed: boolean; // MANDATORY: Driveway oil spill mat
@@ -181,10 +183,11 @@ export function calculateComplianceScore(data: EscrowComplianceData): {
 
   // Pillar 3: Site Readiness & Specialized Toolset (Max 30 points)
   let p3 = 0;
-  if (data.brandedGazeboDeployed) p3 += 7;
-  if (data.dangerTapePerimeterSet) p3 += 7; // demarcated working area
-  if (data.oilSpillMatDeployed && data.oilSpillMatVerified) p3 += 8; // Verified oil spill mat deployed
-  if (data.toolboxType === 'specialized_mechanic_box') p3 += 8; // certified mechanic toolbox
+  if (data.brandedGazeboDeployed) p3 += 5;
+  if (data.gazeboWallCoveringsDeployed && data.gazeboWallCoveringsVerified) p3 += 5; // Waterproof wall curtains against water ingress
+  if (data.dangerTapePerimeterSet) p3 += 6; // demarcated working area
+  if (data.oilSpillMatDeployed && data.oilSpillMatVerified) p3 += 7; // Verified oil spill mat deployed
+  if (data.toolboxType === 'specialized_mechanic_box') p3 += 7; // certified mechanic toolbox
 
   const total = Math.min(100, p1 + p2 + p3);
   return {
@@ -194,6 +197,96 @@ export function calculateComplianceScore(data: EscrowComplianceData): {
     pillar3: p3,
     disqualified: false,
     passedThreshold: total >= 90
+  };
+}
+
+export type JobWeatherCategory = 'minor_enclosed' | 'medium_sheltered' | 'heavy_subgrade';
+
+export function evaluateWeatherWorkViability(
+  serviceType: string,
+  weather: {
+    rainProbability: number; // 0 - 100%
+    precipitationMm: number;
+    windSpeedKmh: number;
+    temperatureC: number;
+    isLightningDetected?: boolean;
+  },
+  hasGazeboWithWalls: boolean
+): {
+  isPermitted: boolean;
+  category: JobWeatherCategory;
+  heatStressAlert: 'none' | 'caution' | 'warning' | 'danger';
+  reason: string;
+  advisory: string;
+} {
+  // Determine service category
+  const lower = serviceType.toLowerCase();
+  let category: JobWeatherCategory = 'minor_enclosed';
+  if (lower.includes('gearbox') || lower.includes('clutch') || lower.includes('engine drop') || lower.includes('subframe')) {
+    category = 'heavy_subgrade';
+  } else if (lower.includes('brake') || lower.includes('suspension') || lower.includes('radiator')) {
+    category = 'medium_sheltered';
+  } else {
+    // Air filter, spark plugs, battery, diagnostic scan, roadside assistance
+    category = 'minor_enclosed';
+  }
+
+  // Ergonomic & Heat Stress Safeguard (WBGT indicator)
+  let heatStressAlert: 'none' | 'caution' | 'warning' | 'danger' = 'none';
+  if (weather.temperatureC >= 38) {
+    heatStressAlert = 'danger';
+  } else if (weather.temperatureC >= 34) {
+    heatStressAlert = 'warning';
+  } else if (weather.temperatureC >= 30) {
+    heatStressAlert = 'caution';
+  }
+
+  // Severe Lightning Hazard
+  if (weather.isLightningDetected) {
+    return {
+      isPermitted: false,
+      category,
+      heatStressAlert,
+      reason: 'ELECTRICAL STORM DETECTED: Mobile outdoor service is halted for technician lightning safety.',
+      advisory: 'Wait for lightning cell to pass (minimum 30 minutes clear radar).'
+    };
+  }
+
+  // Heavy subgrade repair in the rain
+  if (category === 'heavy_subgrade' && (weather.precipitationMm > 1.5 || weather.rainProbability > 60)) {
+    return {
+      isPermitted: false,
+      category,
+      heatStressAlert,
+      reason: 'HEAVY SUBGRADE RISK: Underbody ground operations (gearbox/transmission) cannot safely occur with ground runoff and rain.',
+      advisory: 'Reschedule subgrade repair or divert vehicle to an enclosed brick-and-mortar hoist facility.'
+    };
+  }
+
+  // Minor or medium work in light rain
+  if (weather.precipitationMm > 0.5 || weather.rainProbability > 40) {
+    if (!hasGazeboWithWalls) {
+      return {
+        isPermitted: false,
+        category,
+        heatStressAlert,
+        reason: 'WATER INGRESS RISK: Rain detected, but Gazebo with Wall Coverings has not been verified.',
+        advisory: 'Deploy branded gazebo with side wall curtains and upload verification photo/video to unlock work.'
+      };
+    }
+  }
+
+  // Permitted
+  return {
+    isPermitted: true,
+    category,
+    heatStressAlert,
+    reason: hasGazeboWithWalls 
+      ? 'WEATHER PROTECTED: Gazebo with sealed wall coverings active. Mobile workshop insulated from water ingress.'
+      : 'FAVORABLE WEATHER: Clear environmental conditions.',
+    advisory: heatStressAlert !== 'none'
+      ? `Heat stress advisory active (${weather.temperatureC}°C). Hydrate every 20 minutes and utilize shaded rest intervals.`
+      : 'All mobile service operations authorized.'
   };
 }
 

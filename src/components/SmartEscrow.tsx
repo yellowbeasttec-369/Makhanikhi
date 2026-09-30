@@ -62,6 +62,8 @@ export const SmartEscrow: React.FC = () => {
 
     // Pillar 3: Site Readiness & Specialized Toolset (30%)
     brandedGazeboDeployed: true,
+    gazeboWallCoveringsDeployed: true,
+    gazeboWallCoveringsVerified: true,
     demarcationMethod: 'sand_bottles_6',
     dangerTapePerimeterSet: true,
     oilSpillMatDeployed: true,
@@ -733,7 +735,19 @@ export const SmartEscrow: React.FC = () => {
                       onChange={e => updateCompliance({ brandedGazeboDeployed: e.target.checked })}
                       className="accent-technic-yellow w-4 h-4 rounded"
                     />
-                    <span>Branded Gazebo / Mobile Shelter (+10 pts)</span>
+                    <span>Branded Gazebo / Mobile Shelter (+5 pts)</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input 
+                      type="checkbox"
+                      checked={complianceData.gazeboWallCoveringsDeployed}
+                      onChange={e => updateCompliance({ 
+                        gazeboWallCoveringsDeployed: e.target.checked,
+                        gazeboWallCoveringsVerified: e.target.checked
+                      })}
+                      className="accent-technic-yellow w-4 h-4 rounded"
+                    />
+                    <span>Gazebo Wall Coverings (Water Ingress Prevention) (+5 pts)</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input 
@@ -742,7 +756,7 @@ export const SmartEscrow: React.FC = () => {
                       onChange={e => updateCompliance({ dangerTapePerimeterSet: e.target.checked })}
                       className="accent-technic-yellow w-4 h-4 rounded"
                     />
-                    <span>6 Sand Bottles / Cones + Danger Tape (+7 pts)</span>
+                    <span>6 Sand Bottles / Cones + Danger Tape (+6 pts)</span>
                   </label>
                   
                   {/* Mandatory Oil Spill Mat Check */}
