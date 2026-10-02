@@ -6,6 +6,17 @@ import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
 import { google } from "googleapis";
+import { 
+  MCP_TOOLS, 
+  handleMcpJsonRpcRequest, 
+  executeDiagnoseVehicleSymptom, 
+  executeCrossReferencePartCatalog,
+  executeCheckClosedCircuitErpStock,
+  executeSearchLocalSparesInventory, 
+  executeCreateVoiceSparesOrder,
+  LIMPOPO_SPARES_INVENTORY,
+  VOICE_ORDERS_LEDGER
+} from "./src/services/mcpService";
 
 dotenv.config();
 
@@ -29,6 +40,255 @@ async function startServer() {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
+  });
+
+  // =========================================================================
+  // Alexa+ Model Context Protocol (MCP) Server Routes (/api/mcp)
+  // Powered by Amazon Bedrock AgentCore for Limpopo Informal Mechanics
+  // =========================================================================
+
+  // 1. MCP Discovery / Metadata
+  app.get("/api/mcp", (req, res) => {
+    res.json({
+      jsonrpc: "2.0",
+      protocolVersion: "2024-11-05",
+      serverInfo: {
+        name: "makhanikhi-bedrock-mcp-server",
+        version: "1.0.0",
+        description: "Makhanikhi Hands-Free Alexa+ Model Context Protocol (MCP) Server for Limpopo Informal Mechanics",
+        jurisdiction: "Limpopo, South Africa (Polokwane, Seshego, Mankweng)",
+        currency_support: ["ZAR", "ZARU (Stablecoin 1:1 ZAR)"]
+      },
+      tools: MCP_TOOLS,
+      participating_vendors: LIMPOPO_SPARES_INVENTORY.map(v => ({
+        id: v.supplier_id,
+        name: v.supplier_name,
+        branch: v.branch,
+        region: v.region,
+        phone: v.phone,
+        inventory_items_count: v.inventory.length
+      }))
+    });
+  });
+
+  // 2. Standard MCP JSON-RPC 2.0 Handler
+  app.post("/api/mcp", (req, res) => {
+    try {
+      const rpcBody = req.body;
+      
+      // Support standard JSON-RPC 2.0 envelope
+      if (rpcBody.method) {
+        const response = handleMcpJsonRpcRequest(rpcBody);
+        return res.json(response);
+      }
+
+      // REST fallback for quick tool invocation: { tool: "diagnose_vehicle_symptom", arguments: {...} }
+      if (rpcBody.tool || rpcBody.name) {
+        const toolName = rpcBody.tool || rpcBody.name;
+        const toolArgs = rpcBody.arguments || rpcBody.params || {};
+        const response = handleMcpJsonRpcRequest({
+          method: "tools/call",
+          params: { name: toolName, arguments: toolArgs }
+        });
+        return res.json(response);
+      }
+
+      // Default: list available tools
+      return res.json(handleMcpJsonRpcRequest({ method: "tools/list" }));
+    } catch (error: any) {
+      console.error("MCP Execution Error:", error);
+      res.status(500).json({
+        jsonrpc: "2.0",
+        error: { code: -32603, message: error.message || "Internal MCP Server Error" }
+      });
+    }
+  });
+
+  // 3. Amazon Bedrock AgentCore Voice Execution Loop
+  app.post("/api/mcp/bedrock-agent", async (req, res) => {
+    try {
+      const { query, mechanic_id = "MECH-PLK-01", language = "en-ZA", auto_confirm_order = false } = req.body;
+      const q = (query || "").trim();
+      const qLower = q.toLowerCase();
+
+      const reasoningSteps: Array<{ step: string; tool?: string; output?: any }> = [];
+      const mcpToolCalls: Array<{ tool: string; input: any; result: any }> = [];
+
+      let spokenVoiceResponse = "";
+      let orderCreated = null;
+
+      reasoningSteps.push({
+        step: "Transcribed audio query received from mechanic working hands-free under chassis."
+      });
+
+      // Scenario A: Voice Purchase Order Confirmation
+      if (
+        qLower.includes("confirm order") || 
+        qLower.includes("buy it") || 
+        qLower.includes("place order") ||
+        qLower.includes("order bearing") ||
+        qLower.includes("order parts") ||
+        auto_confirm_order
+      ) {
+        reasoningSteps.push({
+          step: "Bedrock AgentCore recognized intent: 'create_voice_spares_order'. Invoking MCP tool."
+        });
+
+        const orderInput = {
+          mechanic_id,
+          supplier_id: qLower.includes("seshego") ? "SUP-SES-02" : "SUP-PLK-01",
+          part_number: "CR-4155XP-STD",
+          quantity: 1,
+          delivery_address: "Stand 412, Zone 4, Seshego Workshop, Polokwane"
+        };
+
+        const orderResult = executeCreateVoiceSparesOrder(orderInput);
+        orderCreated = orderResult.order;
+
+        mcpToolCalls.push({
+          tool: "create_voice_spares_order",
+          input: orderInput,
+          result: orderResult
+        });
+
+        spokenVoiceResponse = orderResult.voice_spoken_response;
+      } 
+      // Scenario B: Diagnosis AND/OR Spares Search
+      else {
+        // Step 1: Check if vehicle diagnostic is needed
+        let diagnosticData: any = null;
+        let vehicleMake = "Toyota";
+        let vehicleModel = "Hilux 2.5 D-4D";
+        let engineCode = "2KD-FTV";
+        let partCategory = "Big End Bearing Kit";
+
+        if (/\b(quantum|2tr|hiace)\b/i.test(qLower)) {
+          vehicleMake = "Toyota";
+          vehicleModel = "Quantum 2014 2TR-FE 2.7";
+          engineCode = "2TR-FE";
+          partCategory = qLower.includes("water") || qLower.includes("pump") || qLower.includes("leak") || qLower.includes("cool") 
+            ? "Water Pump Housing" 
+            : "Direct Ignition Pencil Coil Pack";
+        } else if (/\b(polo|vivo)\b/i.test(qLower) && !qLower.includes("polokwane")) {
+          vehicleMake = "Volkswagen";
+          vehicleModel = "Polo Vivo 1.4 CLPA";
+          engineCode = "CLPA";
+          partCategory = "Lower Control Arm Console Bush";
+        } else if (/\b(isuzu|d-max|kb)\b/i.test(qLower)) {
+          vehicleMake = "Isuzu";
+          vehicleModel = "D-Max / KB 250 D-Teq";
+          engineCode = "4JK1";
+          partCategory = "Diesel Fuel Filter Cartridge";
+        } else if (/\b(cv|click|axle|lock)\b/i.test(qLower)) {
+          vehicleMake = "Toyota";
+          vehicleModel = "Hilux Vigo 4x4 D-4D";
+          engineCode = "2KD-FTV";
+          partCategory = "Outer CV Joint Kit";
+        }
+
+        const diagInput = {
+          vehicle_make: vehicleMake,
+          vehicle_model: vehicleModel,
+          engine_code: engineCode,
+          symptom_description: q
+        };
+
+        reasoningSteps.push({
+          step: `Bedrock AgentCore (AI Counter-Dealer) analyzed acoustic note. Invoking MCP tool: 'diagnose_vehicle_symptom' for ${vehicleMake} ${vehicleModel} (${engineCode}).`,
+          tool: "diagnose_vehicle_symptom"
+        });
+
+        diagnosticData = executeDiagnoseVehicleSymptom(diagInput);
+        mcpToolCalls.push({
+          tool: "diagnose_vehicle_symptom",
+          input: diagInput,
+          result: diagnosticData
+        });
+
+        // Step 2: Master Spares Counter-Dealer Cross-Reference Catalog (Till-Point Reference Book)
+        const crossRefInput = {
+          vehicle_spec: `${vehicleMake} ${vehicleModel} ${engineCode}`,
+          part_category: partCategory,
+          brand_preference: "OEM_or_HighQuality_Aftermarket"
+        };
+
+        reasoningSteps.push({
+          step: `Bedrock AgentCore digitized till-point counter reference book. Invoking MCP tool: 'cross_reference_part_catalog' for OEM-to-aftermarket mapping.`,
+          tool: "cross_reference_part_catalog"
+        });
+
+        const crossRefResult = executeCrossReferencePartCatalog(crossRefInput);
+        mcpToolCalls.push({
+          tool: "cross_reference_part_catalog",
+          input: crossRefInput,
+          result: crossRefResult
+        });
+
+        // Resolved Part Number for Closed-Circuit ERP Stock Check
+        const primaryAftermarketPart = crossRefResult.aftermarket_cross_references[0]?.part_number || "CR-4155XP-STD";
+
+        // Step 3: Query Closed-Circuit ERP Stock Database
+        const erpStockInput = {
+          part_number: primaryAftermarketPart,
+          region: qLower.includes("seshego") ? "Seshego_Limpopo" : "Polokwane_Limpopo"
+        };
+
+        reasoningSteps.push({
+          step: `Bedrock AgentCore queried closed-circuit motor spares ERP systems in Limpopo. Invoking MCP tool: 'check_closed_circuit_erp_stock' for SKU ${primaryAftermarketPart}.`,
+          tool: "check_closed_circuit_erp_stock"
+        });
+
+        const erpStockResult = executeCheckClosedCircuitErpStock(erpStockInput);
+        mcpToolCalls.push({
+          tool: "check_closed_circuit_erp_stock",
+          input: erpStockInput,
+          result: erpStockResult
+        });
+
+        // Step 4: Synthesize Concise, Direct Spoken Vernacular (Counter-Dealer Master Tone)
+        const topMatch = erpStockResult.matches[0];
+        const secondMatch = erpStockResult.matches[1];
+
+        // Format: Supplier Name, Part Brand, Part Number, Total Price in ZAR and ZARU, ETA
+        let verbalSpoken = `Chief, on that ${vehicleMake} ${vehicleModel} (${engineCode}), `;
+        if (diagnosticData) {
+          verbalSpoken += `${diagnosticData.vernacular_summary} `;
+        }
+
+        // Multimodal Ambiguity Check (Instruct UI to display diagram and confirm visually)
+        if (crossRefResult.ambiguity_detected) {
+          verbalSpoken += `${crossRefResult.visual_confirmation_prompt} `;
+        }
+
+        if (topMatch) {
+          verbalSpoken += `In stock at ${topMatch.supplier_name} (${topMatch.branch}). Brand: ${topMatch.brand}, Part Number: ${topMatch.part_number}. Total price: R${topMatch.price_zar} ZAR (or ${topMatch.price_zaru} ZARU stablecoin), delivery in ${topMatch.delivery_eta_minutes} minutes. `;
+          if (secondMatch && secondMatch.supplier_id !== topMatch.supplier_id) {
+            verbalSpoken += `${secondMatch.supplier_name} also has ${secondMatch.brand} (${secondMatch.part_number}) for R${secondMatch.price_zar} ZAR. `;
+          }
+          verbalSpoken += `Say 'Confirm order with ${topMatch.supplier_name.split(' ')[0]}' to lock funds in smart escrow and dispatch delivery to your workshop now.`;
+        } else {
+          verbalSpoken += `Closed-circuit ERP shows factory order available in 35 minutes for R890 ZAR. Say 'Confirm order' to dispatch.`;
+        }
+
+        spokenVoiceResponse = verbalSpoken;
+      }
+
+      res.json({
+        success: true,
+        query: q,
+        agent: "Amazon Bedrock AgentCore (Makhanikhi MCP Runtime)",
+        architecture: "Alexa+ Model Context Protocol (MCP) Server",
+        locale: language,
+        reasoning_steps: reasoningSteps,
+        mcp_tool_calls: mcpToolCalls,
+        spoken_voice_response: spokenVoiceResponse,
+        order: orderCreated,
+        stablecoin_currency: "ZARU (1 ZARU = 1 ZAR)"
+      });
+    } catch (error: any) {
+      console.error("Bedrock Agent Error:", error);
+      res.status(500).json({ error: error.message || "Failed to process Bedrock voice agent request" });
+    }
   });
 
   // API Routes

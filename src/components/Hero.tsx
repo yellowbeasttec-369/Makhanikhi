@@ -1,8 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Wrench, Shield, Zap, Users, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Wrench, Shield, Zap, Users, CheckCircle2, ArrowRight, Mic, Radio } from 'lucide-react';
 import { Button } from './ui/button';
+import { AlexaVoiceSimulator } from './AlexaVoiceSimulator';
 
 export const Hero: React.FC = () => {
   return (
@@ -43,6 +44,11 @@ export const Hero: React.FC = () => {
                   Book a Repair <ArrowRight className="ml-2 w-5 h-5 sm:w-6 sm:h-6" />
                 </Button>
               </Link>
+              <a href="#alexa-mcp">
+                <Button size="lg" variant="outline" className="bg-technic-yellow/10 border-technic-yellow/40 hover:bg-technic-yellow hover:text-industrial-charcoal font-black h-16 px-8 text-lg rounded-2xl w-full sm:w-auto uppercase text-technic-yellow transition-all tracking-tight flex items-center justify-center gap-2">
+                  <Mic className="w-5 h-5 animate-pulse" /> Alexa+ Voice MCP
+                </Button>
+              </a>
               <Link to="/login?role=pro">
                 <Button size="lg" variant="outline" className="bg-white/5 border-white/10 hover:bg-white hover:text-industrial-charcoal font-black h-16 px-10 text-lg rounded-2xl w-full sm:w-auto uppercase text-white transition-all tracking-tight">
                   Enter Technical Gate
@@ -51,13 +57,18 @@ export const Hero: React.FC = () => {
             </div>
             
             <div className="mt-12 flex flex-wrap justify-center gap-6">
-              {['Out-of-Warranty Vehicles & Fleets', 'Decentralized Escrow Protocol', 'Verified Master Techs & Apprentices'].map((tag) => (
+              {['Out-of-Warranty Vehicles & Fleets', 'Decentralized Escrow Protocol', 'Verified Master Techs & Apprentices', 'Alexa+ Bedrock AgentCore MCP'].map((tag) => (
                 <div key={tag} className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/80">
                   <CheckCircle2 className="w-3 h-3 text-technic-yellow" /> {tag}
                 </div>
               ))}
             </div>
           </motion.div>
+
+          {/* Live Alexa+ Model Context Protocol (MCP) Simulator Widget */}
+          <div id="alexa-mcp" className="mt-14 sm:mt-24 text-left">
+            <AlexaVoiceSimulator />
+          </div>
 
           {/* The Six Core Operational Rules Showcase */}
           <div className="mt-12 sm:mt-24 text-left">

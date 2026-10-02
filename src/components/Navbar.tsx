@@ -4,7 +4,7 @@ import { useAuth } from '../lib/AuthContext';
 import { auth } from '../lib/firebase';
 import { signOut, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { Button } from './ui/button';
-import { Wrench, LogOut, User as UserIcon, Shield, Wallet, Home, Calendar, LayoutDashboard, Menu, Users, Facebook } from 'lucide-react';
+import { Wrench, LogOut, User as UserIcon, Shield, Wallet, Home, Calendar, LayoutDashboard, Menu, Users, Facebook, Mic } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { toast } from 'sonner';
@@ -95,7 +95,15 @@ export const Navbar: React.FC = () => {
             </div>
           </Link>
 
-            <div className="flex items-center gap-2 md:gap-4">
+            <div className="flex items-center gap-2 md:gap-3">
+              <a 
+                href="/#alexa-mcp" 
+                className="flex items-center gap-1.5 h-8 sm:h-9 px-3 rounded-xl border border-technic-yellow/40 bg-technic-yellow/10 text-technic-yellow hover:bg-technic-yellow hover:text-industrial-charcoal font-black text-xs uppercase tracking-tight transition-all shadow-sm"
+                title="Alexa+ Voice MCP Copilot for Limpopo Mechanics"
+              >
+                <Mic className="h-3.5 w-3.5 animate-pulse" />
+                <span className="inline">Alexa+ MCP</span>
+              </a>
               <a 
                 href="https://www.facebook.com/share/1AxbpU1hxa/" 
                 target="_blank" 
