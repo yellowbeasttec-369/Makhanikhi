@@ -2,204 +2,268 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
 import { auth, db } from '../lib/firebase';
-import { 
-  GoogleAuthProvider, 
-  signInWithPopup, 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword 
+import {
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { Button } from './ui/button';
-import { Wrench, Shield, ArrowRight, UserCheck, Users, Award, Lock, CheckCircle2, AlertTriangle, ShieldCheck, Mail, KeyRound, Loader2, Sparkles } from 'lucide-react';
+import {
+  Wrench, Shield, ArrowRight, UserCheck, Users, Award, Lock,
+  CheckCircle2, AlertTriangle, ShieldCheck, Mail, KeyRound,
+  Loader2, Sparkles,
+} from 'lucide-react';
 import { motion } from 'motion/react';
 import { toast } from 'sonner';
 
-export const Login: React.FC = () => {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const queryParams = new URLSearchParams(location.search);
-  const intendedRole = queryParams.get('role');
+// ─── Fix #9: Detect iframe once at module level ───────────────────────────────
+const IS_IFRAME = window.self !== window.top;
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [authLoading, setAuthLoading] = useState(false);
-
-  React.useEffect(() => {
-    if (user) {
-      const checkProfile = async () => {
-        try {
-          const docRef = doc(db, 'users', user.uid);
-          const docSnap = await getDoc(docRef);
-          
-          if (docSnap.exists() && docSnap.data()?.isProfileComplete) {
-            navigate('/dashboard');
-          } else {
-            // New user or incomplete profile, send to registration with the intended role
-            // Use stored role if available
-            const storedRole = localStorage.getItem('makhanikhi_session_role');
-            const roleToUse = intendedRole || storedRole || 'owner';
-            navigate(`/register?role=${roleToUse}`);
-          }
-        } catch (error) {
-          console.error("Error checking profile:", error);
-          // Fallback to dashboard if check fails for any reason but auth is good
-          navigate('/dashboard');
-        }
-      };
-      checkProfile();
-    }
-  }, [user, navigate, intendedRole]);
-
-  // Unified authenticate and write initial Firestore profile helper
-  const handleAuthFlow = async (emailInput: string, passInput: string, selectedRole: string, fullName: string, customFields: any = {}) => {
-    setAuthLoading(true);
-    const resolvedRole = selectedRole || intendedRole || 'owner';
-    localStorage.setItem('makhanikhi_session_role', resolvedRole);
-
-    try {
-      let userCredential;
-      try {
-        // 1. Try signing in
-        userCredential = await signInWithEmailAndPassword(auth, emailInput, passInput);
-        toast.success(`Dumela! Welcome back, ${fullName || userCredential.user.email}`);
-      } catch (signInErr: any) {
-        // 2. If user doesn't exist, register them on-the-fly!
-        if (signInErr.code === 'auth/user-not-found' || signInErr.code === 'auth/invalid-credential' || signInErr.code === 'auth/wrong-password') {
-          try {
-            userCredential = await createUserWithEmailAndPassword(auth, emailInput, passInput);
-            toast.success(`Account registered! Provisioning profile for ${fullName}...`);
-          } catch (regErr: any) {
-            throw new Error(`Authentication failed. ${regErr.message}`);
-          }
-        } else {
-          throw signInErr;
-        }
-      }
-
-      if (userCredential?.user) {
-        const u = userCredential.user;
-        const userDocRef = doc(db, 'users', u.uid);
-        const userDocSnap = await getDoc(userDocRef);
-
-        // 3. Auto-populate core user profile if not exists
-        if (!userDocSnap.exists()) {
-          const initialProfile = {
-            uid: u.uid,
-            email: emailInput,
-            displayName: fullName || emailInput.split('@')[0],
-            role: resolvedRole as any,
-            isProfileComplete: true,
-            isVerified: true,
-            verificationStatus: 'verified' as any,
-            phone: customFields.phone || '+27 82 123 4567',
-            address: customFields.address || 'Metro District 4',
-            createdAt: new Date().toISOString(),
-            ...customFields
-          };
-          await setDoc(userDocRef, initialProfile);
-        }
-        navigate('/dashboard');
-      }
-    } catch (err: any) {
-      console.error('Auth Flow Error:', err);
-      toast.error(err.message || 'Authentication failed. Please verify credentials.');
-    } finally {
-      setAuthLoading(false);
-    }
-  };
-
-  // Preset quick trial logins for clean testing inside sandbox
-  const handlePresetLogin = async (presetType: 'owner' | 'specialist' | 'apprentice') => {
-    if (presetType === 'owner') {
-      await handleAuthFlow(
-        'owner@makhanikhi.co.za',
-        'makhanikhi123!',
-        'owner',
-        'Pontsho Moletsane',
-        {
+// ─── Fix #1: Demo credentials read from env vars; entire block tree-shaken in
+//     production via import.meta.env.DEV (Vite replaces this with `false`).   ─
+const DEMO_PRESETS = import.meta.env.DEV
+  ? {
+      owner: {
+        email:    import.meta.env.VITE_DEMO_OWNER_EMAIL      || 'owner@makhanikhi.co.za',
+        password: import.meta.env.VITE_DEMO_PASSWORD          || 'makhanikhi123!',
+        name:     'Pontsho Moletsane',
+        role:     'owner' as const,
+        extra: {
           phone: '+27 82 123 4567',
           address: 'North District Zone 2',
-          bio: 'Out-of-motor-plan car owner. Prefers micro-reconstructive maintenance protecting vehicle resale values.'
-        }
-      );
-    } else if (presetType === 'specialist') {
-      await handleAuthFlow(
-        'specialist@makhanikhi.co.za',
-        'makhanikhi123!',
-        'specialist',
-        "Sipho 'The Hands' Khumalo",
-        {
+          bio: 'Out-of-motor-plan car owner. Prefers micro-reconstructive maintenance protecting vehicle resale values.',
+        },
+      },
+      specialist: {
+        email:    import.meta.env.VITE_DEMO_SPECIALIST_EMAIL  || 'specialist@makhanikhi.co.za',
+        password: import.meta.env.VITE_DEMO_PASSWORD          || 'makhanikhi123!',
+        name:     "Sipho 'The Hands' Khumalo",
+        role:     'specialist' as const,
+        extra: {
           phone: '+27 83 987 6543',
           address: 'West End Hub 1',
           specialization: 'Gearbox & Engine',
           specializationBrand: 'Ford',
           isAvailable: true,
           yearsOfExperience: 12,
-          bio: 'Registered master general mechanic (The Hands). Mentor in local vocational repairs for out-of-motor-plan vehicles.'
-        }
-      );
-    } else if (presetType === 'apprentice') {
-      await handleAuthFlow(
-        'apprentice@makhanikhi.co.za',
-        'makhanikhi123!',
-        'apprentice',
-        "Thabo 'The Wheels' Modise",
-        {
+          bio: 'Registered master general mechanic (The Hands). Mentor in local vocational repairs for out-of-motor-plan vehicles.',
+        },
+      },
+      apprentice: {
+        email:    import.meta.env.VITE_DEMO_APPRENTICE_EMAIL  || 'apprentice@makhanikhi.co.za',
+        password: import.meta.env.VITE_DEMO_PASSWORD          || 'makhanikhi123!',
+        name:     "Thabo 'The Wheels' Modise",
+        role:     'apprentice' as const,
+        extra: {
           phone: '+27 71 456 7890',
           address: 'North District Zone 2',
           apprenticeStatus: 'awaiting-match',
           trainingPath: 'practical',
           apprenticeStartAge: 20,
-          bio: 'Apprentice mechanic. Level 2 practical compliance cadet. Dedicated to GRC tracking & carbon integrity.'
+          bio: 'Apprentice mechanic. Level 2 practical compliance cadet. Dedicated to GRC tracking & carbon integrity.',
+        },
+      },
+    }
+  : null;
+
+// ─── Simple email regex ────────────────────────────────────────────────────────
+const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+
+// ─── Human-readable Firebase auth error messages ──────────────────────────────
+const friendlyAuthError = (code: string): string => {
+  const map: Record<string, string> = {
+    'auth/user-not-found':       'No account found with this email. Please register first.',
+    'auth/wrong-password':       'Incorrect password. Please try again.',
+    'auth/invalid-credential':   'Incorrect email or password. Please try again.',
+    'auth/email-already-in-use': 'This email is already registered. Please sign in instead.',
+    'auth/weak-password':        'Password must be at least 6 characters.',
+    'auth/too-many-requests':    'Too many failed attempts. Please reset your password or try later.',
+    'auth/invalid-email':        'Please enter a valid email address.',
+  };
+  return map[code] || 'Authentication failed. Please try again.';
+};
+
+export const Login: React.FC = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const intendedRole = new URLSearchParams(location.search).get('role');
+
+  const [email,         setEmail]         = useState('');
+  const [password,      setPassword]      = useState('');
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [authLoading,   setAuthLoading]   = useState(false);
+  const [resetSent,     setResetSent]     = useState(false);
+
+  // ─── Fix #10: Don't silently redirect to /dashboard on profile-check error ──
+  React.useEffect(() => {
+    if (!user) return;
+    const checkProfile = async () => {
+      try {
+        const snap = await getDoc(doc(db, 'users', user.uid));
+        if (snap.exists() && snap.data()?.isProfileComplete) {
+          navigate('/dashboard');
+        } else {
+          const storedRole = localStorage.getItem('makhanikhi_session_role');
+          navigate(`/register?role=${intendedRole || storedRole || 'owner'}`);
         }
-      );
+      } catch (err) {
+        console.error('Profile check error:', err);
+        toast.error('Could not verify your profile. Please try signing in again.');
+      }
+    };
+    checkProfile();
+  }, [user, navigate, intendedRole]);
+
+  // ─── Fix #2 / #6: Separate sign-in path (existing users only) ────────────────
+  const handleSignIn = async (emailInput: string, passInput: string) => {
+    setAuthLoading(true);
+    try {
+      const cred = await signInWithEmailAndPassword(auth, emailInput, passInput);
+      toast.success(`Dumela! Welcome back, ${cred.user.displayName || cred.user.email}`);
+    } catch (err: any) {
+      toast.error(friendlyAuthError(err.code));
+    } finally {
+      setAuthLoading(false);
     }
   };
 
+  // ─── Fix #2 / #6: Separate registration path (new users only) ────────────────
+  const handleRegister = async (emailInput: string, passInput: string, role: string) => {
+    setAuthLoading(true);
+    try {
+      localStorage.setItem('makhanikhi_session_role', role);
+      await createUserWithEmailAndPassword(auth, emailInput, passInput);
+      toast.success("Account created! Let's complete your profile.");
+      // onAuthStateChanged fires → useEffect above handles redirect to /register
+    } catch (err: any) {
+      toast.error(friendlyAuthError(err.code));
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // ─── Fix #1 / #3 / #4 / #5: Demo preset — dev only, corrected profile flags ─
+  const handlePresetLogin = async (key: 'owner' | 'specialist' | 'apprentice') => {
+    if (!DEMO_PRESETS) return;
+    const preset = DEMO_PRESETS[key];
+    setAuthLoading(true);
+    localStorage.setItem('makhanikhi_session_role', preset.role);
+
+    try {
+      let credential;
+      try {
+        credential = await signInWithEmailAndPassword(auth, preset.email, preset.password);
+      } catch {
+        credential = await createUserWithEmailAndPassword(auth, preset.email, preset.password);
+      }
+
+      const u           = credential.user;
+      const userDocRef  = doc(db, 'users', u.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (!userDocSnap.exists()) {
+        // Fix #3 & #4: isVerified false, verificationStatus pending, no fake placeholder data
+        // Fix #5: isProfileComplete true only because preset profiles ARE fully seeded
+        await setDoc(userDocRef, {
+          uid:                u.uid,
+          email:              preset.email,
+          displayName:        preset.name,
+          role:               preset.role,
+          isProfileComplete:  true,
+          isVerified:         false,
+          verificationStatus: 'pending',
+          createdAt:          new Date().toISOString(),
+          ...preset.extra,
+        });
+      }
+
+      toast.success(`Demo: Signed in as ${preset.name}`);
+      navigate('/dashboard');
+    } catch (err: any) {
+      toast.error(err.message || 'Demo login failed.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // ─── Fix #8: Client-side validation + Fix #6: route to correct handler ────────
   const handleManualAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password) {
       toast.error('Email and password are required.');
       return;
     }
-    const derivedRole = intendedRole || 'owner';
-    await handleAuthFlow(email, password, derivedRole, email.split('@')[0]);
+    if (!isValidEmail(trimmedEmail)) {
+      toast.error('Please enter a valid email address.');
+      return;
+    }
+    if (password.length < 6) {
+      toast.error('Password must be at least 6 characters.');
+      return;
+    }
+
+    const role = intendedRole || 'owner';
+    if (isRegistering) {
+      await handleRegister(trimmedEmail, password, role);
+    } else {
+      await handleSignIn(trimmedEmail, password);
+    }
   };
 
-  const handleGoogleLogin = async () => {
-    const provider = new GoogleAuthProvider();
-    const isIframe = window.self !== window.top;
-
+  // ─── Fix #7: Forgot password ──────────────────────────────────────────────────
+  const handleForgotPassword = async () => {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      toast.error('Enter your email address above, then click Forgot Password.');
+      return;
+    }
+    if (!isValidEmail(trimmedEmail)) {
+      toast.error('Please enter a valid email address first.');
+      return;
+    }
     try {
-      if (intendedRole) {
-        localStorage.setItem('makhanikhi_session_role', intendedRole);
-      }
-      await signInWithPopup(auth, provider);
+      await sendPasswordResetEmail(auth, trimmedEmail);
+      setResetSent(true);
+      toast.success('Password reset email sent! Check your inbox.');
+    } catch (err: any) {
+      toast.error(err.message || 'Could not send reset email. Please try again.');
+    }
+  };
+
+  // ─── Fix #9: IS_IFRAME is now a module-level constant ─────────────────────────
+  const handleGoogleLogin = async () => {
+    try {
+      if (intendedRole) localStorage.setItem('makhanikhi_session_role', intendedRole);
+      await signInWithPopup(auth, new GoogleAuthProvider());
     } catch (error: any) {
-      if (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user') {
-        return;
-      }
+      if (
+        error.code === 'auth/cancelled-popup-request' ||
+        error.code === 'auth/popup-closed-by-user'
+      ) return;
       console.error('Google login popup failed:', error);
-      if (error.code === 'auth/unauthorized-domain' || isIframe) {
-        toast.error("Google Auth is locked inside iframe or domain is unauthorized. Please use the quick One-Click presets or direct email login below to enter instantly!", {
-          duration: 10000,
-        });
+      if (error.code === 'auth/unauthorized-domain' || IS_IFRAME) {
+        toast.error(
+          'Google Auth is locked inside iframe or domain is unauthorized. Please use the quick One-Click presets or direct email login below to enter instantly!',
+          { duration: 10000 },
+        );
       } else {
         toast.error(`Login failed: ${error.message || 'Please try again.'}`);
       }
     }
   };
 
-
   return (
     <div className="min-h-[90vh] flex flex-col items-center justify-center py-6 sm:py-12 px-4 relative overflow-hidden">
       {/* Background Decor */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-technic-yellow/5 rounded-full blur-[128px] pointer-events-none" />
       <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-technic-yellow/5 rounded-full blur-[128px] pointer-events-none" />
-      
-      <motion.div 
+
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-8 relative z-10"
@@ -218,55 +282,57 @@ export const Login: React.FC = () => {
               Log in to the digital registry. Standard Email option acts as a secure bypass if Google Popup domain authorization is locked in your browser.
             </p>
 
-            {/* Presets Grid - ONE-CLICK DEMO LOGIN (EXCELLENT TESTING TOOL) */}
-            <div className="mb-8 bg-white/5 border border-white/10 rounded-2xl p-5">
-              <h3 className="text-xs font-black uppercase tracking-wider text-technic-yellow mb-4 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" /> 1-Click Sandbox Presets (No Popup Needed)
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <button
-                  type="button"
-                  disabled={authLoading}
-                  onClick={() => handlePresetLogin('owner')}
-                  className="p-3 bg-industrial-charcoal border border-white/10 hover:border-technic-yellow/40 hover:bg-white/5 transition-all rounded-xl text-left flex flex-col justify-between h-24"
-                >
-                  <UserCheck className="w-4 h-4 text-technic-yellow" />
-                  <div>
-                    <p className="text-[10px] font-black uppercase text-white truncate">Pontsho (Owner)</p>
-                    <p className="text-[8px] text-text-dim mt-0.5">Out-Of-Plan Cars</p>
-                  </div>
-                </button>
+            {/* ── Fix #1: Preset grid only rendered in dev builds ──────────── */}
+            {DEMO_PRESETS && (
+              <div className="mb-8 bg-white/5 border border-white/10 rounded-2xl p-5">
+                <h3 className="text-xs font-black uppercase tracking-wider text-technic-yellow mb-4 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" /> 1-Click Sandbox Presets (Dev Only)
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <button
+                    type="button"
+                    disabled={authLoading}
+                    onClick={() => handlePresetLogin('owner')}
+                    className="p-3 bg-industrial-charcoal border border-white/10 hover:border-technic-yellow/40 hover:bg-white/5 transition-all rounded-xl text-left flex flex-col justify-between h-24"
+                  >
+                    <UserCheck className="w-4 h-4 text-technic-yellow" />
+                    <div>
+                      <p className="text-[10px] font-black uppercase text-white truncate">Pontsho (Owner)</p>
+                      <p className="text-[8px] text-text-dim mt-0.5">Out-Of-Plan Cars</p>
+                    </div>
+                  </button>
 
-                <button
-                  type="button"
-                  disabled={authLoading}
-                  onClick={() => handlePresetLogin('specialist')}
-                  className="p-3 bg-industrial-charcoal border border-white/10 hover:border-technic-yellow/40 hover:bg-white/5 transition-all rounded-xl text-left flex flex-col justify-between h-24"
-                >
-                  <Wrench className="w-4 h-4 text-technic-yellow" />
-                  <div>
-                    <p className="text-[10px] font-black uppercase text-white truncate">Sipho (Specialist)</p>
-                    <p className="text-[8px] text-text-dim mt-0.5">The Hands - Ford Master</p>
-                  </div>
-                </button>
+                  <button
+                    type="button"
+                    disabled={authLoading}
+                    onClick={() => handlePresetLogin('specialist')}
+                    className="p-3 bg-industrial-charcoal border border-white/10 hover:border-technic-yellow/40 hover:bg-white/5 transition-all rounded-xl text-left flex flex-col justify-between h-24"
+                  >
+                    <Wrench className="w-4 h-4 text-technic-yellow" />
+                    <div>
+                      <p className="text-[10px] font-black uppercase text-white truncate">Sipho (Specialist)</p>
+                      <p className="text-[8px] text-text-dim mt-0.5">The Hands - Ford Master</p>
+                    </div>
+                  </button>
 
-                <button
-                  type="button"
-                  disabled={authLoading}
-                  onClick={() => handlePresetLogin('apprentice')}
-                  className="p-3 bg-industrial-charcoal border border-white/10 hover:border-technic-yellow/40 hover:bg-white/5 transition-all rounded-xl text-left flex flex-col justify-between h-24"
-                >
-                  <Users className="w-4 h-4 text-technic-yellow" />
-                  <div>
-                    <p className="text-[10px] font-black uppercase text-white truncate">Thabo (Apprentice)</p>
-                    <p className="text-[8px] text-text-dim mt-0.5">The Wheels - Grade 1</p>
-                  </div>
-                </button>
+                  <button
+                    type="button"
+                    disabled={authLoading}
+                    onClick={() => handlePresetLogin('apprentice')}
+                    className="p-3 bg-industrial-charcoal border border-white/10 hover:border-technic-yellow/40 hover:bg-white/5 transition-all rounded-xl text-left flex flex-col justify-between h-24"
+                  >
+                    <Users className="w-4 h-4 text-technic-yellow" />
+                    <div>
+                      <p className="text-[10px] font-black uppercase text-white truncate">Thabo (Apprentice)</p>
+                      <p className="text-[8px] text-text-dim mt-0.5">The Wheels - Grade 1</p>
+                    </div>
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Direct Email/Password Inputs */}
-            <form onSubmit={handleManualAuth} className="space-y-4 mb-6">
+            <form onSubmit={handleManualAuth} className="space-y-4 mb-4" noValidate>
               <div className="space-y-1.5">
                 <label className="text-[9px] uppercase font-black text-text-dim tracking-widest block">Email Address</label>
                 <div className="relative">
@@ -276,6 +342,7 @@ export const Login: React.FC = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@domain.co.za"
+                    autoComplete="email"
                     className="w-full bg-white/5 border border-white/10 rounded-xl h-10 pl-10 pr-4 text-xs font-mono text-white focus:border-technic-yellow/40 outline-none transition-colors"
                   />
                 </div>
@@ -290,9 +357,14 @@ export const Login: React.FC = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••••••"
+                    autoComplete={isRegistering ? 'new-password' : 'current-password'}
                     className="w-full bg-white/5 border border-white/10 rounded-xl h-10 pl-10 pr-4 text-xs font-mono text-white focus:border-technic-yellow/40 outline-none transition-colors"
                   />
                 </div>
+                {/* ── Fix #8: Show min-length hint when registering ── */}
+                {isRegistering && (
+                  <p className="text-[9px] text-text-dim pl-1">Minimum 6 characters</p>
+                )}
               </div>
 
               <Button
@@ -312,13 +384,28 @@ export const Login: React.FC = () => {
               </Button>
             </form>
 
+            {/* ── Fix #7: Forgot password ────────────────────────────────── */}
+            {!isRegistering && (
+              <div className="mb-4 text-center">
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  disabled={resetSent || authLoading}
+                  className="text-[9px] uppercase tracking-widest font-black text-text-dim hover:text-technic-yellow transition-colors disabled:opacity-40"
+                >
+                  {resetSent ? '✓ Reset Email Sent — Check Your Inbox' : 'Forgot Password?'}
+                </button>
+              </div>
+            )}
+
+            {/* ── Fix #6: Toggle text matches actual behaviour ──────────────── */}
             <div className="flex justify-between items-center text-[10px] text-text-dim uppercase tracking-widest font-black border-t border-white/5 pt-4">
               <button
                 type="button"
-                onClick={() => setIsRegistering(!isRegistering)}
+                onClick={() => { setIsRegistering(!isRegistering); setResetSent(false); }}
                 className="hover:text-technic-yellow transition-colors"
               >
-                {isRegistering ? "Switch to Secure Sign In" : "Need to Register? Custom Account Here"}
+                {isRegistering ? 'Already have an account? Sign In' : 'New here? Register Account'}
               </button>
               <Link to="/" className="hover:text-technic-yellow transition-colors">
                 Change Role

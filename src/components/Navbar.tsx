@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
 import { auth } from '../lib/firebase';
-import { signOut, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { signOut } from 'firebase/auth';
 import { Button } from './ui/button';
 import { Wrench, LogOut, User as UserIcon, Shield, Wallet, Home, Calendar, LayoutDashboard, Menu, Users, Facebook, Mic } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
@@ -11,41 +11,41 @@ import { toast } from 'sonner';
 import { cn } from '../lib/utils';
 import { buttonVariants } from './ui/button';
 
+// Fix #6: Compute once at module level, not 3× inside connectWallet.
+const IS_IFRAME = window.self !== window.top;
+
 export const Navbar: React.FC = () => {
   const { user, profile } = useAuth();
   const [walletAddress, setWalletAddress] = React.useState<string | null>(null);
 
   const connectWallet = async () => {
-    // Check if ethereum is available
-    const ethereum = (window as any).ethereum;
+    // Fix #5: Use window.ethereum (typed in types.ts) instead of (window as any).ethereum.
+    const ethereum = window.ethereum;
 
     if (ethereum) {
       try {
-        const isIframe = window.self !== window.top;
-        
         // Some providers (like MetaMask) might throw "MetaMask extension not found" even if window.ethereum is set
         // if they are incomplete stubs or if the extension was just disabled.
-        
+
         // Request accounts
         const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
-        
+
         if (accounts && accounts.length > 0) {
           setWalletAddress(accounts[0]);
           toast.success(`Wallet Connected: ${accounts[0].slice(0, 6)}...${accounts[0].slice(-4)}`);
         }
       } catch (error: any) {
-        console.error('Wallet connection error:', error);
-        
-        const isIframe = window.self !== window.top;
+        console.error('Wallet connection error:', error.message || String(error));
+
         const errorMessage = error.message || String(error);
-        
+
         if (error.code === 4001) {
           toast.error("Connection request rejected. Please authorize in your wallet.");
         } else if (error.code === -32002) {
           toast.error("Connection request already pending. Please check your wallet extension.");
         } else if (errorMessage.includes("MetaMask extension not found")) {
           toast.error("MetaMask extension found window.ethereum but failed to connect. Try restarting your browser or checking the extension state.");
-        } else if (isIframe) {
+        } else if (IS_IFRAME) {
           toast.error("Wallet connection failed. Most wallets don't work reliably inside iframes. Please open this app in a new tab to connect.", {
             duration: 8000,
           });
@@ -54,8 +54,7 @@ export const Navbar: React.FC = () => {
         }
       }
     } else {
-      const isIframe = window.self !== window.top;
-      if (isIframe) {
+      if (IS_IFRAME) {
         toast.error("Wallet not detected. If you have MetaMask installed, please open the app in a new tab to use it.", {
           duration: 8000,
         });
@@ -65,19 +64,9 @@ export const Navbar: React.FC = () => {
     }
   };
 
-  const handleLogin = async () => {
-    const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (error: any) {
-      // Gracefully handle popup cancellation/closed errors
-      if (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user') {
-        return;
-      }
-      console.error('Login failed', error);
-      toast.error("Login failed. Please try again.");
-    }
-  };
+  // Fix #14: Removed duplicate Google sign-in from Navbar.
+  // The Navbar sign-in never stored the session role or redirected to /register,
+  // leaving new users authenticated but stranded. The Login button links to /login instead.
 
   const handleLogout = () => signOut(auth);
 

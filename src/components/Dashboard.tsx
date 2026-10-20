@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../lib/AuthContext';
 import { db } from '../lib/firebase';
-import { collection, query, where, onSnapshot, orderBy, doc, updateDoc, getDocs, getDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, doc, updateDoc, getDoc, getDocs, arrayUnion } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Button, buttonVariants } from './ui/button';
@@ -34,7 +34,7 @@ import { PartsPricingAndFerrying } from './PartsPricingAndFerrying';
 import { ServiceWorkflowGating } from './ServiceWorkflowGating';
 import { ServiceVehicleAgreement } from './ServiceVehicleAgreement';
 import { WeatherSafetyAndSpecialistRadar } from './WeatherSafetyAndSpecialistRadar';
-import { ServiceRequest, UserProfile, ApprenticeTask, RoadworthyChecklist } from '../types';
+import { ServiceRequest, ServiceOffer, UserProfile, ApprenticeTask, RoadworthyChecklist } from '../types';
 import { notifyParties, addToCalendar, notifyApprentice } from '../services/gemini';
 
 export const Dashboard: React.FC = () => {
@@ -87,13 +87,13 @@ export const Dashboard: React.FC = () => {
     if (profile?.role === 'apprentice' && profile.mentorId) {
       const fetchMentor = async () => {
         try {
-          const q = query(collection(db, 'users'), where('uid', '==', profile.mentorId));
-          const querySnapshot = await getDocs(q);
-          if (!querySnapshot.empty) {
-            setMentorProfile(querySnapshot.docs[0].data() as UserProfile);
+          // Fix #9: mentorId IS the Firestore document ID — use getDoc instead of a collection scan.
+          const mentorDoc = await getDoc(doc(db, 'users', profile.mentorId!));
+          if (mentorDoc.exists()) {
+            setMentorProfile(mentorDoc.data() as UserProfile);
           }
         } catch (error) {
-          console.error("Error fetching mentor profile:", error);
+          console.error("Error fetching mentor profile:", (error as Error).message);
         }
       };
       fetchMentor();
@@ -118,10 +118,11 @@ export const Dashboard: React.FC = () => {
       const request = leads.find(r => r.id === requestId);
       if (!request) return;
 
-      const offer = {
+      const offer: ServiceOffer = {
         specialistId: user.uid,
         specialistName: profile.displayName || 'Technician',
-        specialistRating: 4.8, // Mock rating
+        // Fix #7: Use actual profile rating — 4.8 was a hardcoded mock stored to Firestore.
+        specialistRating: profile.rating ?? 0,
         callOutFee: request.callOutFee || 500,
         timestamp: new Date().toISOString(),
         status: 'pending'
@@ -139,7 +140,8 @@ export const Dashboard: React.FC = () => {
     }
   };
 
-  const handleApproveReferral = async (requestId: string, offer: any) => {
+  // Fix #12: Typed offer as ServiceOffer instead of any.
+  const handleApproveReferral = async (requestId: string, offer: ServiceOffer) => {
     setProcessingId(requestId);
     try {
       const reqDoc = requests.find(r => r.id === requestId);
@@ -151,12 +153,12 @@ export const Dashboard: React.FC = () => {
         status: 'accepted'
       });
 
-      // Mark specialist as unavailable for this date
+      // Fix #8: Use arrayUnion to mark only this date as unavailable rather than
+      // permanently flipping isAvailable to false (which had no automatic reset).
       if (appointmentDate) {
         const specialistRef = doc(db, 'users', offer.specialistId);
-        // In a real app we'd use arrayUnion, but I'll update isAvailable for simplicity now
         await updateDoc(specialistRef, {
-          isAvailable: false // Simple toggle, ideally date-based
+          unavailableDates: arrayUnion(appointmentDate)
         });
       }
 

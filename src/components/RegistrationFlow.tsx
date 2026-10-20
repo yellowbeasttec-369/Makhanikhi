@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
-import { db } from '../lib/firebase';
+import { db, auth } from '../lib/firebase';
 import { doc, updateDoc, collection, setDoc } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
@@ -61,7 +62,7 @@ export const RegistrationFlow: React.FC = () => {
     vehicle: {
       make: '',
       model: '',
-      year: '',
+      year: '' as unknown as number, // stored as string in form, parsed to number on save (Fix #10)
       registration: '',
     }
   });
@@ -77,7 +78,19 @@ export const RegistrationFlow: React.FC = () => {
 
   const handleNext = () => setStep(step + 1);
   const handleBack = () => setStep(step - 1);
-  const handleCancel = () => navigate('/');
+  const handleCancel = async () => {
+    // Fix #15: A user who cancels mid-registration is authenticated but has no profile.
+    // Sign them out (and delete the Firebase Auth account) so they are not permanently stranded.
+    try {
+      if (user) {
+        await user.delete();
+      }
+    } catch {
+      // If delete fails (e.g. requires recent auth), just sign out.
+      await signOut(auth);
+    }
+    navigate('/');
+  };
 
   const onCapture = (imageData: string) => {
     setFormData({ ...formData, photoURL: imageData });
@@ -85,13 +98,35 @@ export const RegistrationFlow: React.FC = () => {
 
   const handleCompleteRegistration = async () => {
     if (!user) return;
+
+    // Fix #11: Validate required fields before writing to Firestore.
+    if (!formData.displayName.trim()) {
+      toast.error('Please enter your full name.');
+      return;
+    }
+    if (!formData.phone.trim()) {
+      toast.error('Please enter a phone number.');
+      return;
+    }
+    if (!formData.address.trim()) {
+      toast.error('Please enter your address.');
+      return;
+    }
+    if (formData.role === 'owner' && formData.vehicle.make) {
+      const parsedYear = parseInt(String(formData.vehicle.year), 10);
+      if (isNaN(parsedYear) || parsedYear < 1886 || parsedYear > new Date().getFullYear() + 1) {
+        toast.error('Please enter a valid vehicle year.');
+        return;
+      }
+    }
+
     setLoading(true);
     try {
-      const updateData: any = {
-        displayName: formData.displayName,
-        phone: formData.phone,
+      const updateData: Record<string, unknown> = {
+        displayName: formData.displayName.trim(),
+        phone: formData.phone.trim(),
         emergencyContact: formData.emergencyContact,
-        address: formData.address,
+        address: formData.address.trim(),
         dob: formData.dob,
         idNumber: formData.idNumber,
         bio: formData.bio,
@@ -114,12 +149,14 @@ export const RegistrationFlow: React.FC = () => {
       }
 
       await setDoc(doc(db, 'users', user.uid), updateData, { merge: true });
-      
+
       // If owner, add the vehicle too
       if (formData.role === 'owner' && formData.vehicle.make) {
         const vehicleRef = doc(collection(db, 'vehicles'));
         await setDoc(vehicleRef, {
           ...formData.vehicle,
+          // Fix #10: Parse year string to number before persisting to Firestore.
+          year: parseInt(String(formData.vehicle.year), 10),
           ownerId: user.uid,
           createdAt: new Date().toISOString(),
           mileage: 0,
@@ -129,19 +166,20 @@ export const RegistrationFlow: React.FC = () => {
       }
 
       if (formData.role === 'apprentice') {
-        toast.success("Registration complete! You are now awaiting matching with a Specialist.");
+        toast.success('Registration complete! You are now awaiting matching with a Specialist.');
       } else {
-        toast.success("Registration complete!");
+        toast.success('Registration complete!');
       }
-      
+
       if (formData.role === 'owner') {
         navigate('/dashboard');
       } else {
         navigate('/verify'); // Go to verification center for specialists/apprentices
       }
     } catch (error) {
-      console.error(error);
-      toast.error("Failed to save profile.");
+      // Fix #19: Log the error message (not the raw object) for debuggable production logs.
+      console.error('Registration failed:', (error as Error).message);
+      toast.error('Failed to save profile.');
     } finally {
       setLoading(false);
     }

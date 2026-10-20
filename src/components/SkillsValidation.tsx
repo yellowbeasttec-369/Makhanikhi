@@ -68,7 +68,8 @@ export const SkillsValidation: React.FC = () => {
     if (!user || !profile) return;
     try {
       const reportRef = doc(db, 'workplaceReports', reportId);
-      const signatureData: any = {
+      // Fix #18: Replaced any with an explicit signature shape matching WorkplaceReport.signatures.
+      const signatureData: { uid: string; timestamp: string; name?: string; industryId?: string } = {
         uid: user.uid,
         timestamp: new Date().toISOString(),
       };

@@ -14,9 +14,12 @@ import { WorkshopRegistry } from './components/WorkshopRegistry';
 import { BottomNav } from './components/BottomNav';
 import { Toaster } from 'sonner';
 
+// Fix #13: AuthProvider returns null until isAuthReady, so the loading spinner was unreachable.
+// Using isAuthReady explicitly to guard protected routes.
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, loading } = useAuth();
-  if (loading) return <div className="h-screen flex items-center justify-center bg-industrial-charcoal text-technic-yellow font-black text-2xl animate-pulse">MAKHANIKHI...</div>;
+  const { user, isAuthReady } = useAuth();
+  // AuthProvider already blocks rendering until auth resolves, but guard defensively.
+  if (!isAuthReady) return <div className="h-screen flex items-center justify-center bg-industrial-charcoal text-technic-yellow font-black text-2xl animate-pulse">MAKHANIKHI...</div>;
   if (!user) return <Navigate to="/login" />;
   return <>{children}</>;
 };

@@ -163,7 +163,7 @@ export const SmartEscrow: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={(val: any) => setActiveTab(val)}>
+      <Tabs value={activeTab} onValueChange={(val: string) => setActiveTab(val)}>
         <TabsList className="bg-card-bg border border-border-dim p-1 rounded-xl flex-wrap justify-start">
           <TabsTrigger value="protocol" className="data-[state=active]:bg-technic-yellow data-[state=active]:text-industrial-charcoal font-bold text-xs uppercase px-4 py-2">
             <Coins className="w-3.5 h-3.5 mr-1.5" /> Escrow Flow & Fees

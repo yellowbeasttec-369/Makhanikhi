@@ -254,9 +254,10 @@ export interface ApprenticeTask {
   description: string;
   status: 'pending' | 'completed' | 'signed-off';
   photoEvidence?: string;
+  // Fix #17: timestamp typed as ISO 8601 string instead of any.
   specialistSignOff?: {
     uid: string;
-    timestamp: any;
+    timestamp: string;
     comments?: string;
   };
 }
@@ -269,10 +270,11 @@ export interface WorkplaceReport {
   periodEnd: string;
   totalHours: number;
   tasksCompleted: string[];
+  // Fix #17: All signature timestamps typed as ISO 8601 strings instead of any.
   signatures: {
-    specialist?: { uid: string; timestamp: any };
-    skillsAuthority?: { uid: string; timestamp: any; name: string };
-    peerReviewer?: { uid: string; timestamp: any; industryId: string };
+    specialist?: { uid: string; timestamp: string };
+    skillsAuthority?: { uid: string; timestamp: string; name: string };
+    peerReviewer?: { uid: string; timestamp: string; industryId: string };
   };
   status: 'draft' | 'submitted' | 'validated';
 }
@@ -284,10 +286,11 @@ export interface PortfolioOfEvidence {
   description: string;
   documents: { title: string; url: string; type: string }[];
   validationStatus: 'pending' | 'validated' | 'rejected';
+  // Fix #17: validation timestamps typed as ISO 8601 strings instead of any.
   validations: {
     validatorUid: string;
     role: 'specialist' | 'skills-authority' | 'peer-reviewer';
-    timestamp: any;
+    timestamp: string;
     comments?: string;
   }[];
 }

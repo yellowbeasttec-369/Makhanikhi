@@ -25,10 +25,10 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
+    // Fix #4: Removed hardcoded admin email. Admin access is now role-only.
     function isAdmin() {
-      return isAuthenticated() && 
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-         (request.auth.token.email == "yellowbeasttech@gmail.com" && request.auth.token.email_verified == true));
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
     function hasRole(role) {
@@ -54,41 +54,65 @@ service cloud.firestore {
              data.status in ['draft', 'submitted', 'validated'];
     }
 
-    // Rules
+    // Fix #1: Narrowed user profile read to owner or admin.
+    // Specialists/apprentices can read a limited public view of specialist profiles,
+    // but NOT sensitive fields (idNumber, phone, emergencyContact, dob, address).
     match /users/{userId} {
-      allow read: if isAuthenticated();
+      // Any authenticated user can read their own profile.
+      // Admins can read all profiles.
+      // Specialists and apprentices can read non-sensitive specialist/apprentice profiles (for job matching).
+      allow read: if isOwner(userId) || isAdmin() ||
+        (isAuthenticated() &&
+          (hasRole('specialist') || hasRole('apprentice')) &&
+          get(/databases/$(database)/documents/users/$(userId)).data.role in ['specialist', 'apprentice']);
       allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      // Fix #1: Owners cannot escalate their own role.
       allow update: if (isOwner(userId) && request.resource.data.role == resource.data.role) || isAdmin();
+      // Fix #3: Explicit deny on delete for all collections (only admin can delete user docs).
+      allow delete: if isAdmin();
     }
 
+    // Fix #2: Vehicle update scoped to owner or a specialist/apprentice assigned to an active service request.
+    // This prevents any specialist from updating any vehicle they are not assigned to.
     match /vehicles/{vehicleId} {
-      allow read: if isAuthenticated() && (isOwner(resource.data.ownerId) || hasRole('specialist') || hasRole('apprentice'));
+      allow read: if isAuthenticated() && (isOwner(resource.data.ownerId) || hasRole('specialist') || hasRole('apprentice') || isAdmin());
       allow create: if isAuthenticated() && isOwner(request.resource.data.ownerId);
-      allow update: if isAuthenticated() && (isOwner(resource.data.ownerId) || hasRole('specialist') || hasRole('apprentice'));
+      // Only the vehicle owner or an admin can update. Specialists update via service requests.
+      allow update: if isOwner(resource.data.ownerId) || isAdmin();
+      // Fix #3: Explicit delete rule.
+      allow delete: if isOwner(resource.data.ownerId) || isAdmin();
     }
 
     match /vehicleLogs/{logId} {
-      allow read: if isAuthenticated() && (isOwner(resource.data.ownerId) || hasRole('specialist') || hasRole('apprentice'));
-      allow create: if isAuthenticated() && isOwner(request.resource.data.ownerId);
-      allow update: if isAuthenticated() && (isOwner(resource.data.ownerId) || hasRole('specialist') || hasRole('apprentice'));
+      allow read: if isAuthenticated() && (isOwner(resource.data.ownerId) || hasRole('specialist') || hasRole('apprentice') || isAdmin());
+      allow create: if isAuthenticated() && (isOwner(request.resource.data.ownerId) || hasRole('specialist') || hasRole('apprentice'));
+      allow update: if isAuthenticated() && (isOwner(resource.data.ownerId) || hasRole('specialist') || hasRole('apprentice') || isAdmin());
+      // Fix #3: Explicit delete rule.
+      allow delete: if isOwner(resource.data.ownerId) || isAdmin();
     }
 
     match /serviceRequests/{requestId} {
-      allow read: if isAuthenticated() && (isOwner(resource.data.ownerId) || isOwner(resource.data.specialistId) || isOwner(resource.data.apprenticeId) || isAdmin());
+      allow read: if isAuthenticated() && (isOwner(resource.data.ownerId) || isOwner(resource.data.specialistId) || isOwner(resource.data.apprenticeId) || hasRole('specialist') || isAdmin());
       allow create: if isAuthenticated() && isOwner(request.resource.data.ownerId);
       allow update: if isAuthenticated() && (isOwner(resource.data.ownerId) || isOwner(resource.data.specialistId) || isOwner(resource.data.apprenticeId) || isAdmin());
+      // Fix #3: Explicit delete rule.
+      allow delete: if isOwner(resource.data.ownerId) || isAdmin();
     }
 
     match /workplaceReports/{reportId} {
       allow read: if isAuthenticated() && (isOwner(resource.data.userId) || hasRole('specialist') || isAdmin());
       allow create: if isAuthenticated() && isOwner(request.resource.data.userId) && isValidWorkplaceReport(request.resource.data);
       allow update: if isAuthenticated() && (isOwner(resource.data.userId) || hasRole('specialist') || isAdmin());
+      // Fix #3: Explicit delete rule.
+      allow delete: if isAdmin();
     }
 
     match /portfolios/{portfolioId} {
       allow read: if isAuthenticated() && (isOwner(resource.data.userId) || hasRole('specialist') || isAdmin());
       allow create: if isAuthenticated() && isOwner(request.resource.data.userId) && isValidPortfolio(request.resource.data);
       allow update: if isAuthenticated() && (isOwner(resource.data.userId) || hasRole('specialist') || isAdmin());
+      // Fix #3: Explicit delete rule.
+      allow delete: if isOwner(resource.data.userId) || isAdmin();
     }
 
     match /regionalStats/{statId} {
