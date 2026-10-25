@@ -94,7 +94,7 @@ export const Navbar: React.FC = () => {
                 <span className="inline">Alexa+ MCP</span>
               </a>
               <a 
-                href="https://www.facebook.com/share/1AxbpU1hxa/" 
+                href="https://www.facebook.com/makhanikhiapp" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white hover:bg-technic-yellow hover:text-industrial-charcoal hover:scale-105 transition-all"
