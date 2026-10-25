@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, CheckCircle2, Facebook, FileText, Gauge, Mail, ShieldCheck, Wrench, CarFront, Building2, Users, ClipboardCheck } from 'lucide-react';
 
 const FACEBOOK_URL = 'https://www.facebook.com/makhanikhiapp';
+const GOOGLE_BUSINESS_URL = 'https://www.google.com/search?q=Makhanikhi+-+Specialist+Mobile+Mechanic';
 const CONTACT_EMAIL = 'makhanikhiwadikoloi@gmail.com';
 
 const audiences = [
@@ -145,6 +146,7 @@ export const PublicLanding: React.FC = () => {
             </div>
             <div className="mt-8 flex flex-wrap gap-3">
               <a href={FACEBOOK_URL} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-4 py-3 text-sm font-bold hover:border-technic-yellow/50"><Facebook className="h-4 w-4 text-[#1877F2]" /> Follow on Facebook</a>
+              <a href={GOOGLE_BUSINESS_URL} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-4 py-3 text-sm font-bold hover:border-technic-yellow/50"><Building2 className="h-4 w-4 text-technic-yellow" /> Google Business Profile</a>
               <a href={`mailto:${CONTACT_EMAIL}`} className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-4 py-3 text-sm font-bold hover:border-technic-yellow/50"><Mail className="h-4 w-4 text-technic-yellow" /> Email us</a>
             </div>
           </div>
@@ -200,7 +202,7 @@ export const PublicLanding: React.FC = () => {
       <footer className="border-t border-white/10 px-4 py-8 text-center text-xs text-white/45">
         <p>Makhanikhi · Specialist mobile mechanics</p>
         <p className="mt-2">In development. Features, availability, verification and payment arrangements may change as the product is tested.</p>
-        <div className="mt-4 flex flex-wrap justify-center gap-5"><a className="hover:text-technic-yellow" href={FACEBOOK_URL} target="_blank" rel="noreferrer">Facebook</a><a className="hover:text-technic-yellow" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a><Link className="hover:text-technic-yellow" to="/login">Existing user sign-in</Link></div>
+        <div className="mt-4 flex flex-wrap justify-center gap-5"><a className="hover:text-technic-yellow" href={FACEBOOK_URL} target="_blank" rel="noreferrer">Facebook</a><a className="hover:text-technic-yellow" href={GOOGLE_BUSINESS_URL} target="_blank" rel="noreferrer">Google Business Profile</a><a className="hover:text-technic-yellow" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a><Link className="hover:text-technic-yellow" to="/login">Existing user sign-in</Link></div>
       </footer>
     </main>
   );
