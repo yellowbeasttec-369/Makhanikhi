@@ -23,7 +23,9 @@ const interestOptions = [
 ];
 
 export const PublicLanding: React.FC = () => {
-  const endpoint = (import.meta as ImportMeta & { env: { VITE_FORMSPREE_ENDPOINT?: string } }).env.VITE_FORMSPREE_ENDPOINT?.trim();
+  // Formspree form IDs are public submission endpoints, not private credentials.
+  // The Vercel environment variable can override this default if the form changes.
+  const endpoint = (import.meta as ImportMeta & { env: { VITE_FORMSPREE_ENDPOINT?: string } }).env.VITE_FORMSPREE_ENDPOINT?.trim() || 'https://formspree.io/f/xnppjeoo';
   const [participantType, setParticipantType] = useState('Vehicle owner');
   const [interests, setInterests] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -161,6 +163,7 @@ export const PublicLanding: React.FC = () => {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">
+                <div aria-hidden="true" className="absolute -left-[10000px] h-px w-px overflow-hidden"><label>Leave this field empty<input type="text" name="_gotcha" tabIndex={-1} autoComplete="off" /></label></div>
                 <div className="grid gap-5 sm:grid-cols-2">
                   <label className="block text-sm font-semibold text-white/85">Your name<input required name="name" autoComplete="name" maxLength={120} className="mt-2 min-h-12 w-full rounded-xl border border-white/15 bg-white/5 px-4 text-white outline-none focus:border-technic-yellow" placeholder="Name" /></label>
                   <label className="block text-sm font-semibold text-white/85">Email address<input required name="email" type="email" autoComplete="email" maxLength={254} className="mt-2 min-h-12 w-full rounded-xl border border-white/15 bg-white/5 px-4 text-white outline-none focus:border-technic-yellow" placeholder="you@example.com" /></label>
