@@ -7,6 +7,8 @@ export const BottomNav: React.FC = () => {
   const location = useLocation();
   const { user, profile } = useAuth();
 
+  if (location.pathname === '/' || location.pathname === '/demo') return null;
+
   if (!user) return null;
 
   const navItems = [

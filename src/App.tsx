@@ -1,9 +1,9 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/AuthContext';
 import { Navbar } from './components/Navbar';
-import { Hero } from './components/Hero';
-import { Facebook, Mail } from 'lucide-react';
+import { PublicLanding } from './components/PublicLanding';
+import { PublicDemo } from './components/PublicDemo';
 import { Dashboard } from './components/Dashboard';
 import { ServiceBooking } from './components/ServiceBooking';
 import { VerificationCenter } from './components/VerificationCenter';
@@ -14,109 +14,37 @@ import { WorkshopRegistry } from './components/WorkshopRegistry';
 import { BottomNav } from './components/BottomNav';
 import { Toaster } from 'sonner';
 
-// Fix #13: AuthProvider returns null until isAuthReady, so the loading spinner was unreachable.
-// Using isAuthReady explicitly to guard protected routes.
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isAuthReady } = useAuth();
-  // AuthProvider already blocks rendering until auth resolves, but guard defensively.
   if (!isAuthReady) return <div className="h-screen flex items-center justify-center bg-industrial-charcoal text-technic-yellow font-black text-2xl animate-pulse">MAKHANIKHI...</div>;
-  if (!user) return <Navigate to="/login" />;
+  if (!user) return <Navigate to="/login" replace />;
   return <>{children}</>;
 };
 
 const AppContent: React.FC = () => {
+  const location = useLocation();
+  const isPublicMarketingRoute = location.pathname === '/' || location.pathname === '/demo';
   return (
     <div className="min-h-screen bg-industrial-charcoal selection:bg-technic-yellow selection:text-industrial-charcoal pb-20 md:pb-0">
-      <Navbar />
+      {!isPublicMarketingRoute && <Navbar />}
       <Routes>
-        <Route path="/" element={<Hero />} />
+        <Route path="/" element={<PublicLanding />} />
+        <Route path="/demo" element={<PublicDemo />} />
         <Route path="/login" element={<Login />} />
         <Route path="/registry" element={<WorkshopRegistry />} />
-        <Route 
-          path="/dashboard" 
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/book" 
-          element={
-            <ProtectedRoute>
-              <ServiceBooking />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/verify" 
-          element={
-            <ProtectedRoute>
-              <VerificationCenter />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/register-owner" 
-          element={
-            <ProtectedRoute>
-              <OwnerRegistration />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/register" 
-          element={
-            <ProtectedRoute>
-              <RegistrationFlow />
-            </ProtectedRoute>
-          } 
-        />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/book" element={<ProtectedRoute><ServiceBooking /></ProtectedRoute>} />
+        <Route path="/verify" element={<ProtectedRoute><VerificationCenter /></ProtectedRoute>} />
+        <Route path="/register-owner" element={<ProtectedRoute><OwnerRegistration /></ProtectedRoute>} />
+        <Route path="/register" element={<ProtectedRoute><RegistrationFlow /></ProtectedRoute>} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      
       <BottomNav />
-      
-      <footer className="border-t border-white/5 py-12 bg-black/20 font-sans">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <div className="flex items-center justify-center gap-2 mb-6">
-            <img src="/Makhanikhi_logo_launch.png" alt="Makhanikhi Logo" className="h-8 w-auto object-contain" referrerPolicy="no-referrer" />
-            <span className="makhanikhi-logo text-xl">Makhanikhi</span>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-4 mb-8">
-            <a 
-              href="https://www.facebook.com/share/1AxbpU1hxa/" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:border-technic-yellow/40 hover:bg-white/10 transition-all text-xs text-digital-white font-mono uppercase font-black tracking-wider"
-            >
-              <Facebook className="w-4 h-4 text-[#1877F2] shrink-0" /> Facebook Page
-            </a>
-            <a 
-              href="mailto:makhanikhiwadikoloi@gmail.com" 
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:border-technic-yellow/40 hover:bg-white/10 transition-all text-xs text-digital-white font-mono uppercase font-black tracking-wider"
-            >
-              <Mail className="w-4 h-4 text-technic-yellow shrink-0" /> makhanikhiwadikoloi@gmail.com
-            </a>
-          </div>
-
-
-          <p className="text-digital-white/20 text-[10px] mt-8">
-            © 2026 Makhanikhi Specialist Mobile Mechanics. All Rights Reserved.
-          </p>
-        </div>
-      </footer>
       <Toaster position="bottom-right" theme="dark" />
     </div>
   );
 };
 
 export default function App() {
-  return (
-    <AuthProvider>
-      <Router>
-        <AppContent />
-      </Router>
-    </AuthProvider>
-  );
+  return <AuthProvider><Router><AppContent /></Router></AuthProvider>;
 }
