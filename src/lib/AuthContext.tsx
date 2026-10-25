@@ -52,10 +52,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (user) await fetchProfile(user);
   }, [user, fetchProfile]);
 
-  // Fix #12: Don't render children until Firebase auth state is known.
-  // This prevents routes from briefly rendering in the wrong state.
-  if (!isAuthReady) return null;
-
+  // Keep public landing/demo routes available while Firebase resolves auth.
+  // ProtectedRoute checks isAuthReady before rendering private content.
   return (
     <AuthContext.Provider value={{ user, profile, loading, isAuthReady, refreshProfile }}>
       {children}
