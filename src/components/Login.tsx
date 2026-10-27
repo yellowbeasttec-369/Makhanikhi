@@ -348,6 +348,25 @@ export const Login: React.FC = () => {
               </div>
             )}
 
+            <div className="grid grid-cols-2 gap-2 mb-6 p-1 rounded-xl border border-white/10 bg-white/[0.03]" aria-label="Account access mode">
+              <button
+                type="button"
+                aria-pressed={isRegistering}
+                onClick={() => { setIsRegistering(true); setResetSent(false); }}
+                className={`rounded-lg py-3 text-[10px] font-black uppercase tracking-widest transition-colors ${isRegistering ? 'bg-technic-yellow text-industrial-charcoal' : 'text-text-dim hover:text-white'}`}
+              >
+                Create New Account
+              </button>
+              <button
+                type="button"
+                aria-pressed={!isRegistering}
+                onClick={() => { setIsRegistering(false); setResetSent(false); }}
+                className={`rounded-lg py-3 text-[10px] font-black uppercase tracking-widest transition-colors ${!isRegistering ? 'bg-technic-yellow text-industrial-charcoal' : 'text-text-dim hover:text-white'}`}
+              >
+                Existing User: Sign In
+              </button>
+            </div>
+
             <section aria-labelledby="role-choice-heading" className="mb-6">
               <h2 id="role-choice-heading" className="text-xs font-black uppercase tracking-widest text-white mb-3">
                 {isRegistering ? '1. I am joining as a…' : 'Choose your role for sign-up'}
@@ -440,18 +459,10 @@ export const Login: React.FC = () => {
               </div>
             )}
 
-            {/* ── Fix #6: Toggle text matches actual behaviour ──────────────── */}
-            <div className="flex justify-between items-center text-[10px] text-text-dim uppercase tracking-widest font-black border-t border-white/5 pt-4">
-              <button
-                type="button"
-                onClick={() => { setIsRegistering(!isRegistering); setResetSent(false); }}
-                className="hover:text-technic-yellow transition-colors"
-              >
-                {isRegistering ? 'Already registered? Sign In' : 'New to Makhanikhi? Create an account'}
-              </button>
-              <span className="text-[9px] normal-case text-text-dim">
-                Selected: {selectedRole === 'owner' ? 'Vehicle Owner' : selectedRole === 'specialist' ? 'Mechanic / Specialist' : 'Apprentice'}
-              </span>
+            <div className="border-t border-white/5 pt-4 text-[10px] text-text-dim">
+              {isRegistering
+                ? 'Creating an account is for new users. If you have registered before, choose “Existing User: Sign In” above.'
+                : 'New to Makhanikhi? Choose “Create New Account” above to register with your selected role.'}
             </div>
           </div>
 
