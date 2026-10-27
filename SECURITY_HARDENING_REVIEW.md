@@ -7,8 +7,8 @@ This branch hardens Firestore access rules and requires a valid Firebase ID toke
 ## Changes made
 
 - User profile reads are limited to the profile owner and an administrator. Firestore rules cannot hide selected fields from a document, so public mechanic discovery needs a separate curated `publicProfiles` collection.
-- Client-created profiles can only be created with the `owner` role; specialist, apprentice and admin roles require a trusted administrative provisioning flow.
-- Profile owners cannot change role, email, UID, rating, verification flags, account flags, or document-review state through ordinary profile updates.
+- Client-created profiles may use the ordinary `owner`, `specialist` or `apprentice` roles so the existing onboarding flow remains usable. Admin roles remain trusted-provisioning-only. New profiles cannot self-verify or set an approved verification status.
+- Profile owners cannot change role, email, UID, rating, verification flags, account flags, or document-review state through ordinary profile updates. Registration now supplies the required UID/email fields when creating the first Firestore profile, and profile hydration errors no longer leave auth readiness stuck.
 - Vehicle and vehicle-log records are private to the owner/admin until a more granular assignment model is implemented.
 - Service requests are readable only by their owner, assigned specialist/apprentice, or an admin. Client updates cannot transfer the request to a different owner, vehicle, specialist, or apprentice.
 - Workplace reports and portfolios are private to their owner/admin. Client-side updates cannot change report validation status or portfolio validation status.
@@ -28,9 +28,10 @@ This branch hardens Firestore access rules and requires a valid Firebase ID toke
 ## Required validation before merge
 
 - Compile/deploy rules to a non-production Firebase project or emulator first.
-- Verify owner can read/update their profile, but cannot assign admin, change role, self-verify, change rating/flags, or read another profile.
+- Verify owner, specialist and apprentice can each complete registration and read/update their own profile, but cannot assign admin, change role, self-verify, change rating/flags, or read another profile.
 - Verify a specialist/apprentice cannot read another owner's vehicle, vehicle logs, private report or portfolio unless a later explicit assignment rule grants access.
 - Verify only owner/assigned participants/admin can read a service request; participant reassignment is denied.
+- Verify email/password login with an existing account reaches a usable authenticated route; verify a profile-read failure does not leave the app in an infinite loading state.
 - Verify every mutating API returns 401 with no token, 401 with a malformed/expired token, and proceeds only with a valid token.
 - Verify legitimate logged-in UI flows and notifications after the new API gate.
 - Run `bun run lint` and `bun run build` in CI; do not infer success from source inspection alone.
