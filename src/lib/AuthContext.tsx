@@ -35,13 +35,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
-      if (firebaseUser) {
-        await fetchProfile(firebaseUser);
-      } else {
+      try {
+        if (firebaseUser) {
+          await fetchProfile(firebaseUser);
+        } else {
+          setProfile(null);
+        }
+      } catch (error) {
+        // Auth state must settle even if Firestore is temporarily unavailable or
+        // a profile read is denied; otherwise protected routes spin forever.
+        console.error('Unable to load user profile after auth state change:', error);
         setProfile(null);
+      } finally {
+        setLoading(false);
+        setIsAuthReady(true);
       }
-      setLoading(false);
-      setIsAuthReady(true);
     });
 
     return () => unsubscribe();
