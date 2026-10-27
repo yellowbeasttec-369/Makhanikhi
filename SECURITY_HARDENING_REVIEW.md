@@ -7,7 +7,7 @@ This branch hardens Firestore access rules and requires a valid Firebase ID toke
 ## Changes made
 
 - User profile reads are limited to the profile owner and an administrator. Firestore rules cannot hide selected fields from a document, so public mechanic discovery needs a separate curated `publicProfiles` collection.
-- Client-created user profiles cannot assign the `admin` role.
+- Client-created profiles can only be created with the `owner` role; specialist, apprentice and admin roles require a trusted administrative provisioning flow.
 - Profile owners cannot change role, email, UID, rating, verification flags, account flags, or document-review state through ordinary profile updates.
 - Vehicle and vehicle-log records are private to the owner/admin until a more granular assignment model is implemented.
 - Service requests are readable only by their owner, assigned specialist/apprentice, or an admin. Client updates cannot transfer the request to a different owner, vehicle, specialist, or apprentice.
