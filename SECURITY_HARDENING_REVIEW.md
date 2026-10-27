@@ -41,3 +41,21 @@ This branch hardens Firestore access rules and requires a valid Firebase ID toke
 ## Rollout recommendation
 
 Review this as a security-focused pull request. Test against a staging Firebase project first; only publish Firestore rules after confirming expected application workflows. No production deployment is claimed by this branch.
+
+
+## Vehicle agreements and custody record (added 2026-10-27)
+
+- Added a dashboard Documents & Agreements area for registering a vehicle record and drafting a vehicle loan, repair-authorisation, or temporary-custody agreement.
+- The vehicle record keeps the account managing the record separate from the optional legal-owner name and records that ownership remains unverified until reviewed.
+- Agreement documents are readable only by the two UIDs listed as participants. Creation is limited to the creator/authorising account; each party can record only their own acknowledgement, once, using a server timestamp. Agreement content and participant identities cannot be changed after creation through client updates; deletion is admin-only.
+- The UI warns that duplicate detection is limited to vehicles the current account can read. A platform-wide duplicate check needs a trusted server-side lookup that does not disclose private vehicle records.
+- Agreement PDFs include a visible Makhanikhi watermark and a disclaimer that the document is user-generated and is not proof of ownership, legal advice, an official roadworthy certificate, or proof of payment.
+- Email delivery, uploaded evidence, formal e-signature provider integration, agreement templates reviewed by counsel, job-card/invoice/warranty PDFs, persistent roadworthiness reports, and experience portfolios are not implemented by this change. Do not claim these features are live yet.
+
+### Additional validation required for vehicle agreements
+
+- Test with the Firestore Emulator before deploying rules: an owner can create an agreement; unrelated users cannot read it; the custodian can read and acknowledge it; the owner cannot write the custodian acknowledgement and vice versa; participant lists, vehicle reference, terms, and existing acknowledgement timestamps cannot be changed; neither participant can delete the agreement.
+- Test vehicle registration for owner, specialist, and apprentice accounts; confirm ownerId remains the account that manages the record and that registration is not displayed as ownership verification.
+- Confirm the generated PDF watermark is visible on every page, long terms wrap across pages, and the disclaimer remains present.
+- Confirm the dashboard tab works at mobile and desktop widths and does not interrupt existing login/onboarding.
+- Run TypeScript lint, production build, Firebase rules tests, and authenticated end-to-end tests before merging. Firestore rules have been edited in the feature branch only and have not been deployed.
