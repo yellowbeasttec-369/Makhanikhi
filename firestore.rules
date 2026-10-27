@@ -150,6 +150,7 @@ service cloud.firestore {
           request.auth.uid, request.resource.data.custodianId
         ]) &&
         request.resource.data.vehicleId is string &&
+        get(/databases/$(database)/documents/vehicles/$(request.resource.data.vehicleId)).data.ownerId == request.auth.uid &&
         request.resource.data.vehicleLabel is string &&
         request.resource.data.registrationNumber is string &&
         request.resource.data.agreementType in ['loan', 'repair', 'custody'] &&
@@ -167,16 +168,16 @@ service cloud.firestore {
           resource.data.ownerAcceptedAt == null &&
           request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly(['ownerAcceptedAt', 'updatedAt']) &&
-          request.resource.data.ownerAcceptedAt is timestamp &&
-          request.resource.data.updatedAt is timestamp
+          request.resource.data.ownerAcceptedAt == request.time &&
+          request.resource.data.updatedAt == request.time
         ) ||
         (
           request.auth.uid == resource.data.custodianId &&
           resource.data.custodianAcceptedAt == null &&
           request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly(['custodianAcceptedAt', 'updatedAt']) &&
-          request.resource.data.custodianAcceptedAt is timestamp &&
-          request.resource.data.updatedAt is timestamp
+          request.resource.data.custodianAcceptedAt == request.time &&
+          request.resource.data.updatedAt == request.time
         )
       );
 
