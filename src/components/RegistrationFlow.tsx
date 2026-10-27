@@ -68,11 +68,11 @@ export const RegistrationFlow: React.FC = () => {
   });
 
   useEffect(() => {
-    if (queryRole === 'owner') {
-      setFormData(prev => ({ ...prev, role: 'owner' }));
-      setStep(2); // Skip role selection if they already chose owner
+    if (queryRole === 'owner' || queryRole === 'specialist' || queryRole === 'apprentice') {
+      setFormData(prev => ({ ...prev, role: queryRole }));
+      setStep(2);
     } else if (queryRole === 'pro') {
-      // Stay on step 1 to choose between specialist or apprentice
+      setStep(1); // Let the user choose specialist or apprentice.
     }
   }, [queryRole]);
 
@@ -191,7 +191,7 @@ export const RegistrationFlow: React.FC = () => {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center p-4">
         <h1 className="text-2xl font-black uppercase text-technic-yellow mb-4">Auth Required</h1>
-        <p className="text-text-dim mb-8">Please login with Google first to begin registration.</p>
+        <p className="text-text-dim mb-8">Sign in or create an account with email and password or Google to begin registration.</p>
         <Button onClick={() => navigate('/login')} className="bento-btn">Go to Login</Button>
       </div>
     );
@@ -221,7 +221,7 @@ export const RegistrationFlow: React.FC = () => {
           <ShieldCheck className="w-3 h-3" /> Professional Onboarding
         </div>
         <h1 className="text-4xl font-display font-black uppercase tracking-tighter mb-2 text-digital-white">
-          {step === 1 ? 'Technical Stream' : step === 2 ? 'Identity Check' : 'Vehicle Registry'}
+          {step === 1 ? 'Choose Your Role' : step === 2 ? 'Identity Check' : 'Vehicle Registry'}
         </h1>
         <p className="text-text-dim">
           {step === 1 
@@ -243,6 +243,18 @@ export const RegistrationFlow: React.FC = () => {
           {step === 1 && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 gap-4">
+                <button
+                  onClick={() => { setFormData({...formData, role: 'owner'}); handleNext(); }}
+                  className={`p-8 rounded-[32px] bg-white/[0.02] border transition-all text-left group flex items-start gap-6 ${formData.role === 'owner' ? 'border-technic-yellow ring-1 ring-technic-yellow' : 'border-white/10 hover:border-technic-yellow/50'}`}
+                >
+                  <div className="w-14 h-14 rounded-2xl bg-technic-yellow/10 flex items-center justify-center shrink-0 border border-technic-yellow/20">
+                    <User className="w-7 h-7 text-technic-yellow" />
+                  </div>
+                  <div>
+                    <h3 className="font-black uppercase tracking-tight text-xl mb-2 text-digital-white">Vehicle Owner</h3>
+                    <p className="text-xs text-text-dim leading-relaxed">For drivers who need maintenance, diagnostics or repair support for their vehicle.</p>
+                  </div>
+                </button>
                 <button 
                   onClick={() => { setFormData({...formData, role: 'specialist'}); handleNext(); }}
                   className={`p-8 rounded-[32px] bg-white/[0.02] border transition-all text-left group flex items-start gap-6 ${formData.role === 'specialist' ? 'border-technic-yellow ring-1 ring-technic-yellow' : 'border-white/10 hover:border-technic-yellow/50'}`}
