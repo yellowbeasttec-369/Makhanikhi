@@ -1016,7 +1016,7 @@ async function startServer() {
   const authFailureCounts = new Map<string, { count: number; resetAt: number }>();
   const requireFirebaseAuth: express.RequestHandler = async (req, res, next) => {
     const authorization = req.header("authorization") || "";
-    const match = authorization.match(/^Bearer\\s+(.+)$/i);
+    const match = authorization.match(/^Bearer\s+(.+)$/i);
     if (!match) {
       res.status(401).json({ error: "A valid Firebase sign-in is required." });
       return;
