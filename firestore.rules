@@ -10,7 +10,7 @@ service cloud.firestore {
     function isValidUser(data, userId) {
       return data.keys().hasAll(['uid', 'email', 'role']) &&
         data.uid == userId &&
-        data.role in ['owner', 'specialist', 'apprentice'] &&
+        data.role == 'owner' &&
         data.email is string && data.email.size() > 0 && data.email.size() < 100;
     }
     function isValidPortfolio(data) {
