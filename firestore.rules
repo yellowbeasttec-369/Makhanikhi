@@ -89,7 +89,9 @@ service cloud.firestore {
       allow read: if isParticipant(resource.data) || isAdmin();
       allow create: if isAuthenticated() &&
         request.resource.data.ownerId == request.auth.uid &&
-        request.resource.data.ownerId is string;
+        request.resource.data.ownerId is string &&
+        (!('specialistId' in request.resource.data) || request.resource.data.specialistId == null) &&
+        (!('apprenticeId' in request.resource.data) || request.resource.data.apprenticeId == null);
       // Participants cannot transfer ownership, vehicles or assigned roles.
       allow update: if (isParticipant(resource.data) || isAdmin()) &&
         request.resource.data.ownerId == resource.data.ownerId &&
