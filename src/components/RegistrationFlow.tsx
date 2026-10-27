@@ -135,8 +135,6 @@ export const RegistrationFlow: React.FC = () => {
         photoURL: formData.photoURL,
         role: formData.role,
         isProfileComplete: true,
-        isVerified: false,
-        verificationStatus: 'pending',
         updatedAt: new Date().toISOString(),
       };
 
