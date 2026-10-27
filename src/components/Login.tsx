@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
 import { auth, db } from '../lib/firebase';
 import {
@@ -9,7 +9,7 @@ import {
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
 import { Button } from './ui/button';
 import {
   Wrench, Shield, ArrowRight, UserCheck, Users, Award, Lock,
@@ -20,7 +20,7 @@ import { motion } from 'motion/react';
 import { toast } from 'sonner';
 
 // ─── Fix #9: Detect iframe once at module level ───────────────────────────────
-const IS_IFRAME = window.self !== window.top;
+const IS_IFRAME = typeof window !== 'undefined' && window.self !== window.top;
 
 // ─── Fix #1: Demo credentials read from env vars; entire block tree-shaken in
 //     production via import.meta.env.DEV (Vite replaces this with `false`).   ─
@@ -97,6 +97,13 @@ export const Login: React.FC = () => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [authLoading,   setAuthLoading]   = useState(false);
   const [resetSent,     setResetSent]     = useState(false);
+  const [selectedRole, setSelectedRole] = useState<'owner' | 'specialist' | 'apprentice'>(
+    intendedRole === 'specialist' || intendedRole === 'pro'
+      ? 'specialist'
+      : intendedRole === 'apprentice'
+        ? 'apprentice'
+        : 'owner'
+  );
 
   // ─── Fix #10: Don't silently redirect to /dashboard on profile-check error ──
   React.useEffect(() => {
@@ -105,10 +112,23 @@ export const Login: React.FC = () => {
       try {
         const snap = await getDoc(doc(db, 'users', user.uid));
         if (snap.exists() && snap.data()?.isProfileComplete) {
+          const savedProfile = snap.data();
+          if (savedProfile.role === 'owner') {
+            // Older builds could mark an owner complete before the separate vehicle write succeeded.
+            // Route that partial state back to vehicle registration instead of stranding the user on the dashboard.
+            const ownedVehicles = await getDocs(
+              query(collection(db, 'vehicles'), where('ownerId', '==', user.uid))
+            );
+            if (ownedVehicles.empty) {
+              localStorage.setItem('makhanikhi_session_role', 'owner');
+              navigate('/register?role=owner');
+              return;
+            }
+          }
           navigate('/dashboard');
         } else {
           const storedRole = localStorage.getItem('makhanikhi_session_role');
-          navigate(`/register?role=${intendedRole || storedRole || 'owner'}`);
+          navigate(`/register?role=${selectedRole || storedRole || 'owner'}`);
         }
       } catch (err) {
         console.error('Profile check error:', err);
@@ -116,7 +136,7 @@ export const Login: React.FC = () => {
       }
     };
     checkProfile();
-  }, [user, navigate, intendedRole]);
+  }, [user, navigate, intendedRole, selectedRole]);
 
   // ─── Fix #2 / #6: Separate sign-in path (existing users only) ────────────────
   const handleSignIn = async (emailInput: string, passInput: string) => {
@@ -140,7 +160,12 @@ export const Login: React.FC = () => {
       toast.success("Account created! Let's complete your profile.");
       // onAuthStateChanged fires → useEffect above handles redirect to /register
     } catch (err: any) {
-      toast.error(friendlyAuthError(err.code));
+      if (err.code === 'auth/email-already-in-use') {
+        setIsRegistering(false);
+        toast.error('An account already uses this email. We switched to Sign In—enter the password for that account, or use Forgot Password.');
+      } else {
+        toast.error(friendlyAuthError(err.code));
+      }
     } finally {
       setAuthLoading(false);
     }
@@ -190,6 +215,18 @@ export const Login: React.FC = () => {
     }
   };
 
+  // Reset stale role state and return focus to the role gateway without sending users to the marketing page.
+  const handleChangeRole = () => {
+    localStorage.removeItem('makhanikhi_session_role');
+    setSelectedRole('owner');
+    setIsRegistering(false);
+    setResetSent(false);
+    navigate('/login#role-choice-heading');
+    window.requestAnimationFrame(() => {
+      document.getElementById('role-choice-heading')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  };
+
   // ─── Fix #8: Client-side validation + Fix #6: route to correct handler ────────
   const handleManualAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -207,7 +244,7 @@ export const Login: React.FC = () => {
       return;
     }
 
-    const role = intendedRole || 'owner';
+    const role = selectedRole;
     if (isRegistering) {
       await handleRegister(trimmedEmail, password, role);
     } else {
@@ -238,7 +275,7 @@ export const Login: React.FC = () => {
   // ─── Fix #9: IS_IFRAME is now a module-level constant ─────────────────────────
   const handleGoogleLogin = async () => {
     try {
-      if (intendedRole) localStorage.setItem('makhanikhi_session_role', intendedRole);
+      localStorage.setItem('makhanikhi_session_role', selectedRole);
       await signInWithPopup(auth, new GoogleAuthProvider());
     } catch (error: any) {
       if (
@@ -246,13 +283,18 @@ export const Login: React.FC = () => {
         error.code === 'auth/popup-closed-by-user'
       ) return;
       console.error('Google login popup failed:', error);
-      if (error.code === 'auth/unauthorized-domain' || IS_IFRAME) {
+      if (error.code === 'auth/unauthorized-domain') {
         toast.error(
-          'Google Auth is locked inside iframe or domain is unauthorized. Please use the quick One-Click presets or direct email login below to enter instantly!',
+          'Google sign-in is not enabled for this domain yet. Use email and password for now; the site owner must add this domain in Firebase Authentication settings.',
+          { duration: 10000 },
+        );
+      } else if (IS_IFRAME || error.code === 'auth/popup-blocked') {
+        toast.error(
+          'Google sign-in may be blocked inside an embedded preview. Open Makhanikhi directly in a new browser tab and try again, or use email and password.',
           { duration: 10000 },
         );
       } else {
-        toast.error(`Login failed: ${error.message || 'Please try again.'}`);
+        toast.error(`Google sign-in failed: ${friendlyAuthError(error.code)}`);
       }
     }
   };
@@ -279,7 +321,7 @@ export const Login: React.FC = () => {
               <span className="text-technic-yellow">Secure Access</span>
             </h1>
             <p className="text-text-dim text-xs mb-6 max-w-md leading-relaxed">
-              Log in to the digital registry. Standard Email option acts as a secure bypass if Google Popup domain authorization is locked in your browser.
+              Create an account or sign in. Choose how you will use Makhanikhi first; you can use email and password even if Google sign-in is unavailable.
             </p>
 
             {/* ── Fix #1: Preset grid only rendered in dev builds ──────────── */}
@@ -331,6 +373,50 @@ export const Login: React.FC = () => {
               </div>
             )}
 
+            <div className="grid grid-cols-2 gap-2 mb-6 p-1 rounded-xl border border-white/10 bg-white/[0.03]" aria-label="Account access mode">
+              <button
+                type="button"
+                aria-pressed={isRegistering}
+                onClick={() => { setIsRegistering(true); setResetSent(false); }}
+                className={`rounded-lg py-3 text-[10px] font-black uppercase tracking-widest transition-colors ${isRegistering ? 'bg-technic-yellow text-industrial-charcoal' : 'text-text-dim hover:text-white'}`}
+              >
+                Create New Account
+              </button>
+              <button
+                type="button"
+                aria-pressed={!isRegistering}
+                onClick={() => { setIsRegistering(false); setResetSent(false); }}
+                className={`rounded-lg py-3 text-[10px] font-black uppercase tracking-widest transition-colors ${!isRegistering ? 'bg-technic-yellow text-industrial-charcoal' : 'text-text-dim hover:text-white'}`}
+              >
+                Existing User: Sign In
+              </button>
+            </div>
+
+            <section aria-labelledby="role-choice-heading" className="mb-6">
+              <h2 id="role-choice-heading" className="text-xs font-black uppercase tracking-widest text-white mb-3">
+                {isRegistering ? '1. I am joining as a…' : 'Choose your role to continue'}
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {([
+                  { value: 'owner', title: 'Vehicle Owner', detail: 'Request vehicle care', icon: UserCheck },
+                  { value: 'specialist', title: 'Mechanic / Specialist', detail: 'Offer repair services', icon: Wrench },
+                  { value: 'apprentice', title: 'Apprentice', detail: 'Learn with a mentor', icon: Users },
+                ] as const).map(({ value, title, detail, icon: RoleIcon }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={selectedRole === value}
+                    onClick={() => setSelectedRole(value)}
+                    className={`rounded-xl border p-3 text-left transition-colors ${selectedRole === value ? 'border-technic-yellow bg-technic-yellow/10' : 'border-white/10 bg-white/[0.02] hover:border-white/30'}`}
+                  >
+                    <RoleIcon className="w-4 h-4 text-technic-yellow mb-2" />
+                    <span className="block text-[10px] font-black uppercase text-white">{title}</span>
+                    <span className="block text-[9px] text-text-dim mt-1">{detail}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+
             {/* Direct Email/Password Inputs */}
             <form onSubmit={handleManualAuth} className="space-y-4 mb-4" noValidate>
               <div className="space-y-1.5">
@@ -377,9 +463,9 @@ export const Login: React.FC = () => {
                     <Loader2 className="w-3.5 h-3.5 animate-spin" /> DISPATCHING SECURE GATEWAY...
                   </>
                 ) : isRegistering ? (
-                  "REGISTER DIRECT ACCOUNT"
+                  `CREATE ${selectedRole === 'owner' ? 'OWNER' : selectedRole === 'specialist' ? 'SPECIALIST' : 'APPRENTICE'} ACCOUNT`
                 ) : (
-                  "SECURE ENTER VIA CRNT"
+                  "SIGN IN"
                 )}
               </Button>
             </form>
@@ -398,18 +484,19 @@ export const Login: React.FC = () => {
               </div>
             )}
 
-            {/* ── Fix #6: Toggle text matches actual behaviour ──────────────── */}
-            <div className="flex justify-between items-center text-[10px] text-text-dim uppercase tracking-widest font-black border-t border-white/5 pt-4">
+            <div className="border-t border-white/5 pt-4 text-[10px] text-text-dim">
+              {isRegistering
+                ? 'Creating an account is for new users. If you have registered before, choose “Existing User: Sign In” above.'
+                : 'New to Makhanikhi? Choose “Create New Account” above to register with your selected role.'}
+            </div>
+            <div className="mt-4 text-center">
               <button
                 type="button"
-                onClick={() => { setIsRegistering(!isRegistering); setResetSent(false); }}
-                className="hover:text-technic-yellow transition-colors"
+                onClick={handleChangeRole}
+                className="text-[10px] uppercase tracking-widest font-black text-text-dim hover:text-technic-yellow transition-colors"
               >
-                {isRegistering ? 'Already have an account? Sign In' : 'New here? Register Account'}
+                Change role / choose account type
               </button>
-              <Link to="/" className="hover:text-technic-yellow transition-colors">
-                Change Role
-              </Link>
             </div>
           </div>
 

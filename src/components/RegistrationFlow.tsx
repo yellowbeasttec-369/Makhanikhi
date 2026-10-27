@@ -68,11 +68,21 @@ export const RegistrationFlow: React.FC = () => {
   });
 
   useEffect(() => {
-    if (queryRole === 'owner') {
-      setFormData(prev => ({ ...prev, role: 'owner' }));
-      setStep(2); // Skip role selection if they already chose owner
-    } else if (queryRole === 'pro') {
-      // Stay on step 1 to choose between specialist or apprentice
+    const savedRole = typeof window !== 'undefined'
+      ? window.localStorage.getItem('makhanikhi_session_role')
+      : null;
+    const role = queryRole === 'owner' || queryRole === 'specialist' || queryRole === 'apprentice'
+      ? queryRole
+      : savedRole === 'owner' || savedRole === 'specialist' || savedRole === 'apprentice'
+        ? savedRole
+        : null;
+
+    if (role) {
+      setFormData(prev => ({ ...prev, role }));
+      setStep(2);
+    } else {
+      // Unknown or missing role must be selected explicitly; never infer a technical role.
+      setStep(1);
     }
   }, [queryRole]);
 
@@ -99,7 +109,11 @@ export const RegistrationFlow: React.FC = () => {
   const handleCompleteRegistration = async () => {
     if (!user) return;
 
-    // Fix #11: Validate required fields before writing to Firestore.
+    if (!['owner', 'specialist', 'apprentice'].includes(formData.role)) {
+      toast.error('Please choose whether you are a Vehicle Owner, Mechanic / Specialist, or Apprentice.');
+      setStep(1);
+      return;
+    }
     if (!formData.displayName.trim()) {
       toast.error('Please enter your full name.');
       return;
@@ -112,17 +126,28 @@ export const RegistrationFlow: React.FC = () => {
       toast.error('Please enter your address.');
       return;
     }
-    if (formData.role === 'owner' && formData.vehicle.make) {
+    if (formData.role === 'owner') {
+      if (!formData.vehicle.make.trim() || !formData.vehicle.model.trim() ||
+          !String(formData.vehicle.year).trim() || !formData.vehicle.registration.trim()) {
+        toast.error('Please complete the vehicle make, model, year, and registration / VIN.');
+        setStep(3);
+        return;
+      }
       const parsedYear = parseInt(String(formData.vehicle.year), 10);
       if (isNaN(parsedYear) || parsedYear < 1886 || parsedYear > new Date().getFullYear() + 1) {
         toast.error('Please enter a valid vehicle year.');
+        setStep(3);
         return;
       }
     }
 
     setLoading(true);
+    let saveStage: 'profile' | 'vehicle' | 'finalize' = 'profile';
     try {
+      const profileRef = doc(db, 'users', user.uid);
       const updateData: Record<string, unknown> = {
+        uid: user.uid,
+        email: user.email || '',
         displayName: formData.displayName.trim(),
         phone: formData.phone.trim(),
         emergencyContact: formData.emergencyContact,
@@ -132,7 +157,8 @@ export const RegistrationFlow: React.FC = () => {
         bio: formData.bio,
         photoURL: formData.photoURL,
         role: formData.role,
-        isProfileComplete: true,
+        // Do not mark the profile complete until every required write succeeds.
+        isProfileComplete: false,
         updatedAt: new Date().toISOString(),
       };
 
@@ -148,14 +174,13 @@ export const RegistrationFlow: React.FC = () => {
         updateData.offersMentorship = formData.offersMentorship;
       }
 
-      await setDoc(doc(db, 'users', user.uid), updateData, { merge: true });
+      await setDoc(profileRef, updateData, { merge: true });
 
-      // If owner, add the vehicle too
-      if (formData.role === 'owner' && formData.vehicle.make) {
+      if (formData.role === 'owner' && formData.vehicle.make.trim()) {
+        saveStage = 'vehicle';
         const vehicleRef = doc(collection(db, 'vehicles'));
         await setDoc(vehicleRef, {
           ...formData.vehicle,
-          // Fix #10: Parse year string to number before persisting to Firestore.
           year: parseInt(String(formData.vehicle.year), 10),
           ownerId: user.uid,
           createdAt: new Date().toISOString(),
@@ -164,6 +189,12 @@ export const RegistrationFlow: React.FC = () => {
           faults: []
         });
       }
+
+      saveStage = 'finalize';
+      await updateDoc(profileRef, {
+        isProfileComplete: true,
+        updatedAt: new Date().toISOString(),
+      });
 
       if (formData.role === 'apprentice') {
         toast.success('Registration complete! You are now awaiting matching with a Specialist.');
@@ -174,12 +205,24 @@ export const RegistrationFlow: React.FC = () => {
       if (formData.role === 'owner') {
         navigate('/dashboard');
       } else {
-        navigate('/verify'); // Go to verification center for specialists/apprentices
+        navigate('/verify');
       }
     } catch (error) {
-      // Fix #19: Log the error message (not the raw object) for debuggable production logs.
-      console.error('Registration failed:', (error as Error).message);
-      toast.error('Failed to save profile.');
+      const err = error as { code?: string; message?: string };
+      const code = err.code || 'unknown';
+      // Log only Firebase's error code and message; do not log profile data.
+      console.error('Registration failed at ' + saveStage + ':', { code, message: err.message });
+      const stageLabel = saveStage === 'profile'
+        ? 'profile details'
+        : saveStage === 'vehicle'
+          ? 'vehicle details'
+          : 'finalising your account';
+      const hint = code === 'permission-denied'
+        ? 'Firestore denied the write; check the active database rules and the exact database configured for this app.'
+        : code === 'unavailable' || code === 'network-request-failed'
+          ? 'The database or network is temporarily unavailable. Please retry.'
+          : 'Please retry once; if it repeats, share the error code with the developer.';
+      toast.error(`Could not save ${stageLabel} (${code}). ${hint}`, { duration: 10000 });
     } finally {
       setLoading(false);
     }
@@ -189,7 +232,7 @@ export const RegistrationFlow: React.FC = () => {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center p-4">
         <h1 className="text-2xl font-black uppercase text-technic-yellow mb-4">Auth Required</h1>
-        <p className="text-text-dim mb-8">Please login with Google first to begin registration.</p>
+        <p className="text-text-dim mb-8">Sign in or create an account with email and password or Google to begin registration.</p>
         <Button onClick={() => navigate('/login')} className="bento-btn">Go to Login</Button>
       </div>
     );
@@ -219,7 +262,7 @@ export const RegistrationFlow: React.FC = () => {
           <ShieldCheck className="w-3 h-3" /> Professional Onboarding
         </div>
         <h1 className="text-4xl font-display font-black uppercase tracking-tighter mb-2 text-digital-white">
-          {step === 1 ? 'Technical Stream' : step === 2 ? 'Identity Check' : 'Vehicle Registry'}
+          {step === 1 ? 'Choose Your Role' : step === 2 ? 'Identity Check' : 'Vehicle Registry'}
         </h1>
         <p className="text-text-dim">
           {step === 1 
@@ -241,6 +284,18 @@ export const RegistrationFlow: React.FC = () => {
           {step === 1 && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 gap-4">
+                <button
+                  onClick={() => { setFormData({...formData, role: 'owner'}); handleNext(); }}
+                  className={`p-8 rounded-[32px] bg-white/[0.02] border transition-all text-left group flex items-start gap-6 ${formData.role === 'owner' ? 'border-technic-yellow ring-1 ring-technic-yellow' : 'border-white/10 hover:border-technic-yellow/50'}`}
+                >
+                  <div className="w-14 h-14 rounded-2xl bg-technic-yellow/10 flex items-center justify-center shrink-0 border border-technic-yellow/20">
+                    <User className="w-7 h-7 text-technic-yellow" />
+                  </div>
+                  <div>
+                    <h3 className="font-black uppercase tracking-tight text-xl mb-2 text-digital-white">Vehicle Owner</h3>
+                    <p className="text-xs text-text-dim leading-relaxed">For drivers who need maintenance, diagnostics or repair support for their vehicle.</p>
+                  </div>
+                </button>
                 <button 
                   onClick={() => { setFormData({...formData, role: 'specialist'}); handleNext(); }}
                   className={`p-8 rounded-[32px] bg-white/[0.02] border transition-all text-left group flex items-start gap-6 ${formData.role === 'specialist' ? 'border-technic-yellow ring-1 ring-technic-yellow' : 'border-white/10 hover:border-technic-yellow/50'}`}

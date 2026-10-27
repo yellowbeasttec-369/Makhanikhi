@@ -1,123 +1,198 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ===============================================================
-    // Assumed Data Model
-    // ===============================================================
-    //
-    // Collection: users
-    // Fields: uid, email, displayName, role, specialization, experience, bio, photoURL, isVerified, rating, flagged
-    //
-    // Collection: vehicles
-    // Fields: ownerId, make, model, year, vin, mileage, serviceHistory, faults
-    //
-    // Collection: serviceRequests
-    // Fields: ownerId, vehicleId, specialistId, apprenticeId, type, status, description, callOutFee, diagnosticQuote, partsQuote, totalAmount, paymentStatus, createdAt, checklist
-    //
-    // ===============================================================
-
-    // Helper Functions
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
-    }
-
-    // Fix #4: Removed hardcoded admin email. Admin access is now role-only.
+    function isAuthenticated() { return request.auth != null; }
+    function isOwner(userId) { return isAuthenticated() && request.auth.uid == userId; }
     function isAdmin() {
       return isAuthenticated() &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
-
-    function hasRole(role) {
-      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
-    }
-
-    function isValidUser(data) {
+    function isValidUser(data, userId) {
       return data.keys().hasAll(['uid', 'email', 'role']) &&
-             data.role in ['owner', 'specialist', 'apprentice', 'admin'] &&
-             data.email is string && data.email.size() < 100;
+        data.uid == userId &&
+        data.role in ['owner', 'specialist', 'apprentice'] &&
+        data.email is string && data.email.size() > 0 && data.email.size() < 100 &&
+        (!('isVerified' in data) || data.isVerified == false) &&
+        (!('verificationStatus' in data) || data.verificationStatus == 'pending') &&
+        (!('rating' in data) || data.rating == 0);
     }
-
     function isValidPortfolio(data) {
       return data.keys().hasAll(['userId', 'title', 'validationStatus']) &&
-             data.userId is string &&
-             data.validationStatus in ['pending', 'validated', 'rejected'];
+        data.userId is string &&
+        data.validationStatus in ['pending', 'validated', 'rejected'];
     }
-
     function isValidWorkplaceReport(data) {
       return data.keys().hasAll(['userId', 'role', 'status']) &&
-             data.userId is string &&
-             data.role in ['specialist', 'apprentice'] &&
-             data.status in ['draft', 'submitted', 'validated'];
+        data.userId is string &&
+        data.role in ['specialist', 'apprentice'] &&
+        data.status in ['draft', 'submitted', 'validated'];
     }
 
-    // Fix #1: Narrowed user profile read to owner or admin.
-    // Specialists/apprentices can read a limited public view of specialist profiles,
-    // but NOT sensitive fields (idNumber, phone, emergencyContact, dob, address).
+    // Firestore rules cannot redact fields from a document. Keep user profiles
+    // private; use a separately curated publicProfiles collection for discovery.
     match /users/{userId} {
-      // Any authenticated user can read their own profile.
-      // Admins can read all profiles.
-      // Specialists and apprentices can read non-sensitive specialist/apprentice profiles (for job matching).
-      allow read: if isOwner(userId) || isAdmin() ||
-        (isAuthenticated() &&
-          (hasRole('specialist') || hasRole('apprentice')) &&
-          get(/databases/$(database)/documents/users/$(userId)).data.role in ['specialist', 'apprentice']);
-      allow create: if isOwner(userId) && isValidUser(request.resource.data);
-      // Fix #1: Owners cannot escalate their own role.
-      allow update: if (isOwner(userId) && request.resource.data.role == resource.data.role) || isAdmin();
-      // Fix #3: Explicit deny on delete for all collections (only admin can delete user docs).
+      allow read: if isOwner(userId) || isAdmin();
+      // Self-registration is permitted for ordinary roles, never for admin.
+      // New accounts cannot self-verify or create a reviewed/approved status.
+      allow create: if isOwner(userId) &&
+        isValidUser(request.resource.data, userId) &&
+        (!('email' in request.auth.token) || request.resource.data.email == request.auth.token.email);
+      allow update: if isAdmin() || (
+        isOwner(userId) &&
+        request.resource.data.uid == resource.data.uid &&
+        request.resource.data.email == resource.data.email &&
+        request.resource.data.role in ['owner', 'specialist', 'apprentice'] &&
+        (request.resource.data.role == resource.data.role || !('isProfileComplete' in resource.data) || resource.data.isProfileComplete != true) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'role', 'displayName', 'phone', 'emergencyContact', 'address',
+          'specialization', 'specializationBrand', 'isAvailable',
+          'unavailableDates', 'yearsOfExperience', 'certifications',
+          'affiliations', 'accreditations', 'accomplishments', 'bio',
+          'photoURL', 'dob', 'idNumber', 'isProfileComplete',
+          'trainingPath', 'apprenticeStartAge', 'apprenticeStatus',
+          'mentorId', 'offersMentorship', 'latitude', 'longitude',
+          'updatedAt'
+        ])
+      );
       allow delete: if isAdmin();
     }
 
-    // Fix #2: Vehicle update scoped to owner or a specialist/apprentice assigned to an active service request.
-    // This prevents any specialist from updating any vehicle they are not assigned to.
+    // Vehicle records contain ownership evidence, identifiers and service history.
+    // Technician access should be introduced via an explicit assignment model.
     match /vehicles/{vehicleId} {
-      allow read: if isAuthenticated() && (isOwner(resource.data.ownerId) || hasRole('specialist') || hasRole('apprentice') || isAdmin());
-      allow create: if isAuthenticated() && isOwner(request.resource.data.ownerId);
-      // Only the vehicle owner or an admin can update. Specialists update via service requests.
-      allow update: if isOwner(resource.data.ownerId) || isAdmin();
-      // Fix #3: Explicit delete rule.
+      allow read: if isOwner(resource.data.ownerId) || isAdmin();
+      allow create: if isAuthenticated() &&
+        isOwner(request.resource.data.ownerId) &&
+        request.resource.data.ownerId is string;
+      allow update: if isOwner(resource.data.ownerId) &&
+        request.resource.data.ownerId == resource.data.ownerId;
       allow delete: if isOwner(resource.data.ownerId) || isAdmin();
     }
 
     match /vehicleLogs/{logId} {
-      allow read: if isAuthenticated() && (isOwner(resource.data.ownerId) || hasRole('specialist') || hasRole('apprentice') || isAdmin());
-      allow create: if isAuthenticated() && (isOwner(request.resource.data.ownerId) || hasRole('specialist') || hasRole('apprentice'));
-      allow update: if isAuthenticated() && (isOwner(resource.data.ownerId) || hasRole('specialist') || hasRole('apprentice') || isAdmin());
-      // Fix #3: Explicit delete rule.
+      allow read: if isOwner(resource.data.ownerId) || isAdmin();
+      allow create: if isAuthenticated() &&
+        (isOwner(request.resource.data.ownerId) || isAdmin()) &&
+        request.resource.data.ownerId is string;
+      allow update: if isOwner(resource.data.ownerId) &&
+        request.resource.data.ownerId == resource.data.ownerId;
       allow delete: if isOwner(resource.data.ownerId) || isAdmin();
     }
 
     match /serviceRequests/{requestId} {
-      allow read: if isAuthenticated() && (isOwner(resource.data.ownerId) || isOwner(resource.data.specialistId) || isOwner(resource.data.apprenticeId) || hasRole('specialist') || isAdmin());
-      allow create: if isAuthenticated() && isOwner(request.resource.data.ownerId);
-      allow update: if isAuthenticated() && (isOwner(resource.data.ownerId) || isOwner(resource.data.specialistId) || isOwner(resource.data.apprenticeId) || isAdmin());
-      // Fix #3: Explicit delete rule.
+      function isParticipant(data) {
+        return isAuthenticated() && (
+          data.ownerId == request.auth.uid ||
+          data.specialistId == request.auth.uid ||
+          data.apprenticeId == request.auth.uid
+        );
+      }
+      allow read: if isParticipant(resource.data) || isAdmin();
+      allow create: if isAuthenticated() &&
+        request.resource.data.ownerId == request.auth.uid &&
+        request.resource.data.ownerId is string &&
+        (!('specialistId' in request.resource.data) || request.resource.data.specialistId == null) &&
+        (!('apprenticeId' in request.resource.data) || request.resource.data.apprenticeId == null);
+      // Participants cannot transfer ownership, vehicles or assigned roles.
+      allow update: if (isParticipant(resource.data) || isAdmin()) &&
+        request.resource.data.ownerId == resource.data.ownerId &&
+        request.resource.data.vehicleId == resource.data.vehicleId &&
+        (isAdmin() ||
+          (request.resource.data.specialistId == resource.data.specialistId &&
+           request.resource.data.apprenticeId == resource.data.apprenticeId));
       allow delete: if isOwner(resource.data.ownerId) || isAdmin();
     }
 
     match /workplaceReports/{reportId} {
-      allow read: if isAuthenticated() && (isOwner(resource.data.userId) || hasRole('specialist') || isAdmin());
-      allow create: if isAuthenticated() && isOwner(request.resource.data.userId) && isValidWorkplaceReport(request.resource.data);
-      allow update: if isAuthenticated() && (isOwner(resource.data.userId) || hasRole('specialist') || isAdmin());
-      // Fix #3: Explicit delete rule.
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if isAuthenticated() &&
+        isOwner(request.resource.data.userId) &&
+        isValidWorkplaceReport(request.resource.data) &&
+        request.resource.data.status == 'draft';
+      allow update: if isAdmin() || (
+        isOwner(resource.data.userId) &&
+        resource.data.status == 'draft' &&
+        request.resource.data.userId == resource.data.userId &&
+        request.resource.data.status == 'draft'
+      );
       allow delete: if isAdmin();
     }
 
     match /portfolios/{portfolioId} {
-      allow read: if isAuthenticated() && (isOwner(resource.data.userId) || hasRole('specialist') || isAdmin());
-      allow create: if isAuthenticated() && isOwner(request.resource.data.userId) && isValidPortfolio(request.resource.data);
-      allow update: if isAuthenticated() && (isOwner(resource.data.userId) || hasRole('specialist') || isAdmin());
-      // Fix #3: Explicit delete rule.
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if isAuthenticated() &&
+        isOwner(request.resource.data.userId) &&
+        isValidPortfolio(request.resource.data) &&
+        request.resource.data.validationStatus == 'pending';
+      allow update: if isAdmin() || (
+        isOwner(resource.data.userId) &&
+        request.resource.data.userId == resource.data.userId &&
+        request.resource.data.validationStatus == resource.data.validationStatus
+      );
       allow delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+
+    // Vehicle agreements are private to the two named participants.
+    // Ownership and custody remain separate concepts; acknowledgements can only
+    // be recorded by the corresponding participant and are immutable afterward.
+    match /vehicleAgreements/{agreementId} {
+      allow read: if isAuthenticated() &&
+        request.auth.uid in resource.data.participantUids;
+
+      allow create: if isAuthenticated() &&
+        request.resource.data.createdBy == request.auth.uid &&
+        request.resource.data.ownerId is string &&
+        request.resource.data.custodianId is string &&
+        request.resource.data.ownerId != request.resource.data.custodianId &&
+        request.resource.data.participantUids is list &&
+        request.resource.data.participantUids.size() == 2 &&
+        request.resource.data.participantUids.hasAll([
+          request.resource.data.ownerId, request.resource.data.custodianId
+        ]) &&
+        request.resource.data.vehicleId is string &&
+        get(/databases/$(database)/documents/vehicles/$(request.resource.data.vehicleId)).data.ownerId == request.auth.uid &&
+        request.resource.data.vehicleLabel is string &&
+        request.resource.data.registrationNumber is string &&
+        request.resource.data.agreementType in ['loan', 'repair', 'custody'] &&
+        request.resource.data.startDate is string &&
+        request.resource.data.expectedReturnDate is string &&
+        request.resource.data.terms is string &&
+        request.resource.data.terms.size() > 0 &&
+        request.resource.data.terms.size() <= 4000 &&
+        request.resource.data.ownerAcceptedAt == null &&
+        request.resource.data.custodianAcceptedAt == null;
+
+      allow update: if isAuthenticated() && (
+        (
+          request.auth.uid == resource.data.ownerId &&
+          resource.data.ownerAcceptedAt == null &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['ownerAcceptedAt', 'updatedAt']) &&
+          request.resource.data.ownerAcceptedAt == request.time &&
+          request.resource.data.updatedAt == request.time
+        ) ||
+        (
+          request.auth.uid == resource.data.custodianId &&
+          resource.data.custodianAcceptedAt == null &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['custodianAcceptedAt', 'updatedAt']) &&
+          request.resource.data.custodianAcceptedAt == request.time &&
+          request.resource.data.updatedAt == request.time
+        )
+      );
+
+      // Preserve the agreement history; administrative cleanup only.
+      allow delete: if isAdmin();
     }
 
     match /regionalStats/{statId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
+    }
+
+    // Default deny for collections without an explicit rule above.
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

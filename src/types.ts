@@ -46,7 +46,16 @@ export interface UserProfile {
 
 export interface Vehicle {
   id: string;
+  /** Account allowed to manage this vehicle record; legacy records use the legal owner's UID here. */
   ownerId: string;
+  /** Account that entered this record. Optional for backwards compatibility. */
+  registeredById?: string;
+  /** Optional app account for the legal owner when different from the record manager. */
+  legalOwnerUid?: string;
+  legalOwnerName?: string;
+  /** Temporary custody is separate from ownership. */
+  currentCustodianId?: string;
+  registrationNumber?: string;
   make: string;
   model: string;
   year: number;
@@ -59,6 +68,27 @@ export interface Vehicle {
     registrationUrl?: string;
     logbookUrl?: string;
   };
+}
+
+export type VehicleAgreementType = 'loan' | 'repair' | 'custody';
+
+export interface VehicleAgreement {
+  id: string;
+  createdBy: string;
+  ownerId: string;
+  custodianId: string;
+  participantUids: string[];
+  vehicleId: string;
+  vehicleLabel: string;
+  registrationNumber: string;
+  agreementType: VehicleAgreementType;
+  startDate: string;
+  expectedReturnDate: string;
+  terms: string;
+  ownerAcceptedAt?: unknown;
+  custodianAcceptedAt?: unknown;
+  createdAt?: unknown;
+  updatedAt?: unknown;
 }
 
 export interface ServiceRecord {
