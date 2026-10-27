@@ -215,6 +215,18 @@ export const Login: React.FC = () => {
     }
   };
 
+  // Reset stale role state and return focus to the role gateway without sending users to the marketing page.
+  const handleChangeRole = () => {
+    localStorage.removeItem('makhanikhi_session_role');
+    setSelectedRole('owner');
+    setIsRegistering(false);
+    setResetSent(false);
+    navigate('/login#role-choice-heading');
+    window.requestAnimationFrame(() => {
+      document.getElementById('role-choice-heading')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  };
+
   // ─── Fix #8: Client-side validation + Fix #6: route to correct handler ────────
   const handleManualAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -382,7 +394,7 @@ export const Login: React.FC = () => {
 
             <section aria-labelledby="role-choice-heading" className="mb-6">
               <h2 id="role-choice-heading" className="text-xs font-black uppercase tracking-widest text-white mb-3">
-                {isRegistering ? '1. I am joining as a…' : 'Choose your role for sign-up'}
+                {isRegistering ? '1. I am joining as a…' : 'Choose your role to continue'}
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {([
@@ -476,6 +488,15 @@ export const Login: React.FC = () => {
               {isRegistering
                 ? 'Creating an account is for new users. If you have registered before, choose “Existing User: Sign In” above.'
                 : 'New to Makhanikhi? Choose “Create New Account” above to register with your selected role.'}
+            </div>
+            <div className="mt-4 text-center">
+              <button
+                type="button"
+                onClick={handleChangeRole}
+                className="text-[10px] uppercase tracking-widest font-black text-text-dim hover:text-technic-yellow transition-colors"
+              >
+                Change role / choose account type
+              </button>
             </div>
           </div>
 
