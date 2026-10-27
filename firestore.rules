@@ -132,6 +132,58 @@ service cloud.firestore {
       allow delete: if isOwner(resource.data.userId) || isAdmin();
     }
 
+    // Vehicle agreements are private to the two named participants.
+    // Ownership and custody remain separate concepts; acknowledgements can only
+    // be recorded by the corresponding participant and are immutable afterward.
+    match /vehicleAgreements/{agreementId} {
+      allow read: if isAuthenticated() &&
+        request.auth.uid in resource.data.participantUids;
+
+      allow create: if isAuthenticated() &&
+        request.resource.data.createdBy == request.auth.uid &&
+        request.resource.data.ownerId == request.auth.uid &&
+        request.resource.data.custodianId is string &&
+        request.resource.data.custodianId != request.auth.uid &&
+        request.resource.data.participantUids is list &&
+        request.resource.data.participantUids.size() == 2 &&
+        request.resource.data.participantUids.hasAll([
+          request.auth.uid, request.resource.data.custodianId
+        ]) &&
+        request.resource.data.vehicleId is string &&
+        request.resource.data.vehicleLabel is string &&
+        request.resource.data.registrationNumber is string &&
+        request.resource.data.agreementType in ['loan', 'repair', 'custody'] &&
+        request.resource.data.startDate is string &&
+        request.resource.data.expectedReturnDate is string &&
+        request.resource.data.terms is string &&
+        request.resource.data.terms.size() > 0 &&
+        request.resource.data.terms.size() <= 4000 &&
+        request.resource.data.ownerAcceptedAt == null &&
+        request.resource.data.custodianAcceptedAt == null;
+
+      allow update: if isAuthenticated() && (
+        (
+          request.auth.uid == resource.data.ownerId &&
+          resource.data.ownerAcceptedAt == null &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['ownerAcceptedAt', 'updatedAt']) &&
+          request.resource.data.ownerAcceptedAt is timestamp &&
+          request.resource.data.updatedAt is timestamp
+        ) ||
+        (
+          request.auth.uid == resource.data.custodianId &&
+          resource.data.custodianAcceptedAt == null &&
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['custodianAcceptedAt', 'updatedAt']) &&
+          request.resource.data.custodianAcceptedAt is timestamp &&
+          request.resource.data.updatedAt is timestamp
+        )
+      );
+
+      // Preserve the agreement history; administrative cleanup only.
+      allow delete: if isAdmin();
+    }
+
     match /regionalStats/{statId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
