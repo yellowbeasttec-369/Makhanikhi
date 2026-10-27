@@ -33,6 +33,7 @@ import { ApprenticeHub } from './ApprenticeHub';
 import { PartsPricingAndFerrying } from './PartsPricingAndFerrying';
 import { ServiceWorkflowGating } from './ServiceWorkflowGating';
 import { ServiceVehicleAgreement } from './ServiceVehicleAgreement';
+import { DocumentsAndAgreements } from './DocumentsAndAgreements';
 import { WeatherSafetyAndSpecialistRadar } from './WeatherSafetyAndSpecialistRadar';
 import { ServiceRequest, ServiceOffer, UserProfile, ApprenticeTask, RoadworthyChecklist } from '../types';
 import { notifyParties, addToCalendar, notifyApprentice } from '../services/gemini';
@@ -704,6 +705,10 @@ export const Dashboard: React.FC = () => {
                   <ShoppingBag className="mr-2 h-4 w-4" />
                   <span>Parts Pricing & Ferrying</span>
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveTab('documents')} className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
+                  <FileText className="mr-2 h-4 w-4" />
+                  <span>Documents & Agreements</span>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setActiveTab('gated-workflow')} className="focus:bg-white/5 focus:text-technic-yellow cursor-pointer">
                   <Scale className="mr-2 h-4 w-4" />
                   <span>Gated Service Workflow</span>
@@ -777,6 +782,9 @@ export const Dashboard: React.FC = () => {
               </TabsTrigger>
             </>
           )}
+          <TabsTrigger value="documents" className="data-[state=active]:bg-technic-yellow data-[state=active]:text-industrial-charcoal rounded-lg px-6 py-2.5 font-bold transition-all text-xs tracking-widest uppercase">
+            <FileText className="w-4 h-4 mr-2" /> DOCUMENTS & AGREEMENTS
+          </TabsTrigger>
           <TabsTrigger value="gated-workflow" className="data-[state=active]:bg-technic-yellow data-[state=active]:text-industrial-charcoal rounded-lg px-6 py-2.5 font-bold transition-all text-xs tracking-widest uppercase">
             <Scale className="w-4 h-4 mr-2" /> {isOwner ? 'SERVICE PROGRESS & ROAD TEST' : 'WORKFLOW GATING'}
           </TabsTrigger>
@@ -1757,6 +1765,9 @@ export const Dashboard: React.FC = () => {
             </TabsContent>
             <TabsContent value="parts-pricing" className="mt-0">
               <PartsPricingAndFerrying />
+            </TabsContent>
+            <TabsContent value="documents" className="mt-0">
+              <DocumentsAndAgreements />
             </TabsContent>
             <TabsContent value="gated-workflow" className="mt-0">
               <ServiceWorkflowGating />
