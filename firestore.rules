@@ -10,8 +10,11 @@ service cloud.firestore {
     function isValidUser(data, userId) {
       return data.keys().hasAll(['uid', 'email', 'role']) &&
         data.uid == userId &&
-        data.role == 'owner' &&
-        data.email is string && data.email.size() > 0 && data.email.size() < 100;
+        data.role in ['owner', 'specialist', 'apprentice'] &&
+        data.email is string && data.email.size() > 0 && data.email.size() < 100 &&
+        (!('isVerified' in data) || data.isVerified == false) &&
+        (!('verificationStatus' in data) || data.verificationStatus == 'pending') &&
+        (!('rating' in data) || data.rating == 0);
     }
     function isValidPortfolio(data) {
       return data.keys().hasAll(['userId', 'title', 'validationStatus']) &&
@@ -29,8 +32,11 @@ service cloud.firestore {
     // private; use a separately curated publicProfiles collection for discovery.
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
-      // Admin roles must be provisioned by a trusted administrative process.
-      allow create: if isOwner(userId) && isValidUser(request.resource.data, userId);
+      // Self-registration is permitted for ordinary roles, never for admin.
+      // New accounts cannot self-verify or create a reviewed/approved status.
+      allow create: if isOwner(userId) &&
+        isValidUser(request.resource.data, userId) &&
+        (!('email' in request.auth.token) || request.resource.data.email == request.auth.token.email);
       allow update: if isAdmin() || (
         isOwner(userId) &&
         request.resource.data.uid == resource.data.uid &&
@@ -43,7 +49,8 @@ service cloud.firestore {
           'affiliations', 'accreditations', 'accomplishments', 'bio',
           'photoURL', 'dob', 'idNumber', 'isProfileComplete',
           'trainingPath', 'apprenticeStartAge', 'apprenticeStatus',
-          'mentorId', 'offersMentorship', 'latitude', 'longitude'
+          'mentorId', 'offersMentorship', 'latitude', 'longitude',
+          'updatedAt'
         ])
       );
       allow delete: if isAdmin();
@@ -97,7 +104,8 @@ service cloud.firestore {
       allow read: if isOwner(resource.data.userId) || isAdmin();
       allow create: if isAuthenticated() &&
         isOwner(request.resource.data.userId) &&
-        isValidWorkplaceReport(request.resource.data);
+        isValidWorkplaceReport(request.resource.data) &&
+        request.resource.data.status == 'draft';
       allow update: if isAdmin() || (
         isOwner(resource.data.userId) &&
         resource.data.status == 'draft' &&
@@ -111,7 +119,8 @@ service cloud.firestore {
       allow read: if isOwner(resource.data.userId) || isAdmin();
       allow create: if isAuthenticated() &&
         isOwner(request.resource.data.userId) &&
-        isValidPortfolio(request.resource.data);
+        isValidPortfolio(request.resource.data) &&
+        request.resource.data.validationStatus == 'pending';
       allow update: if isAdmin() || (
         isOwner(resource.data.userId) &&
         request.resource.data.userId == resource.data.userId &&
