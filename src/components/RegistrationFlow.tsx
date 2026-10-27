@@ -68,11 +68,21 @@ export const RegistrationFlow: React.FC = () => {
   });
 
   useEffect(() => {
-    if (queryRole === 'owner' || queryRole === 'specialist' || queryRole === 'apprentice') {
-      setFormData(prev => ({ ...prev, role: queryRole }));
+    const savedRole = typeof window !== 'undefined'
+      ? window.localStorage.getItem('makhanikhi_session_role')
+      : null;
+    const role = queryRole === 'owner' || queryRole === 'specialist' || queryRole === 'apprentice'
+      ? queryRole
+      : savedRole === 'owner' || savedRole === 'specialist' || savedRole === 'apprentice'
+        ? savedRole
+        : null;
+
+    if (role) {
+      setFormData(prev => ({ ...prev, role }));
       setStep(2);
-    } else if (queryRole === 'pro') {
-      setStep(1); // Let the user choose specialist or apprentice.
+    } else {
+      // Unknown or missing role must be selected explicitly; never infer a technical role.
+      setStep(1);
     }
   }, [queryRole]);
 
@@ -99,7 +109,11 @@ export const RegistrationFlow: React.FC = () => {
   const handleCompleteRegistration = async () => {
     if (!user) return;
 
-    // Fix #11: Validate required fields before writing to Firestore.
+    if (!['owner', 'specialist', 'apprentice'].includes(formData.role)) {
+      toast.error('Please choose whether you are a Vehicle Owner, Mechanic / Specialist, or Apprentice.');
+      setStep(1);
+      return;
+    }
     if (!formData.displayName.trim()) {
       toast.error('Please enter your full name.');
       return;
@@ -121,7 +135,9 @@ export const RegistrationFlow: React.FC = () => {
     }
 
     setLoading(true);
+    let saveStage: 'profile' | 'vehicle' | 'finalize' = 'profile';
     try {
+      const profileRef = doc(db, 'users', user.uid);
       const updateData: Record<string, unknown> = {
         uid: user.uid,
         email: user.email || '',
@@ -134,7 +150,8 @@ export const RegistrationFlow: React.FC = () => {
         bio: formData.bio,
         photoURL: formData.photoURL,
         role: formData.role,
-        isProfileComplete: true,
+        // Do not mark the profile complete until every required write succeeds.
+        isProfileComplete: false,
         updatedAt: new Date().toISOString(),
       };
 
@@ -150,14 +167,13 @@ export const RegistrationFlow: React.FC = () => {
         updateData.offersMentorship = formData.offersMentorship;
       }
 
-      await setDoc(doc(db, 'users', user.uid), updateData, { merge: true });
+      await setDoc(profileRef, updateData, { merge: true });
 
-      // If owner, add the vehicle too
-      if (formData.role === 'owner' && formData.vehicle.make) {
+      if (formData.role === 'owner' && formData.vehicle.make.trim()) {
+        saveStage = 'vehicle';
         const vehicleRef = doc(collection(db, 'vehicles'));
         await setDoc(vehicleRef, {
           ...formData.vehicle,
-          // Fix #10: Parse year string to number before persisting to Firestore.
           year: parseInt(String(formData.vehicle.year), 10),
           ownerId: user.uid,
           createdAt: new Date().toISOString(),
@@ -166,6 +182,12 @@ export const RegistrationFlow: React.FC = () => {
           faults: []
         });
       }
+
+      saveStage = 'finalize';
+      await updateDoc(profileRef, {
+        isProfileComplete: true,
+        updatedAt: new Date().toISOString(),
+      });
 
       if (formData.role === 'apprentice') {
         toast.success('Registration complete! You are now awaiting matching with a Specialist.');
@@ -176,12 +198,24 @@ export const RegistrationFlow: React.FC = () => {
       if (formData.role === 'owner') {
         navigate('/dashboard');
       } else {
-        navigate('/verify'); // Go to verification center for specialists/apprentices
+        navigate('/verify');
       }
     } catch (error) {
-      // Fix #19: Log the error message (not the raw object) for debuggable production logs.
-      console.error('Registration failed:', (error as Error).message);
-      toast.error('Failed to save profile.');
+      const err = error as { code?: string; message?: string };
+      const code = err.code || 'unknown';
+      // Log only Firebase's error code and message; do not log profile data.
+      console.error('Registration failed at ' + saveStage + ':', { code, message: err.message });
+      const stageLabel = saveStage === 'profile'
+        ? 'profile details'
+        : saveStage === 'vehicle'
+          ? 'vehicle details'
+          : 'finalising your account';
+      const hint = code === 'permission-denied'
+        ? 'Firestore denied the write; check the active database rules and the exact database configured for this app.'
+        : code === 'unavailable' || code === 'network-request-failed'
+          ? 'The database or network is temporarily unavailable. Please retry.'
+          : 'Please retry once; if it repeats, share the error code with the developer.';
+      toast.error(`Could not save ${stageLabel} (${code}). ${hint}`, { duration: 10000 });
     } finally {
       setLoading(false);
     }
