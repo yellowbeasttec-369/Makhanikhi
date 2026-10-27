@@ -31,7 +31,8 @@ This branch hardens Firestore access rules and requires a valid Firebase ID toke
 - Verify owner, specialist and apprentice can each complete registration and read/update their own profile, but cannot assign admin, change role, self-verify, change rating/flags, or read another profile.
 - Verify a specialist/apprentice cannot read another owner's vehicle, vehicle logs, private report or portfolio unless a later explicit assignment rule grants access.
 - Verify only owner/assigned participants/admin can read a service request; participant reassignment is denied.
-- Verify email/password login with an existing account reaches a usable authenticated route; verify a profile-read failure does not leave the app in an infinite loading state.
+- Verify email/password login with an existing account reaches a usable authenticated route; verify a new account can register with each of the three roles; verify an already-registered email switches the UI to Sign In; verify a profile-read failure does not leave the app in an infinite loading state.
+- Google sign-in still requires the deployed domain to be listed under Firebase Authentication → Settings → Authorized domains. Test both the canonical production domain and preview domain after configuration.
 - Verify every mutating API returns 401 with no token, 401 with a malformed/expired token, and proceeds only with a valid token.
 - Verify legitimate logged-in UI flows and notifications after the new API gate.
 - Run `bun run lint` and `bun run build` in CI; do not infer success from source inspection alone.
