@@ -141,13 +141,13 @@ service cloud.firestore {
 
       allow create: if isAuthenticated() &&
         request.resource.data.createdBy == request.auth.uid &&
-        request.resource.data.ownerId == request.auth.uid &&
+        request.resource.data.ownerId is string &&
         request.resource.data.custodianId is string &&
-        request.resource.data.custodianId != request.auth.uid &&
+        request.resource.data.ownerId != request.resource.data.custodianId &&
         request.resource.data.participantUids is list &&
         request.resource.data.participantUids.size() == 2 &&
         request.resource.data.participantUids.hasAll([
-          request.auth.uid, request.resource.data.custodianId
+          request.resource.data.ownerId, request.resource.data.custodianId
         ]) &&
         request.resource.data.vehicleId is string &&
         get(/databases/$(database)/documents/vehicles/$(request.resource.data.vehicleId)).data.ownerId == request.auth.uid &&
