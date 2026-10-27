@@ -9,7 +9,7 @@ import {
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore';
 import { Button } from './ui/button';
 import {
   Wrench, Shield, ArrowRight, UserCheck, Users, Award, Lock,
@@ -112,6 +112,19 @@ export const Login: React.FC = () => {
       try {
         const snap = await getDoc(doc(db, 'users', user.uid));
         if (snap.exists() && snap.data()?.isProfileComplete) {
+          const savedProfile = snap.data();
+          if (savedProfile.role === 'owner') {
+            // Older builds could mark an owner complete before the separate vehicle write succeeded.
+            // Route that partial state back to vehicle registration instead of stranding the user on the dashboard.
+            const ownedVehicles = await getDocs(
+              query(collection(db, 'vehicles'), where('ownerId', '==', user.uid))
+            );
+            if (ownedVehicles.empty) {
+              localStorage.setItem('makhanikhi_session_role', 'owner');
+              navigate('/register?role=owner');
+              return;
+            }
+          }
           navigate('/dashboard');
         } else {
           const storedRole = localStorage.getItem('makhanikhi_session_role');
