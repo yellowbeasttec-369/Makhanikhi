@@ -6,6 +6,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
 import { google } from "googleapis";
+import firebaseConfig from "./firebase-applet-config.json";
 // =========================================================================
 // Makhanikhi Model Context Protocol (MCP) Server & Bedrock AgentCore Engine
 // Embedded directly to ensure standalone execution under Node.js ESM in production
@@ -1008,7 +1009,55 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json());
+  app.use(express.json({ limit: "1mb" }));
+
+  // Verify Firebase ID tokens server-side before allowing mutating API routes.
+  // Identity Toolkit validates the token against this Firebase project's API key.
+  const authFailureCounts = new Map<string, { count: number; resetAt: number }>();
+  const requireFirebaseAuth: express.RequestHandler = async (req, res, next) => {
+    const authorization = req.header("authorization") || "";
+    const match = authorization.match(/^Bearer\\s+(.+)$/i);
+    if (!match) {
+      res.status(401).json({ error: "A valid Firebase sign-in is required." });
+      return;
+    }
+
+    // Best-effort per-instance throttling for invalid-token attempts.
+    const now = Date.now();
+    const clientKey = req.ip || "unknown";
+    const attempt = authFailureCounts.get(clientKey);
+    if (attempt && attempt.resetAt > now && attempt.count >= 30) {
+      res.status(429).json({ error: "Too many authentication attempts. Try again shortly." });
+      return;
+    }
+
+    try {
+      const verifyResponse = await fetch(
+        "https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=" +
+          encodeURIComponent(firebaseConfig.apiKey),
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idToken: match[1] })
+        }
+      );
+      if (!verifyResponse.ok) throw new Error("Invalid Firebase ID token");
+      const identity = await verifyResponse.json();
+      const uid = identity.users?.[0]?.localId;
+      if (!uid) throw new Error("Firebase identity missing");
+
+      res.locals.firebaseUid = uid;
+      authFailureCounts.delete(clientKey);
+      next();
+    } catch {
+      const current = authFailureCounts.get(clientKey);
+      authFailureCounts.set(clientKey, {
+        count: current && current.resetAt > now ? current.count + 1 : 1,
+        resetAt: current && current.resetAt > now ? current.resetAt : now + 60_000
+      });
+      res.status(401).json({ error: "Invalid or expired Firebase ID token." });
+    }
+  };
 
   // Gemini AI Setup
   const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
@@ -1053,7 +1102,7 @@ async function startServer() {
   });
 
   // 2. Standard MCP JSON-RPC 2.0 Handler
-  app.post("/api/mcp", (req, res) => {
+  app.post("/api/mcp", requireFirebaseAuth, (req, res) => {
     try {
       const rpcBody = req.body;
       
@@ -1086,7 +1135,7 @@ async function startServer() {
   });
 
   // 3. Amazon Bedrock AgentCore Voice Execution Loop
-  app.post("/api/mcp/bedrock-agent", async (req, res) => {
+  app.post("/api/mcp/bedrock-agent", requireFirebaseAuth, async (req, res) => {
     try {
       const { query, mechanic_id = "MECH-PLK-01", language = "en-ZA", auto_confirm_order = false } = req.body;
       const q = (query || "").trim();
@@ -1273,7 +1322,7 @@ async function startServer() {
   });
 
   // API Routes
-  app.post("/api/ai/generate-contract", async (req, res) => {
+  app.post("/api/ai/generate-contract", requireFirebaseAuth, async (req, res) => {
     try {
       const { serviceDetails } = req.body;
       
@@ -1307,7 +1356,7 @@ async function startServer() {
     }
   });
 
-  app.post("/api/ai/analyze-faults", async (req, res) => {
+  app.post("/api/ai/analyze-faults", requireFirebaseAuth, async (req, res) => {
     try {
       const { faults, vehicleInfo } = req.body;
       
@@ -1329,7 +1378,7 @@ async function startServer() {
     }
   });
 
-  app.post("/api/parts/search", async (req, res) => {
+  app.post("/api/parts/search", requireFirebaseAuth, async (req, res) => {
     try {
       const { partQuery, vehicleMake, vehicleModel } = req.body;
       const vehicleDesc = `${vehicleMake || ''} ${vehicleModel || ''}`.trim() || 'passenger car';
@@ -1366,7 +1415,7 @@ Each item must have:
     }
   });
 
-  app.post("/api/ai/explain-issue-video", async (req, res) => {
+  app.post("/api/ai/explain-issue-video", requireFirebaseAuth, async (req, res) => {
     try {
       const { issueTopic, vehicleInfo, clientConcerns } = req.body;
       const vehicleDesc = vehicleInfo ? `${vehicleInfo.year || ''} ${vehicleInfo.make || ''} ${vehicleInfo.model || ''}` : 'passenger vehicle';
@@ -1403,7 +1452,7 @@ Return JSON with:
     }
   });
 
-  app.post("/api/notify/agreement-finalized", async (req, res) => {
+  app.post("/api/notify/agreement-finalized", requireFirebaseAuth, async (req, res) => {
     try {
       const { requestId, parties, agreement } = req.body;
       console.log(`[NOTIFY] Agreement finalized for request ${requestId}`);
@@ -1426,7 +1475,7 @@ Return JSON with:
     }
   });
 
-  app.post("/api/notify/apprentice-assign", async (req, res) => {
+  app.post("/api/notify/apprentice-assign", requireFirebaseAuth, async (req, res) => {
     try {
       const { apprenticeEmail, apprenticePhone, apprenticeName, specialistName, vehicleDetails, serviceType, description } = req.body;
       console.log(`[NOTIFY] Dispatching notification to apprentice team: ${apprenticeName} (${apprenticeEmail})`);
@@ -1485,7 +1534,7 @@ Return JSON with:
     }
   });
 
-  app.post("/api/notify/send-poe-pdf", async (req, res) => {
+  app.post("/api/notify/send-poe-pdf", requireFirebaseAuth, async (req, res) => {
     try {
       const { recipientEmail, recipientName, role, documentType, summaryText } = req.body;
       console.log(`[POE DISPATCH] Sending ${documentType} to ${recipientEmail} for ${recipientName} (${role})`);
@@ -1524,7 +1573,7 @@ Return JSON with:
     }
   });
 
-  app.post("/api/calendar/add-event", async (req, res) => {
+  app.post("/api/calendar/add-event", requireFirebaseAuth, async (req, res) => {
     try {
       const { eventData, accessToken } = req.body;
       if (!accessToken) return res.status(401).json({ error: "Access token required" });
