@@ -250,7 +250,7 @@ export const Login: React.FC = () => {
   // ─── Fix #9: IS_IFRAME is now a module-level constant ─────────────────────────
   const handleGoogleLogin = async () => {
     try {
-      if (intendedRole) localStorage.setItem('makhanikhi_session_role', intendedRole);
+      localStorage.setItem('makhanikhi_session_role', selectedRole);
       await signInWithPopup(auth, new GoogleAuthProvider());
     } catch (error: any) {
       if (
