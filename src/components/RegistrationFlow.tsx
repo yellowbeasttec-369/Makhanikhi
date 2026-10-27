@@ -123,6 +123,8 @@ export const RegistrationFlow: React.FC = () => {
     setLoading(true);
     try {
       const updateData: Record<string, unknown> = {
+        uid: user.uid,
+        email: user.email || '',
         displayName: formData.displayName.trim(),
         phone: formData.phone.trim(),
         emergencyContact: formData.emergencyContact,
@@ -133,6 +135,8 @@ export const RegistrationFlow: React.FC = () => {
         photoURL: formData.photoURL,
         role: formData.role,
         isProfileComplete: true,
+        isVerified: false,
+        verificationStatus: 'pending',
         updatedAt: new Date().toISOString(),
       };
 
