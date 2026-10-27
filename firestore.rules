@@ -42,7 +42,7 @@ service cloud.firestore {
         request.resource.data.uid == resource.data.uid &&
         request.resource.data.email == resource.data.email &&
         request.resource.data.role in ['owner', 'specialist', 'apprentice'] &&
-        (request.resource.data.role == resource.data.role || resource.data.isProfileComplete != true) &&
+        (request.resource.data.role == resource.data.role || !('isProfileComplete' in resource.data) || resource.data.isProfileComplete != true) &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'role', 'displayName', 'phone', 'emergencyContact', 'address',
           'specialization', 'specializationBrand', 'isAvailable',
