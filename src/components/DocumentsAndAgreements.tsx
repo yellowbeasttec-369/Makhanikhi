@@ -197,7 +197,7 @@ export const DocumentsAndAgreements: React.FC = () => {
     }
     if (agreement[field]) return;
     try {
-      await updateDoc(doc(db, 'vehicleAgreements', agreement.id), { [field]: new Date().toISOString(), updatedAt: serverTimestamp() });
+      await updateDoc(doc(db, 'vehicleAgreements', agreement.id), { [field]: serverTimestamp(), updatedAt: serverTimestamp() });
       toast.success('Your acknowledgement has been recorded.');
     } catch (error) {
       console.error('Agreement acknowledgement failed:', error);
