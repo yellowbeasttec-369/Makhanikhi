@@ -126,10 +126,17 @@ export const RegistrationFlow: React.FC = () => {
       toast.error('Please enter your address.');
       return;
     }
-    if (formData.role === 'owner' && formData.vehicle.make) {
+    if (formData.role === 'owner') {
+      if (!formData.vehicle.make.trim() || !formData.vehicle.model.trim() ||
+          !String(formData.vehicle.year).trim() || !formData.vehicle.registration.trim()) {
+        toast.error('Please complete the vehicle make, model, year, and registration / VIN.');
+        setStep(3);
+        return;
+      }
       const parsedYear = parseInt(String(formData.vehicle.year), 10);
       if (isNaN(parsedYear) || parsedYear < 1886 || parsedYear > new Date().getFullYear() + 1) {
         toast.error('Please enter a valid vehicle year.');
+        setStep(3);
         return;
       }
     }
