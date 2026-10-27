@@ -67,7 +67,7 @@ export const DocumentsAndAgreements: React.FC = () => {
     make: '', model: '', year: String(new Date().getFullYear()), registrationNumber: '', vin: '', legalOwnerName: ''
   });
   const [agreementForm, setAgreementForm] = useState({
-    vehicleId: '', custodianId: '', agreementType: 'repair' as AgreementRow['agreementType'],
+    vehicleId: '', counterpartyId: '', myRole: 'owner' as 'owner' | 'custodian', agreementType: 'repair' as AgreementRow['agreementType'],
     startDate: new Date().toISOString().slice(0, 10), expectedReturnDate: '', terms: ''
   });
 
@@ -145,7 +145,7 @@ export const DocumentsAndAgreements: React.FC = () => {
   const createAgreement = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!user || !selectedVehicle) return;
-    if (!agreementForm.custodianId.trim() || agreementForm.custodianId.trim() === user.uid) {
+    if (!agreementForm.counterpartyId.trim() || agreementForm.counterpartyId.trim() === user.uid) {
       toast.error('Enter the other participant’s Firebase user UID. It must be different from your own.');
       return;
     }
@@ -159,11 +159,14 @@ export const DocumentsAndAgreements: React.FC = () => {
     }
     setSaving(true);
     try {
+      const otherUid = agreementForm.counterpartyId.trim();
+      const ownerId = agreementForm.myRole === 'owner' ? user.uid : otherUid;
+      const custodianId = agreementForm.myRole === 'custodian' ? user.uid : otherUid;
       await addDoc(collection(db, 'vehicleAgreements'), {
         createdBy: user.uid,
-        ownerId: user.uid,
-        custodianId: agreementForm.custodianId.trim(),
-        participantUids: [user.uid, agreementForm.custodianId.trim()],
+        ownerId,
+        custodianId,
+        participantUids: [ownerId, custodianId],
         vehicleId: selectedVehicle.id,
         vehicleLabel: `${selectedVehicle.year} ${selectedVehicle.make} ${selectedVehicle.model}`,
         registrationNumber: selectedVehicle.registrationNumber || 'Not recorded',
@@ -177,7 +180,7 @@ export const DocumentsAndAgreements: React.FC = () => {
         updatedAt: serverTimestamp()
       });
       setShowAgreementForm(false);
-      setAgreementForm({ vehicleId: '', custodianId: '', agreementType: 'repair', startDate: new Date().toISOString().slice(0, 10), expectedReturnDate: '', terms: '' });
+      setAgreementForm({ vehicleId: '', counterpartyId: '', myRole: 'owner', agreementType: 'repair', startDate: new Date().toISOString().slice(0, 10), expectedReturnDate: '', terms: '' });
       toast.success('Agreement draft created. The other participant must sign in and acknowledge it separately.');
     } catch (error) {
       console.error('Agreement creation failed:', error);
@@ -274,11 +277,12 @@ export const DocumentsAndAgreements: React.FC = () => {
 
       {showAgreementForm && <form onSubmit={createAgreement} className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
         <h3 className="font-bold uppercase">Create a vehicle agreement</h3>
-        <p className="text-xs text-text-dim">The creator is recorded as the owner/authorising party for this agreement. Enter the other participant’s Firebase UID; a secure email-based invitation flow is a follow-up task.</p>
+        <p className="text-xs text-text-dim">Choose whether you are the vehicle owner/authorising party or the temporary custodian. Enter the other participant’s Firebase UID; a secure email-based invitation flow is a follow-up task.</p>
         <div className="grid gap-3 md:grid-cols-2">
           <div><Label>Vehicle *</Label><select value={agreementForm.vehicleId} onChange={e => setAgreementForm({ ...agreementForm, vehicleId: e.target.value })} required className="h-10 w-full rounded-md border border-white/15 bg-industrial-charcoal px-3 text-sm"><option value="">Select vehicle</option>{vehicles.map(vehicle => <option key={vehicle.id} value={vehicle.id}>{vehicle.year} {vehicle.make} {vehicle.model} — {vehicle.registrationNumber || 'No registration'}</option>)}</select></div>
           <div><Label>Agreement type</Label><select value={agreementForm.agreementType} onChange={e => setAgreementForm({ ...agreementForm, agreementType: e.target.value as AgreementRow['agreementType'] })} className="h-10 w-full rounded-md border border-white/15 bg-industrial-charcoal px-3 text-sm"><option value="repair">Repair authorisation</option><option value="loan">Vehicle loan / use</option><option value="custody">Temporary custody / handover</option></select></div>
-          <div><Label>Other participant UID *</Label><Input value={agreementForm.custodianId} onChange={e => setAgreementForm({ ...agreementForm, custodianId: e.target.value })} required /></div>
+          <div><Label>Your role in this agreement *</Label><select value={agreementForm.myRole} onChange={e => setAgreementForm({ ...agreementForm, myRole: e.target.value as 'owner' | 'custodian' })} className="h-10 w-full rounded-md border border-white/15 bg-industrial-charcoal px-3 text-sm"><option value="owner">Vehicle owner / authorising party</option><option value="custodian">Mechanic / temporary custodian</option></select></div>
+          <div><Label>Other participant UID *</Label><Input value={agreementForm.counterpartyId} onChange={e => setAgreementForm({ ...agreementForm, counterpartyId: e.target.value })} required /></div>
           <div><Label>Start date *</Label><Input type="date" value={agreementForm.startDate} onChange={e => setAgreementForm({ ...agreementForm, startDate: e.target.value })} required /></div>
           <div><Label>Expected return date *</Label><Input type="date" min={agreementForm.startDate} value={agreementForm.expectedReturnDate} onChange={e => setAgreementForm({ ...agreementForm, expectedReturnDate: e.target.value })} required /></div>
         </div>
@@ -304,7 +308,7 @@ export const DocumentsAndAgreements: React.FC = () => {
             <p className="whitespace-pre-wrap text-sm text-text-dim">{agreement.terms}</p>
             <div className="grid gap-2 text-xs sm:grid-cols-2"><p>{agreement.ownerAcceptedAt ? <CheckCircle2 className="mr-1 inline h-3 w-3 text-emerald-300" /> : '○ '}Authorising party: {agreement.ownerAcceptedAt ? 'acknowledged' : 'pending'}</p><p>{agreement.custodianAcceptedAt ? <CheckCircle2 className="mr-1 inline h-3 w-3 text-emerald-300" /> : '○ '}Custodian: {agreement.custodianAcceptedAt ? 'acknowledged' : 'pending'}</p></div>
             <div className="flex flex-wrap gap-2">
-              {!myAccepted && <Button size="sm" variant="outline" onClick={() => acknowledge(agreement, isOwner ? 'owner' : 'custodian')}>I acknowledge as {isOwner ? 'owner' : 'custodian'}</Button>}
+              {!myAccepted && <Button size="sm" variant="outline" onClick={() => acknowledge(agreement, isOwner ? 'owner' : 'custodian')}>I have reviewed and accept as {isOwner ? 'owner' : 'custodian'}</Button>}
               {!otherAccepted && <span className="self-center text-xs text-text-dim">Waiting for the other participant’s acknowledgement.</span>}
               <Button size="sm" onClick={() => downloadAgreement(agreement)} className="bg-technic-yellow text-industrial-charcoal"><Download className="mr-2 h-4 w-4" />Download watermarked PDF</Button>
             </div>
