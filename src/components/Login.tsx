@@ -413,6 +413,14 @@ export const Login: React.FC = () => {
             </div>
           </div>
 
+          <nav aria-label="Legal and privacy information" className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 text-[10px] font-bold uppercase tracking-wider text-text-dim">
+            <Link className="hover:text-technic-yellow underline underline-offset-4" to="/privacy">Privacy Notice</Link>
+            <Link className="hover:text-technic-yellow underline underline-offset-4" to="/terms">Terms of Use</Link>
+            <Link className="hover:text-technic-yellow underline underline-offset-4" to="/community">Community &amp; Safety</Link>
+            <Link className="hover:text-technic-yellow underline underline-offset-4" to="/data-rights">Data requests</Link>
+          </nav>
+          <p className="mt-3 text-center text-[9px] leading-4 text-amber-200/70">These policy pages are draft versions under review; they are not yet a formal record of consent or a claim of completed compliance.</p>
+
           <div className="space-y-4 mt-8 pt-6 border-t border-white/5">
             <div className="p-3.5 bg-red-500/5 border border-red-500/20 rounded-xl text-[10px] text-red-200 tracking-wider font-mono flex items-start gap-2.5 leading-relaxed">
               <AlertTriangle className="w-4 h-4 text-technic-yellow shrink-0 mt-0.5" />

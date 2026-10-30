@@ -205,7 +205,7 @@ export const PublicLanding: React.FC = () => {
       <footer className="border-t border-white/10 px-4 py-8 text-center text-xs text-white/45">
         <p>Makhanikhi · Specialist mobile mechanics</p>
         <p className="mt-2">In development. Features, availability, verification and payment arrangements may change as the product is tested.</p>
-        <div className="mt-4 flex flex-wrap justify-center gap-5"><a className="hover:text-technic-yellow" href={FACEBOOK_URL} target="_blank" rel="noreferrer">Facebook</a><a className="hover:text-technic-yellow" href={GOOGLE_BUSINESS_URL} target="_blank" rel="noreferrer">Google Business Profile</a><a className="hover:text-technic-yellow" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a><Link className="hover:text-technic-yellow" to="/login">Existing user sign-in</Link></div>
+        <div className="mt-4 flex flex-wrap justify-center gap-5"><Link className="hover:text-technic-yellow" to="/privacy">Privacy Notice</Link><Link className="hover:text-technic-yellow" to="/terms">Terms of Use</Link><Link className="hover:text-technic-yellow" to="/community">Community & Safety</Link><Link className="hover:text-technic-yellow" to="/data-rights">Data requests</Link><a className="hover:text-technic-yellow" href={FACEBOOK_URL} target="_blank" rel="noreferrer">Facebook</a><a className="hover:text-technic-yellow" href={GOOGLE_BUSINESS_URL} target="_blank" rel="noreferrer">Google Business Profile</a><a className="hover:text-technic-yellow" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a><Link className="hover:text-technic-yellow" to="/login">Existing user sign-in</Link></div>
       </footer>
     </main>
   );

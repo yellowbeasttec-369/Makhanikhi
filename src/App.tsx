@@ -13,6 +13,7 @@ import { Login } from './components/Login';
 import { WorkshopRegistry } from './components/WorkshopRegistry';
 import { BottomNav } from './components/BottomNav';
 import { Toaster } from 'sonner';
+import { LegalPages } from './components/LegalPages';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isAuthReady } = useAuth();
@@ -23,7 +24,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 const AppContent: React.FC = () => {
   const location = useLocation();
-  const isPublicMarketingRoute = location.pathname === '/' || location.pathname === '/demo';
+  const isPublicMarketingRoute = location.pathname === '/' || location.pathname === '/demo' || ['/privacy', '/terms', '/community', '/data-rights'].includes(location.pathname);
   return (
     <div className="min-h-screen bg-industrial-charcoal selection:bg-technic-yellow selection:text-industrial-charcoal pb-20 md:pb-0">
       {!isPublicMarketingRoute && <Navbar />}
@@ -31,6 +32,10 @@ const AppContent: React.FC = () => {
         <Route path="/" element={<PublicLanding />} />
         <Route path="/demo" element={<PublicDemo />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/privacy" element={<LegalPages />} />
+        <Route path="/terms" element={<LegalPages />} />
+        <Route path="/community" element={<LegalPages />} />
+        <Route path="/data-rights" element={<LegalPages />} />
         <Route path="/registry" element={<WorkshopRegistry />} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/book" element={<ProtectedRoute><ServiceBooking /></ProtectedRoute>} />
